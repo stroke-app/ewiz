@@ -4,17 +4,45 @@ import * as z from "zod";
 import { authMiddleware } from "#/lib/auth/middleware";
 import { dodoClient } from "#/lib/payments/dodo";
 
-import { getLicenseForUser, issueLicenseForUser } from "./service";
+import { formatDeviceCode } from "./device-code";
+import {
+  bindDeviceForUser,
+  getLicenseForUser,
+  issueLicenseForUser,
+  nextRebindDate,
+} from "./service";
 
 export interface LicenseDTO {
-  key: string;
+  /** Signed token, or null while no Mac is linked yet. */
+  key: string | null;
   email: string;
   name: string;
   issuedAt: string;
+  /** Formatted device code ("7F3A-92C1-D04B") the key is locked to, or null. */
+  deviceCode: string | null;
+  /** When the license may move to a different Mac; null = movable now / not bound. */
+  canRebindAt: string | null;
 }
 
-function toDTO(row: { key: string; email: string; name: string; issuedAt: Date }): LicenseDTO {
-  return { key: row.key, email: row.email, name: row.name, issuedAt: row.issuedAt.toISOString() };
+interface LicenseRow {
+  key: string | null;
+  email: string;
+  name: string;
+  issuedAt: Date;
+  deviceCode: string | null;
+  deviceBoundAt: Date | null;
+}
+
+function toDTO(row: LicenseRow): LicenseDTO {
+  const next = nextRebindDate(row);
+  return {
+    key: row.key,
+    email: row.email,
+    name: row.name,
+    issuedAt: row.issuedAt.toISOString(),
+    deviceCode: row.deviceCode ? formatDeviceCode(row.deviceCode) : null,
+    canRebindAt: next && next > new Date() ? next.toISOString() : null,
+  };
 }
 
 /** Current user's license, or null if they haven't purchased. */
@@ -28,7 +56,8 @@ export const $getLicense = createServerFn({ method: "GET" })
 /**
  * Called when the buyer returns from Dodo checkout. Verifies the payment really
  * succeeded AND belongs to this signed-in user (so nobody can mint a license by
- * guessing a payment id), then issues the perpetual license. Idempotent.
+ * guessing a payment id), then records the purchase. Idempotent. The signed key
+ * is minted afterwards by $bindDevice, once the buyer enters their device code.
  */
 export const $claimLicense = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
@@ -56,5 +85,18 @@ export const $claimLicense = createServerFn({ method: "POST" })
       dodoPaymentId: payment.payment_id,
       dodoCustomerId: payment.customer?.customer_id,
     });
+    return toDTO(row);
+  });
+
+/**
+ * Link the license to one Mac: signs a key with the device code embedded, so
+ * the desktop app rejects it on any other machine. Same code → idempotent;
+ * a different code re-mints the key, rate-limited by REBIND_COOLDOWN_DAYS.
+ */
+export const $bindDevice = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .validator(z.object({ deviceCode: z.string().trim().min(1).max(64) }))
+  .handler(async ({ data, context }): Promise<LicenseDTO> => {
+    const row = await bindDeviceForUser(context.user.id, data.deviceCode);
     return toDTO(row);
   });
