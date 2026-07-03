@@ -19,13 +19,18 @@ export interface LicensePayload {
   /** null / undefined = perpetual (the `exp` field is omitted, matching battpie). */
   expiresAt?: Date | null;
   product: string;
+  /**
+   * Normalized 12-hex device code (see device-code.ts) binding the license to
+   * one Mac. null / undefined = not device-bound (pre-device-locking licenses).
+   */
+  deviceCode?: string | null;
 }
 
 /**
  * Mint a Battlify license token:  base64url(payloadJSON) "." base64url(ed25519 sig).
  *
  * Byte-compatible with the offline verifier in battpie
- * (Sources/BattlifyKit/License.swift): payload keys are {e, n, iat, exp?, p},
+ * (Sources/BattlifyKit/License.swift): payload keys are {e, n, iat, exp?, p, d?},
  * dates are unix seconds, and `exp` is omitted for a perpetual license. The
  * signature is Ed25519 over the exact payload bytes, which is what the app
  * base64url-decodes and verifies before JSON-decoding.
@@ -49,6 +54,9 @@ export function signLicense(payload: LicensePayload, privateKeyBase64: string): 
   };
   if (payload.expiresAt) {
     body.exp = Math.floor(payload.expiresAt.getTime() / 1000);
+  }
+  if (payload.deviceCode) {
+    body.d = payload.deviceCode;
   }
 
   const payloadBytes = Buffer.from(JSON.stringify(body), "utf8");
