@@ -1,19 +1,12 @@
 {
   "version": "7",
-  "dialect": "postgresql",
+  "dialect": "sqlite",
   "entries": [
     {
       "idx": 0,
-      "version": "7",
-      "when": 1782918690508,
-      "tag": "0000_add_dodo_customer_id",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1782922137694,
-      "tag": "0001_equal_morlocks",
+      "version": "6",
+      "when": 1782983559897,
+      "tag": "0000_init",
       "breakpoints": true
     }
   ]

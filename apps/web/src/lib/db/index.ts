@@ -1,14 +1,10 @@
 import "@tanstack/react-start/server-only";
-import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
+import { env as workerEnv } from "cloudflare:workers";
+import { drizzle } from "drizzle-orm/d1";
 
-import { env } from "#/env/server";
 import * as schema from "#/lib/db/schema";
 
-const client = postgres(env.DATABASE_URL);
-
-export const db = drizzle({
-  client,
+export const db = drizzle(workerEnv.DB, {
   schema,
   casing: "snake_case",
 });

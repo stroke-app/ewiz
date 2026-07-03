@@ -24,7 +24,7 @@ export const auth = betterAuth({
     enabled: false,
   },
   database: drizzleAdapter(db, {
-    provider: "pg",
+    provider: "sqlite",
     schema,
   }),
 
@@ -103,15 +103,25 @@ export const auth = betterAuth({
   },
 
   // https://better-auth.com/docs/concepts/oauth
+  // Only register a provider when its credentials are actually configured,
+  // so the worker still boots when GitHub/Google aren't set up yet.
   socialProviders: {
-    github: {
-      clientId: env.GITHUB_CLIENT_ID!,
-      clientSecret: env.GITHUB_CLIENT_SECRET!,
-    },
-    google: {
-      clientId: env.GOOGLE_CLIENT_ID!,
-      clientSecret: env.GOOGLE_CLIENT_SECRET!,
-    },
+    ...(env.GITHUB_CLIENT_ID && env.GITHUB_CLIENT_SECRET
+      ? {
+          github: {
+            clientId: env.GITHUB_CLIENT_ID,
+            clientSecret: env.GITHUB_CLIENT_SECRET,
+          },
+        }
+      : {}),
+    ...(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET
+      ? {
+          google: {
+            clientId: env.GOOGLE_CLIENT_ID,
+            clientSecret: env.GOOGLE_CLIENT_SECRET,
+          },
+        }
+      : {}),
   },
 
   // https://better-auth.com/docs/authentication/email-password

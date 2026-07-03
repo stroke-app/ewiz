@@ -1,5 +1,5 @@
-import { relations } from "drizzle-orm";
-import { index, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { relations, sql } from "drizzle-orm";
+import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 import { user } from "./auth.schema";
 
@@ -8,7 +8,7 @@ import { user } from "./auth.schema";
  * `key` is the signed Ed25519 token the desktop app verifies offline
  * (see battpie: Sources/BattlifyKit/License.swift).
  */
-export const license = pgTable(
+export const license = sqliteTable(
   "license",
   {
     id: text("id").primaryKey(),
@@ -23,8 +23,12 @@ export const license = pgTable(
     key: text("key").notNull(),
     dodoPaymentId: text("dodo_payment_id"),
     dodoCustomerId: text("dodo_customer_id"),
-    issuedAt: timestamp("issued_at").defaultNow().notNull(),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
+    issuedAt: integer("issued_at", { mode: "timestamp_ms" })
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+      .notNull(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+      .notNull(),
   },
   (table) => [index("license_userId_idx").on(table.userId)],
 );

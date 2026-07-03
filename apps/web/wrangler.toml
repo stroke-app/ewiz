@@ -1,0 +1,35 @@
+name = "battlify"
+account_id = "16b2c363a412bfaaec2a5a2572964728"
+compatibility_date = "2025-10-01"
+main = "@tanstack/react-start/server-entry"
+compatibility_flags = ["nodejs_compat"]
+preview_urls = true
+
+# Official custom domain (zone discerns.app already configured in Cloudflare)
+routes = [{ pattern = "battlify.discerns.app", custom_domain = true }]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "battlify"
+database_id = "b0fd3951-0e5c-4f20-b467-b29936eb6d44"
+migrations_dir = "drizzle"
+
+[vars]
+VITE_BASE_URL = "https://battlify.discerns.app"
+DODO_PAYMENTS_ENVIRONMENT = "live_mode"
+# Secrets: set via `wrangler secret put <NAME>`
+# BETTER_AUTH_SECRET, DODO_PAYMENTS_API_KEY, DODO_PAYMENTS_WEBHOOK_SECRET,
+# DODO_BATTLIFY_PRODUCT_ID, LICENSE_SIGNING_PRIVATE_KEY,
+# GITHUB_CLIENT_ID/SECRET, GOOGLE_CLIENT_ID/SECRET
+
+[assets]
+directory = "./public"
+
+[observability]
+enabled = true
+head_sampling_rate = 1
+
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+invocation_logs = true
