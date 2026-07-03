@@ -7,7 +7,7 @@
     "dev": "CI=true wrangler d1 migrations apply battlify --local && vite dev",
     "build": "vite build",
     "preview": "vite preview",
-    "deploy": "vite build && wrangler types && CI=true wrangler d1 migrations apply battlify --remote; wrangler deploy",
+    "deploy": "vite build && wrangler types && CLOUDFLARE_ACCOUNT_ID=16b2c363a412bfaaec2a5a2572964728 CI=true wrangler d1 migrations apply battlify --remote; wrangler deploy",
     "migrate:local": "CI=true wrangler d1 migrations apply battlify --local",
     "migrate:remote": "CI=true wrangler d1 migrations apply battlify --remote",
     "cf-gen": "wrangler types",

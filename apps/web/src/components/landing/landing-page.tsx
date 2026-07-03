@@ -105,6 +105,9 @@ function Nav() {
           <a href="#pricing" className="transition-colors hover:text-foreground">
             Pricing
           </a>
+          <Link to="/blog" className="transition-colors hover:text-foreground">
+            Blog
+          </Link>
           <a
             href={LINKS.releases}
             target="_blank"
@@ -504,6 +507,7 @@ function Footer() {
       title: "Product",
       links: [
         { label: "Pricing", href: "#pricing" },
+        { label: "Blog", href: "/blog" },
         { label: "Download", href: LINKS.releases, external: true },
       ],
     },

@@ -11,11 +11,14 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as BuyRouteImport } from './routes/buy'
 import { Route as LegalRouteRouteImport } from './routes/legal/route'
+import { Route as BlogRouteRouteImport } from './routes/blog/route'
 import { Route as GuestRouteRouteImport } from './routes/_guest/route'
 import { Route as AuthRouteRouteImport } from './routes/_auth/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as BlogIndexRouteImport } from './routes/blog/index'
 import { Route as LegalTermsRouteImport } from './routes/legal/terms'
 import { Route as LegalPrivacyRouteImport } from './routes/legal/privacy'
+import { Route as BlogSlugRouteImport } from './routes/blog/$slug'
 import { Route as GuestSignupRouteImport } from './routes/_guest/signup'
 import { Route as GuestLoginRouteImport } from './routes/_guest/login'
 import { Route as AuthAppRouteRouteImport } from './routes/_auth/app/route'
@@ -32,6 +35,11 @@ const LegalRouteRoute = LegalRouteRouteImport.update({
   path: '/legal',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BlogRouteRoute = BlogRouteRouteImport.update({
+  id: '/blog',
+  path: '/blog',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const GuestRouteRoute = GuestRouteRouteImport.update({
   id: '/_guest',
   getParentRoute: () => rootRouteImport,
@@ -45,6 +53,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BlogIndexRoute = BlogIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => BlogRouteRoute,
+} as any)
 const LegalTermsRoute = LegalTermsRouteImport.update({
   id: '/terms',
   path: '/terms',
@@ -54,6 +67,11 @@ const LegalPrivacyRoute = LegalPrivacyRouteImport.update({
   id: '/privacy',
   path: '/privacy',
   getParentRoute: () => LegalRouteRoute,
+} as any)
+const BlogSlugRoute = BlogSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => BlogRouteRoute,
 } as any)
 const GuestSignupRoute = GuestSignupRouteImport.update({
   id: '/signup',
@@ -83,13 +101,16 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/blog': typeof BlogRouteRouteWithChildren
   '/legal': typeof LegalRouteRouteWithChildren
   '/buy': typeof BuyRoute
   '/app': typeof AuthAppRouteRouteWithChildren
   '/login': typeof GuestLoginRoute
   '/signup': typeof GuestSignupRoute
+  '/blog/$slug': typeof BlogSlugRoute
   '/legal/privacy': typeof LegalPrivacyRoute
   '/legal/terms': typeof LegalTermsRoute
+  '/blog/': typeof BlogIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/app/': typeof AuthAppIndexRoute
 }
@@ -99,8 +120,10 @@ export interface FileRoutesByTo {
   '/buy': typeof BuyRoute
   '/login': typeof GuestLoginRoute
   '/signup': typeof GuestSignupRoute
+  '/blog/$slug': typeof BlogSlugRoute
   '/legal/privacy': typeof LegalPrivacyRoute
   '/legal/terms': typeof LegalTermsRoute
+  '/blog': typeof BlogIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/app': typeof AuthAppIndexRoute
 }
@@ -109,13 +132,16 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_auth': typeof AuthRouteRouteWithChildren
   '/_guest': typeof GuestRouteRouteWithChildren
+  '/blog': typeof BlogRouteRouteWithChildren
   '/legal': typeof LegalRouteRouteWithChildren
   '/buy': typeof BuyRoute
   '/_auth/app': typeof AuthAppRouteRouteWithChildren
   '/_guest/login': typeof GuestLoginRoute
   '/_guest/signup': typeof GuestSignupRoute
+  '/blog/$slug': typeof BlogSlugRoute
   '/legal/privacy': typeof LegalPrivacyRoute
   '/legal/terms': typeof LegalTermsRoute
+  '/blog/': typeof BlogIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/_auth/app/': typeof AuthAppIndexRoute
 }
@@ -123,13 +149,16 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/blog'
     | '/legal'
     | '/buy'
     | '/app'
     | '/login'
     | '/signup'
+    | '/blog/$slug'
     | '/legal/privacy'
     | '/legal/terms'
+    | '/blog/'
     | '/api/auth/$'
     | '/app/'
   fileRoutesByTo: FileRoutesByTo
@@ -139,8 +168,10 @@ export interface FileRouteTypes {
     | '/buy'
     | '/login'
     | '/signup'
+    | '/blog/$slug'
     | '/legal/privacy'
     | '/legal/terms'
+    | '/blog'
     | '/api/auth/$'
     | '/app'
   id:
@@ -148,13 +179,16 @@ export interface FileRouteTypes {
     | '/'
     | '/_auth'
     | '/_guest'
+    | '/blog'
     | '/legal'
     | '/buy'
     | '/_auth/app'
     | '/_guest/login'
     | '/_guest/signup'
+    | '/blog/$slug'
     | '/legal/privacy'
     | '/legal/terms'
+    | '/blog/'
     | '/api/auth/$'
     | '/_auth/app/'
   fileRoutesById: FileRoutesById
@@ -163,6 +197,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRouteRoute: typeof AuthRouteRouteWithChildren
   GuestRouteRoute: typeof GuestRouteRouteWithChildren
+  BlogRouteRoute: typeof BlogRouteRouteWithChildren
   LegalRouteRoute: typeof LegalRouteRouteWithChildren
   BuyRoute: typeof BuyRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
@@ -182,6 +217,13 @@ declare module '@tanstack/react-router' {
       path: '/legal'
       fullPath: '/legal'
       preLoaderRoute: typeof LegalRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/blog': {
+      id: '/blog'
+      path: '/blog'
+      fullPath: '/blog'
+      preLoaderRoute: typeof BlogRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_guest': {
@@ -205,6 +247,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/blog/': {
+      id: '/blog/'
+      path: '/'
+      fullPath: '/blog/'
+      preLoaderRoute: typeof BlogIndexRouteImport
+      parentRoute: typeof BlogRouteRoute
+    }
     '/legal/terms': {
       id: '/legal/terms'
       path: '/terms'
@@ -218,6 +267,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/legal/privacy'
       preLoaderRoute: typeof LegalPrivacyRouteImport
       parentRoute: typeof LegalRouteRoute
+    }
+    '/blog/$slug': {
+      id: '/blog/$slug'
+      path: '/$slug'
+      fullPath: '/blog/$slug'
+      preLoaderRoute: typeof BlogSlugRouteImport
+      parentRoute: typeof BlogRouteRoute
     }
     '/_guest/signup': {
       id: '/_guest/signup'
@@ -295,6 +351,20 @@ const GuestRouteRouteWithChildren = GuestRouteRoute._addFileChildren(
   GuestRouteRouteChildren,
 )
 
+interface BlogRouteRouteChildren {
+  BlogSlugRoute: typeof BlogSlugRoute
+  BlogIndexRoute: typeof BlogIndexRoute
+}
+
+const BlogRouteRouteChildren: BlogRouteRouteChildren = {
+  BlogSlugRoute: BlogSlugRoute,
+  BlogIndexRoute: BlogIndexRoute,
+}
+
+const BlogRouteRouteWithChildren = BlogRouteRoute._addFileChildren(
+  BlogRouteRouteChildren,
+)
+
 interface LegalRouteRouteChildren {
   LegalPrivacyRoute: typeof LegalPrivacyRoute
   LegalTermsRoute: typeof LegalTermsRoute
@@ -313,6 +383,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRouteRoute: AuthRouteRouteWithChildren,
   GuestRouteRoute: GuestRouteRouteWithChildren,
+  BlogRouteRoute: BlogRouteRouteWithChildren,
   LegalRouteRoute: LegalRouteRouteWithChildren,
   BuyRoute: BuyRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
