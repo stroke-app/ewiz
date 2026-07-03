@@ -1,13 +1,13 @@
 import { SiGithub, SiGoogle } from "@icons-pack/react-simple-icons";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { BatteryChargingIcon, LoaderCircleIcon } from "lucide-react";
+import { LoaderCircleIcon, LockIcon, MailIcon, UserIcon } from "lucide-react";
 import { toast } from "sonner";
 
+import { AuthField } from "#/components/auth/auth-field";
+import { BatteryMark } from "#/components/logo";
 import { SignInSocialButton } from "#/components/sign-in-social-button";
 import { Button } from "#/components/ui/button";
-import { Input } from "#/components/ui/input";
-import { Label } from "#/components/ui/label";
 import { authClient } from "#/lib/auth/auth-client";
 import { authQueryOptions } from "#/lib/auth/queries";
 
@@ -62,93 +62,83 @@ function SignupForm() {
 
   return (
     <div className="flex flex-col gap-6">
-      <form onSubmit={handleSubmit}>
-        <div className="flex flex-col gap-6">
-          <div className="flex flex-col items-center gap-2">
-            <Link to="/" className="flex flex-col items-center gap-2 font-medium">
-              <div className="flex size-9 items-center justify-center rounded-xl bg-battlify-green/15 ring-1 ring-battlify-green/30">
-                <BatteryChargingIcon className="size-5 text-battlify-green" />
-              </div>
-              <span className="sr-only">Battlify</span>
-            </Link>
-            <h1 className="text-xl font-bold">Sign up for Battlify</h1>
-          </div>
-          <div className="flex flex-col gap-5">
-            <div className="grid gap-2">
-              <Label htmlFor="name">Name</Label>
-              <Input
-                id="name"
-                name="name"
-                type="text"
-                placeholder="John Doe"
-                readOnly={isPending}
-                required
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                placeholder="hello@example.com"
-                readOnly={isPending}
-                required
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                placeholder="Password"
-                readOnly={isPending}
-                required
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="confirm_password">Confirm Password</Label>
-              <Input
-                id="confirm_password"
-                name="confirm_password"
-                type="password"
-                placeholder="Confirm Password"
-                readOnly={isPending}
-                required
-              />
-            </div>
-            <Button type="submit" className="mt-2 w-full" size="lg" disabled={isPending}>
-              {isPending && <LoaderCircleIcon className="animate-spin" />}
-              {isPending ? "Signing up..." : "Sign up"}
-            </Button>
-          </div>
-          <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border">
-            <span className="relative z-10 bg-background px-2 text-muted-foreground">Or</span>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <SignInSocialButton
-              provider="github"
-              callbackURL={redirectUrl}
-              disabled={isPending}
-              icon={<SiGithub className="size-4" />}
-            />
-            <SignInSocialButton
-              provider="google"
-              callbackURL={redirectUrl}
-              // disabled={isPending}
-              disabled={true} // TODO disabled just for the preview deployment at https://tanstarter.mugnavo.com
-              icon={<SiGoogle className="size-4" />}
-            />
-          </div>
-        </div>
+      <div className="flex flex-col gap-1.5">
+        <Link to="/" aria-label="Battlify" className="mb-2 w-fit">
+          <BatteryMark className="size-8 text-foreground" accent />
+        </Link>
+        <h1 className="font-display text-2xl font-bold tracking-tight">Create your account</h1>
+        <p className="text-sm text-muted-foreground">
+          Already have one?{" "}
+          <Link to="/login" className="text-primary hover:underline">
+            Sign in
+          </Link>
+        </p>
+      </div>
+
+      <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+        <AuthField
+          id="name"
+          name="name"
+          type="text"
+          label="Name"
+          icon={<UserIcon />}
+          placeholder="Enter your name..."
+          readOnly={isPending}
+          required
+        />
+        <AuthField
+          id="email"
+          name="email"
+          type="email"
+          label="Email"
+          icon={<MailIcon />}
+          placeholder="Enter your email..."
+          readOnly={isPending}
+          required
+        />
+        <AuthField
+          id="password"
+          name="password"
+          type="password"
+          label="Password"
+          icon={<LockIcon />}
+          placeholder="Create a password..."
+          readOnly={isPending}
+          required
+        />
+        <AuthField
+          id="confirm_password"
+          name="confirm_password"
+          type="password"
+          label="Confirm password"
+          icon={<LockIcon />}
+          placeholder="Re-enter your password..."
+          readOnly={isPending}
+          required
+        />
+        <Button type="submit" className="mt-1 h-10 w-full" disabled={isPending}>
+          {isPending && <LoaderCircleIcon className="animate-spin" />}
+          {isPending ? "Creating account..." : "Create account"}
+        </Button>
       </form>
 
-      <div className="text-center text-sm">
-        Already have an account?{" "}
-        <Link to="/login" className="underline underline-offset-4">
-          Login
-        </Link>
+      <div className="relative text-center text-xs tracking-wide text-muted-foreground uppercase after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border">
+        <span className="relative z-10 bg-background px-3">Or continue with</span>
+      </div>
+
+      <div className="grid gap-3">
+        <SignInSocialButton
+          provider="google"
+          callbackURL={redirectUrl}
+          disabled={isPending}
+          icon={<SiGoogle className="size-4" />}
+        />
+        <SignInSocialButton
+          provider="github"
+          callbackURL={redirectUrl}
+          disabled={isPending}
+          icon={<SiGithub className="size-4" />}
+        />
       </div>
     </div>
   );

@@ -34,14 +34,14 @@ export function SignInSocialButton(props: SocialLoginButtonProps) {
 
   return (
     <Button
-      variant="secondary"
-      className="w-full"
+      variant="outline"
+      className="h-10 w-full"
       type="button"
       disabled={mutation.isSuccess || mutation.isPending || props.disabled}
       onClick={() => mutation.mutate()}
     >
       {props.icon}
-      Login with {providerLabel}
+      {providerLabel}
     </Button>
   );
 }
