@@ -75,11 +75,11 @@
   --battlify-muted-foreground: oklch(0.68 0.012 264);
   --battlify-border: oklch(1 0 0 / 9%);
 
-  --background: oklch(0.145 0.004 264); /* near-black */
+  --background: oklch(0.115 0.003 264); /* near-pure black */
   --foreground: oklch(0.97 0.004 264);
-  --card: oklch(0.185 0.005 264); /* elevated panel */
+  --card: oklch(0.168 0.004 264); /* subtle elevated panel */
   --card-foreground: oklch(0.97 0.004 264);
-  --popover: oklch(0.185 0.005 264);
+  --popover: oklch(0.168 0.004 264);
   --popover-foreground: oklch(0.97 0.004 264);
   --primary: oklch(0.62 0.2 256); /* vivid blue #2f7fff */
   --primary-foreground: oklch(0.98 0.01 256);
@@ -120,11 +120,11 @@
   --battlify-muted-foreground: oklch(0.68 0.012 264);
   --battlify-border: oklch(1 0 0 / 9%);
 
-  --background: oklch(0.145 0.004 264);
+  --background: oklch(0.115 0.003 264);
   --foreground: oklch(0.97 0.004 264);
-  --card: oklch(0.185 0.005 264);
+  --card: oklch(0.168 0.004 264);
   --card-foreground: oklch(0.97 0.004 264);
-  --popover: oklch(0.185 0.005 264);
+  --popover: oklch(0.168 0.004 264);
   --popover-foreground: oklch(0.97 0.004 264);
   --primary: oklch(0.62 0.2 256);
   --primary-foreground: oklch(0.98 0.01 256);
