@@ -68,7 +68,7 @@ function RootDocument({ children }: { readonly children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body>
-        <ThemeProvider defaultTheme="dark">
+        <ThemeProvider defaultTheme="system">
           {children}
           <Toaster richColors />
         </ThemeProvider>

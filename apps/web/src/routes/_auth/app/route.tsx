@@ -2,6 +2,7 @@ import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
 
 import { Logo } from "#/components/logo";
 import { SignOutButton } from "#/components/sign-out-button";
+import { ThemeToggle } from "#/components/theme-toggle";
 
 export const Route = createFileRoute("/_auth/app")({
   component: AppLayout,
@@ -14,7 +15,10 @@ function AppLayout() {
         <Link to="/" aria-label="Battlify home">
           <Logo />
         </Link>
-        <SignOutButton />
+        <div className="flex items-center gap-1.5">
+          <ThemeToggle />
+          <SignOutButton />
+        </div>
       </header>
 
       <main className="mt-12 w-full max-w-xl">

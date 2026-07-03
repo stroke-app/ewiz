@@ -15,6 +15,7 @@ import {
 
 import { useCheckout } from "#/components/buy-button";
 import { BatteryMark, Logo } from "#/components/logo";
+import { ThemeToggle } from "#/components/theme-toggle";
 import { Button } from "#/components/ui/button";
 
 import { LINKS, MOMENTS } from "./landing-data";
@@ -123,14 +124,7 @@ function Nav() {
           </a>
         </nav>
         <div className="flex items-center gap-1.5 justify-self-end">
-          <Button
-            render={<a href={LINKS.github} target="_blank" rel="noreferrer" aria-label="GitHub" />}
-            nativeButton={false}
-            variant="ghost"
-            size="icon-sm"
-          >
-            <SiGithub className="size-4" />
-          </Button>
+          <ThemeToggle />
           <Button render={<Link to="/login" />} variant="outline" size="sm" nativeButton={false}>
             Sign in
           </Button>
@@ -147,7 +141,7 @@ function Hero() {
     <section className="relative overflow-hidden">
       <div
         aria-hidden
-        className="pointer-events-none absolute top-[-6rem] left-1/2 h-[34rem] w-[46rem] -translate-x-1/2 rounded-full opacity-40 blur-[120px]"
+        className="pointer-events-none absolute top-[-6rem] left-1/2 h-[34rem] w-[46rem] -translate-x-1/2 rounded-full opacity-20 blur-[120px] dark:opacity-40"
         style={{ background: "radial-gradient(closest-side, var(--color-primary), transparent)" }}
       />
       <Container className="relative pt-20 pb-10 text-center">
@@ -182,10 +176,10 @@ function ScreenshotFrame({ children }: { children: React.ReactNode }) {
     <div className="relative">
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-x-8 -top-6 bottom-0 rounded-[2rem] opacity-50 blur-2xl"
+        className="pointer-events-none absolute inset-x-8 -top-6 bottom-0 rounded-[2rem] opacity-30 blur-2xl dark:opacity-50"
         style={{ background: "radial-gradient(60% 60% at 50% 0%, var(--color-primary), transparent)" }}
       />
-      <div className="relative rounded-[20px] bg-gradient-to-b from-primary/30 via-primary/5 to-transparent p-2 sm:p-2.5">
+      <div className="relative rounded-[20px] bg-gradient-to-b from-primary/20 via-primary/5 to-transparent p-2 sm:p-2.5 dark:from-primary/30">
         {children}
       </div>
     </div>

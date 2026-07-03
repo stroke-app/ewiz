@@ -61,56 +61,56 @@
 }
 
 /* ==========================================================================
-   Battlify design system — near-black + vivid blue (SQL Studio-inspired).
-   One unified dark theme across marketing + app. Blue = interactive accent;
-   green/orange are reserved for battery/charge *status* only.
+   Battlify design system — vivid blue accent (SQL Studio-inspired), light +
+   dark. `:root` is the light theme; `.dark` overrides to near-black. Blue is
+   the interactive accent; green/orange are reserved for battery *status* only.
+   Style through tokens so both themes stay in sync.
    ========================================================================== */
 :root {
   /* Status colors — battery health, never used for generic UI accents. */
-  --battlify-green: oklch(0.8 0.16 155); /* holding / charged */
-  --battlify-orange: oklch(0.79 0.15 68); /* charging */
-  --battlify-glow: oklch(0.62 0.2 256 / 32%); /* blue hero glow */
-  --battlify-surface: oklch(0.205 0.006 264);
-  --battlify-muted: oklch(0.27 0.006 264);
-  --battlify-muted-foreground: oklch(0.68 0.012 264);
-  --battlify-border: oklch(1 0 0 / 9%);
+  --battlify-green: oklch(0.58 0.15 152); /* holding / charged */
+  --battlify-orange: oklch(0.66 0.16 55); /* charging */
+  --battlify-glow: oklch(0.55 0.22 256 / 16%); /* soft blue hero glow */
+  --battlify-surface: oklch(0.97 0.003 264);
+  --battlify-muted: oklch(0.95 0.004 264);
+  --battlify-muted-foreground: oklch(0.5 0.015 264);
+  --battlify-border: oklch(0 0 0 / 8%);
 
-  --background: oklch(0.115 0.003 264); /* near-pure black */
-  --foreground: oklch(0.97 0.004 264);
-  --card: oklch(0.168 0.004 264); /* subtle elevated panel */
-  --card-foreground: oklch(0.97 0.004 264);
-  --popover: oklch(0.168 0.004 264);
-  --popover-foreground: oklch(0.97 0.004 264);
-  --primary: oklch(0.62 0.2 256); /* vivid blue #2f7fff */
-  --primary-foreground: oklch(0.98 0.01 256);
-  --secondary: oklch(0.235 0.006 264);
-  --secondary-foreground: oklch(0.97 0.004 264);
-  --muted: oklch(0.235 0.006 264);
-  --muted-foreground: oklch(0.68 0.012 264);
-  --accent: oklch(0.27 0.02 256); /* subtle blue-tinted hover */
-  --accent-foreground: oklch(0.97 0.004 264);
-  --destructive: oklch(0.62 0.21 25);
-  --border: oklch(1 0 0 / 9%);
-  --input: oklch(1 0 0 / 12%);
-  --ring: oklch(0.62 0.2 256);
-  --chart-1: oklch(0.62 0.2 256);
-  --chart-2: oklch(0.7 0.15 232);
-  --chart-3: oklch(0.75 0.14 195);
-  --chart-4: oklch(0.8 0.16 155);
-  --chart-5: oklch(0.79 0.15 68);
+  --background: oklch(0.985 0.002 264); /* soft off-white */
+  --foreground: oklch(0.21 0.01 264);
+  --card: oklch(1 0 0); /* white panel, elevated over the off-white ground */
+  --card-foreground: oklch(0.21 0.01 264);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.21 0.01 264);
+  --primary: oklch(0.55 0.22 256); /* blue #2563eb-ish, deep enough on white */
+  --primary-foreground: oklch(0.99 0.005 256);
+  --secondary: oklch(0.96 0.004 264);
+  --secondary-foreground: oklch(0.24 0.01 264);
+  --muted: oklch(0.96 0.004 264);
+  --muted-foreground: oklch(0.5 0.015 264);
+  --accent: oklch(0.95 0.015 256); /* subtle blue-tinted hover */
+  --accent-foreground: oklch(0.24 0.01 264);
+  --destructive: oklch(0.58 0.22 27);
+  --border: oklch(0 0 0 / 9%);
+  --input: oklch(0 0 0 / 12%);
+  --ring: oklch(0.55 0.22 256);
+  --chart-1: oklch(0.55 0.22 256);
+  --chart-2: oklch(0.6 0.15 232);
+  --chart-3: oklch(0.65 0.14 195);
+  --chart-4: oklch(0.58 0.15 152);
+  --chart-5: oklch(0.66 0.16 55);
   --radius: 0.75rem;
-  --sidebar: oklch(0.185 0.005 264);
-  --sidebar-foreground: oklch(0.97 0.004 264);
-  --sidebar-primary: oklch(0.62 0.2 256);
-  --sidebar-primary-foreground: oklch(0.98 0.01 256);
-  --sidebar-accent: oklch(0.27 0.02 256);
-  --sidebar-accent-foreground: oklch(0.97 0.004 264);
-  --sidebar-border: oklch(1 0 0 / 9%);
-  --sidebar-ring: oklch(0.62 0.2 256);
+  --sidebar: oklch(1 0 0);
+  --sidebar-foreground: oklch(0.21 0.01 264);
+  --sidebar-primary: oklch(0.55 0.22 256);
+  --sidebar-primary-foreground: oklch(0.99 0.005 256);
+  --sidebar-accent: oklch(0.95 0.015 256);
+  --sidebar-accent-foreground: oklch(0.24 0.01 264);
+  --sidebar-border: oklch(0 0 0 / 9%);
+  --sidebar-ring: oklch(0.55 0.22 256);
 }
 
-/* Dark is the default and only theme; keep .dark identical so the toggle and
-   any `dark:` variants resolve to the same near-black surface. */
+/* Dark theme — near-pure black + vivid blue. */
 .dark {
   --battlify-green: oklch(0.8 0.16 155);
   --battlify-orange: oklch(0.79 0.15 68);
