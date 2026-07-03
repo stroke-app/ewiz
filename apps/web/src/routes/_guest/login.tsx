@@ -1,10 +1,16 @@
-import { SiGithub, SiGoogle } from "@icons-pack/react-simple-icons";
+import {
+  GithubIcon,
+  GoogleIcon,
+  Loading03Icon,
+  LockPasswordIcon,
+  Mail02Icon,
+} from "@hugeicons/core-free-icons";
 import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { LoaderCircleIcon, LockIcon, MailIcon } from "lucide-react";
 import { toast } from "sonner";
 
 import { AuthField } from "#/components/auth/auth-field";
+import { Icon } from "#/components/icon";
 import { BatteryMark } from "#/components/logo";
 import { SignInSocialButton } from "#/components/sign-in-social-button";
 import { Button } from "#/components/ui/button";
@@ -28,8 +34,6 @@ function LoginForm() {
           onError: ({ error }) => {
             toast.error(error.message || "An error occurred while signing in.");
           },
-          // better-auth seems to trigger a hard navigation on login,
-          // so we don't have to revalidate & navigate ourselves
         },
       ),
   });
@@ -68,7 +72,7 @@ function LoginForm() {
           name="email"
           type="email"
           label="Email"
-          icon={<MailIcon />}
+          icon={<Icon icon={Mail02Icon} />}
           placeholder="Enter your email..."
           readOnly={isPending}
           required
@@ -78,7 +82,7 @@ function LoginForm() {
           name="password"
           type="password"
           label="Password"
-          icon={<LockIcon />}
+          icon={<Icon icon={LockPasswordIcon} />}
           placeholder="Enter your password..."
           readOnly={isPending}
           required
@@ -89,7 +93,7 @@ function LoginForm() {
           }
         />
         <Button type="submit" className="mt-1 h-10 w-full" disabled={isPending}>
-          {isPending && <LoaderCircleIcon className="animate-spin" />}
+          {isPending && <Icon icon={Loading03Icon} className="animate-spin" />}
           {isPending ? "Signing in..." : "Sign in"}
         </Button>
       </form>
@@ -103,13 +107,13 @@ function LoginForm() {
           provider="google"
           callbackURL={redirectUrl}
           disabled={isPending}
-          icon={<SiGoogle className="size-4" />}
+          icon={<Icon icon={GoogleIcon} className="size-4" />}
         />
         <SignInSocialButton
           provider="github"
           callbackURL={redirectUrl}
           disabled={isPending}
-          icon={<SiGithub className="size-4" />}
+          icon={<Icon icon={GithubIcon} className="size-4" />}
         />
       </div>
     </div>

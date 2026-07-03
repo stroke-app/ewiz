@@ -1,17 +1,18 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
 import {
-  CheckIcon,
+  CheckmarkBadge02Icon,
+  CopyCheckIcon,
   CopyIcon,
   LaptopIcon,
-  LoaderCircleIcon,
-  ShieldCheckIcon,
+  Loading03Icon,
   SparklesIcon,
-} from "lucide-react";
+} from "@hugeicons/core-free-icons";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { useCheckout } from "#/components/buy-button";
+import { Icon } from "#/components/icon";
 import { Button } from "#/components/ui/button";
 import { Input } from "#/components/ui/input";
 import { useAuthSuspense } from "#/lib/auth/hooks";
@@ -76,7 +77,7 @@ function AppIndex() {
   if (claimIsPending || (purchase === "success" && payment_id)) {
     return (
       <div className="flex flex-col items-center gap-3 rounded-2xl border bg-card p-10 text-center">
-        <LoaderCircleIcon className="size-6 animate-spin text-muted-foreground" />
+        <Icon icon={Loading03Icon} className="size-6 animate-spin text-muted-foreground" />
         <p className="text-sm text-muted-foreground">Confirming your payment…</p>
       </div>
     );
@@ -132,7 +133,7 @@ function DeviceCodeForm({
         aria-label="Device code"
       />
       <Button type="submit" disabled={isPending || !isValidDeviceCode(code)}>
-        {isPending ? <LoaderCircleIcon className="animate-spin" /> : null}
+        {isPending ? <Icon icon={Loading03Icon} className="animate-spin" /> : null}
         {submitLabel}
       </Button>
     </form>
@@ -145,7 +146,7 @@ function LinkMacCard() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-col items-center gap-2 text-center">
         <div className="flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary">
-          <LaptopIcon className="size-6" />
+          <Icon icon={LaptopIcon} className="size-6" />
         </div>
         <h1 className="text-xl font-semibold">One step left — link your Mac</h1>
         <p className="max-w-sm text-sm text-muted-foreground">
@@ -201,7 +202,7 @@ function LicenseCard({ license }: { license: LicenseDTO }) {
     <div className="flex flex-col gap-6">
       <div className="flex flex-col items-center gap-2 text-center">
         <div className="flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary">
-          <ShieldCheckIcon className="size-6" />
+          <Icon icon={CheckmarkBadge02Icon} className="size-6" />
         </div>
         <h1 className="text-xl font-semibold">You own Battlify</h1>
         <p className="text-sm text-muted-foreground">
@@ -222,7 +223,7 @@ function LicenseCard({ license }: { license: LicenseDTO }) {
             License key
           </span>
           <Button size="xs" variant="outline" onClick={copy} type="button">
-            {copied ? <CheckIcon /> : <CopyIcon />}
+            <Icon icon={copied ? CopyCheckIcon : CopyIcon} className="size-3" />
             {copied ? "Copied" : "Copy"}
           </Button>
         </div>
@@ -263,7 +264,7 @@ function LicenseCard({ license }: { license: LicenseDTO }) {
               </div>
               {!rebindLockedUntil && !moving ? (
                 <Button size="xs" variant="outline" type="button" onClick={() => setMoving(true)}>
-                  <LaptopIcon />
+                  <Icon icon={LaptopIcon} className="size-3" />
                   Move license
                 </Button>
               ) : null}
@@ -295,7 +296,7 @@ function PurchaseCard({ name }: { name?: string }) {
     <div className="flex flex-col gap-6">
       <div className="flex flex-col items-center gap-2 text-center">
         <div className="flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary">
-          <SparklesIcon className="size-6" />
+          <Icon icon={SparklesIcon} className="size-6" />
         </div>
         <h1 className="text-xl font-semibold">Unlock Battlify{name ? `, ${name}` : ""}</h1>
         <p className="max-w-sm text-sm text-muted-foreground">
@@ -310,7 +311,7 @@ function PurchaseCard({ name }: { name?: string }) {
           <span className="text-sm text-muted-foreground">· one-time</span>
         </div>
         <Button size="lg" className="w-full" onClick={buy} disabled={loading} type="button">
-          {loading ? <LoaderCircleIcon className="animate-spin" /> : null}
+          {loading ? <Icon icon={Loading03Icon} className="animate-spin" /> : null}
           {loading ? "Opening checkout…" : "Buy Battlify"}
         </Button>
         <p className="text-xs text-muted-foreground">Secure checkout via Dodo Payments.</p>

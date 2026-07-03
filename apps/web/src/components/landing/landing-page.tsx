@@ -1,19 +1,22 @@
-import { SiGithub, SiX } from "@icons-pack/react-simple-icons";
-import { Link } from "@tanstack/react-router";
 import {
-  BatteryChargingIcon,
-  CheckIcon,
+  BatteryCharging02Icon,
+  Cancel02Icon,
   CpuIcon,
-  DownloadIcon,
+  Download04Icon,
+  GithubIcon,
   HeartIcon,
-  LightbulbIcon,
-  MonitorIcon,
-  MoonIcon,
+  Idea01Icon,
+  LaptopIcon,
+  Moon02Icon,
+  NewTwitterRectangleIcon,
   ThermometerIcon,
-  XIcon,
-} from "lucide-react";
+  Tick02Icon,
+} from "@hugeicons/core-free-icons";
+import type { IconSvgElement } from "@hugeicons/react";
+import { Link } from "@tanstack/react-router";
 
 import { useCheckout } from "#/components/buy-button";
+import { Icon } from "#/components/icon";
 import { BatteryMark, Logo } from "#/components/logo";
 import { ThemeToggle } from "#/components/theme-toggle";
 import { Button } from "#/components/ui/button";
@@ -21,10 +24,6 @@ import { Button } from "#/components/ui/button";
 import { LINKS, MOMENTS } from "./landing-data";
 
 const PRICE = "$2.99";
-
-function Container({ className, children }: { className?: string; children: React.ReactNode }) {
-  return <div className={"mx-auto max-w-3xl px-6 " + (className ?? "")}>{children}</div>;
-}
 
 function DownloadButton({
   size = "default",
@@ -48,7 +47,7 @@ function DownloadButton({
       className={className}
     >
       {children ?? "Download"}
-      <DownloadIcon />
+      <Icon icon={Download04Icon} className="size-4" />
     </Button>
   );
 }
@@ -144,7 +143,7 @@ function Hero() {
         className="pointer-events-none absolute top-[-6rem] left-1/2 h-[34rem] w-[46rem] -translate-x-1/2 rounded-full opacity-20 blur-[120px] dark:opacity-40"
         style={{ background: "radial-gradient(closest-side, var(--color-primary), transparent)" }}
       />
-      <Container className="relative pt-20 pb-10 text-center">
+      <div className="relative mx-auto max-w-3xl px-6 pt-20 pb-10 text-center">
         <Eyebrow>Introducing Battlify</Eyebrow>
         <h1 className="font-display mx-auto mt-5 max-w-xl text-4xl font-bold tracking-tight text-balance sm:text-5xl">
           A new era of battery care begins here.
@@ -159,13 +158,13 @@ function Hero() {
         <p className="mt-4 text-[13px] text-muted-foreground">
           No account required. Free for 30 days.
         </p>
-      </Container>
+      </div>
 
-      <Container className="relative pb-20">
+      <div className="relative mx-auto max-w-3xl px-6 pb-20">
         <ScreenshotFrame>
           <WindowMockup variant="charging" />
         </ScreenshotFrame>
-      </Container>
+      </div>
     </section>
   );
 }
@@ -177,7 +176,9 @@ function ScreenshotFrame({ children }: { children: React.ReactNode }) {
       <div
         aria-hidden
         className="pointer-events-none absolute inset-x-8 -top-6 bottom-0 rounded-[2rem] opacity-30 blur-2xl dark:opacity-50"
-        style={{ background: "radial-gradient(60% 60% at 50% 0%, var(--color-primary), transparent)" }}
+        style={{
+          background: "radial-gradient(60% 60% at 50% 0%, var(--color-primary), transparent)",
+        }}
       />
       <div className="relative rounded-[20px] bg-gradient-to-b from-primary/20 via-primary/5 to-transparent p-2 sm:p-2.5 dark:from-primary/30">
         {children}
@@ -187,12 +188,12 @@ function ScreenshotFrame({ children }: { children: React.ReactNode }) {
 }
 
 function WindowMockup({ variant }: { variant: "charging" | "sleep" }) {
-  const sidebar = [
-    { icon: BatteryChargingIcon, label: "Charging", key: "charging" },
-    { icon: MoonIcon, label: "Sleep", key: "sleep" },
+  const sidebar: Array<{ icon: IconSvgElement; label: string; key: string }> = [
+    { icon: BatteryCharging02Icon, label: "Charging", key: "charging" },
+    { icon: Moon02Icon, label: "Sleep", key: "sleep" },
     { icon: ThermometerIcon, label: "Health", key: "health" },
-    { icon: LightbulbIcon, label: "MagSafe", key: "magsafe" },
-  ] as const;
+    { icon: Idea01Icon, label: "MagSafe", key: "magsafe" },
+  ];
 
   return (
     <div className="overflow-hidden rounded-2xl border border-border bg-card">
@@ -207,16 +208,16 @@ function WindowMockup({ variant }: { variant: "charging" | "sleep" }) {
       </div>
       <div className="grid sm:grid-cols-[180px_1fr]">
         <aside className="hidden flex-col gap-1 border-r border-border/60 bg-background/30 p-3 sm:flex">
-          {sidebar.map(({ icon: Icon, label, key }) => (
+          {sidebar.map((item) => (
             <div
-              key={key}
+              key={item.key}
               className={
                 "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm " +
-                (key === variant ? "bg-primary/15 text-primary" : "text-muted-foreground")
+                (item.key === variant ? "bg-primary/15 text-primary" : "text-muted-foreground")
               }
             >
-              <Icon className="size-4" />
-              {label}
+              <Icon icon={item.icon} className="size-4" />
+              {item.label}
             </div>
           ))}
         </aside>
@@ -269,7 +270,7 @@ function SleepPane() {
       </div>
       <div className="mt-4 flex items-center gap-3">
         <div className="flex size-12 items-center justify-center rounded-xl bg-muted text-foreground">
-          <MoonIcon className="size-6" />
+          <Icon icon={Moon02Icon} className="size-6" />
         </div>
         <p className="text-sm text-muted-foreground">
           Closed means closed — no overnight creep back to 100%, no silent drain.
@@ -297,20 +298,20 @@ function ToggleRow({ label }: { label: string }) {
 
 /* ========================================================================== */
 
-const FEATURE_ICONS = {
-  "Charge limit": BatteryChargingIcon,
-  "Sleep-safe": MoonIcon,
+const FEATURE_ICONS: Record<string, IconSvgElement> = {
+  "Charge limit": BatteryCharging02Icon,
+  "Sleep-safe": Moon02Icon,
   "Heat-aware": ThermometerIcon,
-  "MagSafe LED": LightbulbIcon,
-} as const;
+  "MagSafe LED": Idea01Icon,
+};
 
 function Features() {
   return (
-    <Container className="py-20">
+    <div className="mx-auto max-w-3xl px-6 py-20">
       <div id="features" className="scroll-mt-20">
         <Eyebrow tone="rose">
           <span className="inline-flex items-center gap-1.5">
-            <HeartIcon className="size-3 fill-rose-500" /> Made with love
+            <Icon icon={HeartIcon} className="size-3 text-rose-500" /> Made with love
           </span>
         </Eyebrow>
         <h2 className="font-display mt-3 text-3xl font-bold tracking-tight text-balance">
@@ -318,29 +319,29 @@ function Features() {
         </h2>
 
         <div className="mt-8 flex flex-col gap-1">
-          {MOMENTS.map((m, i) => {
-            const Icon = FEATURE_ICONS[m.eye as keyof typeof FEATURE_ICONS] ?? BatteryChargingIcon;
-            return (
-              <div
-                key={m.eye}
-                className={
-                  "rounded-lg px-4 py-3.5 transition-colors " +
-                  (i === 0 ? "bg-card" : "hover:bg-card/60")
-                }
-              >
-                <div className="flex items-center gap-2.5">
-                  <Icon className="size-4 text-muted-foreground" />
-                  <h3 className="font-medium">{m.title}</h3>
-                </div>
-                <p className="mt-1 pl-[26px] text-sm leading-relaxed text-muted-foreground">
-                  {m.body}
-                </p>
+          {MOMENTS.map((m, i) => (
+            <div
+              key={m.eye}
+              className={
+                "rounded-lg px-4 py-3.5 transition-colors " +
+                (i === 0 ? "bg-card" : "hover:bg-card/60")
+              }
+            >
+              <div className="flex items-center gap-2.5">
+                <Icon
+                  icon={FEATURE_ICONS[m.eye] ?? BatteryCharging02Icon}
+                  className="size-4 text-muted-foreground"
+                />
+                <h3 className="font-medium">{m.title}</h3>
               </div>
-            );
-          })}
+              <p className="mt-1 pl-[26px] text-sm leading-relaxed text-muted-foreground">
+                {m.body}
+              </p>
+            </div>
+          ))}
         </div>
       </div>
-    </Container>
+    </div>
   );
 }
 
@@ -348,20 +349,20 @@ function Features() {
 
 function Showcase() {
   return (
-    <Container className="py-8">
+    <div className="mx-auto max-w-3xl px-6 py-8">
       <ScreenshotFrame>
         <WindowMockup variant="sleep" />
       </ScreenshotFrame>
-    </Container>
+    </div>
   );
 }
 
 function Developer() {
   return (
-    <Container className="py-16">
+    <div className="mx-auto max-w-3xl px-6 py-16">
       <div className="rounded-xl border border-border bg-card px-5 py-4">
         <div className="flex items-center gap-2.5">
-          <HeartIcon className="size-4 fill-rose-500 text-rose-500" />
+          <Icon icon={HeartIcon} className="size-4 text-rose-500" />
           <h3 className="font-medium">Made by a single developer</h3>
         </div>
         <p className="mt-1 pl-[26px] text-sm leading-relaxed text-muted-foreground">
@@ -369,20 +370,20 @@ function Developer() {
           native Mac software that just works, stays out of your way, and anyone can afford.
         </p>
       </div>
-    </Container>
+    </div>
   );
 }
 
 /* ========================================================================== */
 
 function Supported() {
-  const items = [
+  const items: Array<{ icon: IconSvgElement; title: string; status: string; ok: boolean }> = [
     { icon: CpuIcon, title: "Apple Silicon", status: "Supported", ok: true },
-    { icon: MonitorIcon, title: "macOS 14 – 26", status: "Supported", ok: true },
-    { icon: XIcon, title: "Intel Macs", status: "Not supported", ok: false },
+    { icon: LaptopIcon, title: "macOS 14 – 26", status: "Supported", ok: true },
+    { icon: Cancel02Icon, title: "Intel Macs", status: "Not supported", ok: false },
   ];
   return (
-    <Container className="py-16">
+    <div className="mx-auto max-w-3xl px-6 py-16">
       <h2 className="font-display text-3xl font-bold tracking-tight text-balance">
         Which Macs are supported?
       </h2>
@@ -397,12 +398,13 @@ function Supported() {
             className="flex flex-col items-center rounded-xl border border-border bg-card p-6 text-center"
           >
             <div className="flex size-11 items-center justify-center rounded-xl bg-muted text-foreground">
-              <it.icon className="size-5" />
+              <Icon icon={it.icon} className="size-5" />
             </div>
             <h3 className="mt-3 text-sm font-medium">{it.title}</h3>
             <p
               className={
-                "mt-1 text-xs font-medium " + (it.ok ? "text-battlify-green" : "text-muted-foreground")
+                "mt-1 text-xs font-medium " +
+                (it.ok ? "text-battlify-green" : "text-muted-foreground")
               }
             >
               {it.status}
@@ -410,7 +412,7 @@ function Supported() {
           </div>
         ))}
       </div>
-    </Container>
+    </div>
   );
 }
 
@@ -425,7 +427,7 @@ function Pricing() {
     "Locked to one Mac (movable)",
   ];
   return (
-    <Container className="py-20">
+    <div className="mx-auto max-w-3xl px-6 py-20">
       <div id="pricing" className="scroll-mt-20 text-center">
         <Eyebrow tone="green">Pricing</Eyebrow>
         <h2 className="font-display mx-auto mt-3 max-w-md text-3xl font-bold tracking-tight text-balance">
@@ -447,7 +449,7 @@ function Pricing() {
           <ul className="mt-3 space-y-2.5">
             {trialFeatures.map((f) => (
               <li key={f} className="flex items-center gap-2.5 text-sm">
-                <CheckIcon className="size-4 shrink-0 text-muted-foreground" />
+                <Icon icon={Tick02Icon} className="size-4 text-muted-foreground" />
                 {f}
               </li>
             ))}
@@ -474,7 +476,7 @@ function Pricing() {
           <ul className="mt-3 space-y-2.5">
             {licenseFeatures.map((f) => (
               <li key={f} className="flex items-center gap-2.5 text-sm">
-                <CheckIcon className="size-4 shrink-0 text-battlify-green" />
+                <Icon icon={Tick02Icon} className="size-4 text-battlify-green" />
                 {f}
               </li>
             ))}
@@ -487,7 +489,7 @@ function Pricing() {
       <p className="mt-5 text-center text-xs text-muted-foreground">
         Secure checkout via Dodo Payments · applicable taxes handled at checkout.
       </p>
-    </Container>
+    </div>
   );
 }
 
@@ -515,7 +517,7 @@ function Footer() {
   ];
   return (
     <footer className="mt-8 border-t border-border">
-      <Container className="grid gap-10 py-14 sm:grid-cols-[1fr_auto_auto_auto]">
+      <div className="mx-auto grid max-w-3xl gap-10 px-6 py-14 sm:grid-cols-[1fr_auto_auto_auto]">
         <div>
           <Logo />
         </div>
@@ -552,30 +554,32 @@ function Footer() {
             </li>
           </ul>
         </div>
-      </Container>
-      <Container className="flex flex-col items-center justify-between gap-4 border-t border-border py-6 text-sm text-muted-foreground sm:flex-row">
-        <p>© 2026 Battlify · built by broisnischal</p>
-        <div className="flex items-center gap-4">
-          <a
-            href="https://x.com/broisnischal"
-            target="_blank"
-            rel="noreferrer"
-            aria-label="X"
-            className="transition-colors hover:text-foreground"
-          >
-            <SiX className="size-4" />
-          </a>
-          <a
-            href={LINKS.github}
-            target="_blank"
-            rel="noreferrer"
-            aria-label="GitHub"
-            className="transition-colors hover:text-foreground"
-          >
-            <SiGithub className="size-4" />
-          </a>
+      </div>
+      <div className="border-t border-border">
+        <div className="mx-auto flex max-w-3xl flex-col items-center justify-between gap-4 px-6 py-6 text-sm text-muted-foreground sm:flex-row">
+          <p>© 2026 Battlify · built by broisnischal</p>
+          <div className="flex items-center gap-4">
+            <a
+              href="https://x.com/broisnischal"
+              target="_blank"
+              rel="noreferrer"
+              aria-label="X"
+              className="transition-colors hover:text-foreground"
+            >
+              <Icon icon={NewTwitterRectangleIcon} className="size-4" />
+            </a>
+            <a
+              href={LINKS.github}
+              target="_blank"
+              rel="noreferrer"
+              aria-label="GitHub"
+              className="transition-colors hover:text-foreground"
+            >
+              <Icon icon={GithubIcon} className="size-4" />
+            </a>
+          </div>
         </div>
-      </Container>
+      </div>
     </footer>
   );
 }

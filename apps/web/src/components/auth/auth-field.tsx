@@ -1,6 +1,7 @@
-import { EyeIcon, EyeOffIcon } from "lucide-react";
+import { EyeIcon, EyeOffIcon } from "@hugeicons/core-free-icons";
 import * as React from "react";
 
+import { Icon } from "#/components/icon";
 import { Input } from "#/components/ui/input";
 import { Label } from "#/components/ui/label";
 
@@ -53,7 +54,7 @@ export function AuthField({
             aria-label={show ? "Hide password" : "Show password"}
             className="absolute top-1/2 right-2.5 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
           >
-            {show ? <EyeOffIcon className="size-4" /> : <EyeIcon className="size-4" />}
+            <Icon icon={show ? EyeOffIcon : EyeIcon} className="size-4" />
           </button>
         ) : null}
       </div>

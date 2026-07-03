@@ -1,10 +1,17 @@
-import { SiGithub, SiGoogle } from "@icons-pack/react-simple-icons";
+import {
+  GithubIcon,
+  GoogleIcon,
+  Loading03Icon,
+  LockPasswordIcon,
+  Mail02Icon,
+  UserIcon,
+} from "@hugeicons/core-free-icons";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { LoaderCircleIcon, LockIcon, MailIcon, UserIcon } from "lucide-react";
 import { toast } from "sonner";
 
 import { AuthField } from "#/components/auth/auth-field";
+import { Icon } from "#/components/icon";
 import { BatteryMark } from "#/components/logo";
 import { SignInSocialButton } from "#/components/sign-in-social-button";
 import { Button } from "#/components/ui/button";
@@ -81,7 +88,7 @@ function SignupForm() {
           name="name"
           type="text"
           label="Name"
-          icon={<UserIcon />}
+          icon={<Icon icon={UserIcon} />}
           placeholder="Enter your name..."
           readOnly={isPending}
           required
@@ -91,7 +98,7 @@ function SignupForm() {
           name="email"
           type="email"
           label="Email"
-          icon={<MailIcon />}
+          icon={<Icon icon={Mail02Icon} />}
           placeholder="Enter your email..."
           readOnly={isPending}
           required
@@ -101,7 +108,7 @@ function SignupForm() {
           name="password"
           type="password"
           label="Password"
-          icon={<LockIcon />}
+          icon={<Icon icon={LockPasswordIcon} />}
           placeholder="Create a password..."
           readOnly={isPending}
           required
@@ -111,13 +118,13 @@ function SignupForm() {
           name="confirm_password"
           type="password"
           label="Confirm password"
-          icon={<LockIcon />}
+          icon={<Icon icon={LockPasswordIcon} />}
           placeholder="Re-enter your password..."
           readOnly={isPending}
           required
         />
         <Button type="submit" className="mt-1 h-10 w-full" disabled={isPending}>
-          {isPending && <LoaderCircleIcon className="animate-spin" />}
+          {isPending && <Icon icon={Loading03Icon} className="animate-spin" />}
           {isPending ? "Creating account..." : "Create account"}
         </Button>
       </form>
@@ -131,13 +138,13 @@ function SignupForm() {
           provider="google"
           callbackURL={redirectUrl}
           disabled={isPending}
-          icon={<SiGoogle className="size-4" />}
+          icon={<Icon icon={GoogleIcon} className="size-4" />}
         />
         <SignInSocialButton
           provider="github"
           callbackURL={redirectUrl}
           disabled={isPending}
-          icon={<SiGithub className="size-4" />}
+          icon={<Icon icon={GithubIcon} className="size-4" />}
         />
       </div>
     </div>
