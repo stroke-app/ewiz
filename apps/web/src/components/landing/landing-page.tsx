@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import {
   ArrowRightIcon,
   BluetoothIcon,
@@ -590,6 +591,12 @@ function Footer() {
               <a href={LINKS.feedback} target="_blank" rel="noopener noreferrer">
                 Feedback
               </a>
+            </div>
+            <div className="fcol">
+              <h5>Legal</h5>
+              <Link to="/terms">Terms</Link>
+              <Link to="/privacy">Privacy</Link>
+              <Link to="/changelog">Changelog</Link>
             </div>
           </div>
         </div>
