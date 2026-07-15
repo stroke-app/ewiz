@@ -58,6 +58,10 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+  /* Theme-aware elevation, resolved per-theme via the vars below. */
+  --shadow-soft: var(--sh-soft);
+  --shadow-elevated: var(--sh-elevated);
+  --shadow-window: var(--sh-window);
 }
 
 /* ==========================================================================
@@ -108,6 +112,11 @@
   --sidebar-accent-foreground: oklch(0.24 0.01 264);
   --sidebar-border: oklch(0 0 0 / 9%);
   --sidebar-ring: oklch(0.55 0.22 256);
+
+  /* Elevation — soft ambient stack for panels, deeper for the app window. */
+  --sh-soft: 0 1px 2px oklch(0 0 0 / 4%), 0 4px 12px -4px oklch(0 0 0 / 6%);
+  --sh-elevated: 0 2px 4px oklch(0 0 0 / 4%), 0 18px 44px -16px oklch(0 0 0 / 12%);
+  --sh-window: 0 2px 6px oklch(0 0 0 / 6%), 0 30px 60px -24px oklch(0 0 0 / 20%);
 }
 
 /* Dark theme — near-pure black + vivid blue. */
@@ -151,6 +160,11 @@
   --sidebar-accent-foreground: oklch(0.97 0.004 264);
   --sidebar-border: oklch(1 0 0 / 9%);
   --sidebar-ring: oklch(0.62 0.2 256);
+
+  /* On near-black, shadows read as depth only when they go darker + wider. */
+  --sh-soft: 0 1px 2px oklch(0 0 0 / 30%), 0 4px 12px -4px oklch(0 0 0 / 40%);
+  --sh-elevated: 0 2px 4px oklch(0 0 0 / 40%), 0 22px 52px -18px oklch(0 0 0 / 66%);
+  --sh-window: 0 2px 8px oklch(0 0 0 / 50%), 0 40px 80px -28px oklch(0 0 0 / 80%);
 }
 
 @layer base {
@@ -171,6 +185,56 @@
     @apply font-sans;
   }
 }
+
+/* ==========================================================================
+   Landing motion — CSS-only, SSR-safe. `.animate-enter` plays a staggered
+   fade-up on load (hero content, so it never depends on JS being ready).
+   `.reveal` fades a section in as it scrolls into view via a scroll-driven
+   timeline where supported, and stays fully visible everywhere else. Both
+   respect prefers-reduced-motion.
+   ========================================================================== */
+@keyframes blfEnter {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: blur(0);
+  }
+}
+.animate-enter {
+  animation: blfEnter 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: var(--enter-delay, 0ms);
+}
+@keyframes blfReveal {
+  from {
+    opacity: 0;
+    transform: translateY(22px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .reveal {
+      opacity: 0;
+      animation: blfReveal linear both;
+      animation-timeline: view();
+      animation-range: entry 6% cover 28%;
+    }
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-enter {
+    animation: none;
+  }
+}
+
 /* ==========================================================================
    Battlify landing — light, friendly, premium (macmousefix-inspired).
    Scoped under `.blf`. Dark app-window mockups keep their own dark palette.
