@@ -2,25 +2,24 @@ import { ArrowRight02Icon } from "@hugeicons/core-free-icons";
 import { createFileRoute, Link } from "@tanstack/react-router";
 
 import { Icon } from "#/components/icon";
+import { breadcrumbSchema, JsonLd } from "#/components/seo/json-ld";
 import { POSTS } from "#/lib/blog/posts";
+import { seo } from "#/lib/seo";
+
+const BLOG_DESCRIPTION =
+  "Field notes on how lithium-ion batteries work, why they fade, and how to make yours last for years.";
 
 export const Route = createFileRoute("/blog/")({
   component: BlogIndex,
   head: () => ({
-    meta: [
-      { title: "Blog — Battlify" },
-      {
-        name: "description",
-        content:
-          "Field notes on how lithium-ion batteries work, why they fade, and how to make yours last.",
-      },
-    ],
+    ...seo({ title: "Blog", description: BLOG_DESCRIPTION, path: "/blog" }),
   }),
 });
 
 function BlogIndex() {
   return (
     <div>
+      <JsonLd data={breadcrumbSchema([{ name: "Blog", path: "/blog" }])} />
       <p className="text-[11px] font-semibold tracking-[0.16em] text-primary uppercase">Blog</p>
       <h1 className="font-display mt-3 text-4xl font-bold tracking-tight text-balance">
         Battery science, without the hand-waving.
