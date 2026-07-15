@@ -9,6 +9,9 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TermsRouteImport } from './routes/terms'
+import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as ChangelogRouteImport } from './routes/changelog'
 import { Route as BuyRouteImport } from './routes/buy'
 import { Route as LegalRouteRouteImport } from './routes/legal/route'
 import { Route as BlogRouteRouteImport } from './routes/blog/route'
@@ -25,6 +28,21 @@ import { Route as AuthAppRouteRouteImport } from './routes/_auth/app/route'
 import { Route as AuthAppIndexRouteImport } from './routes/_auth/app/index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ChangelogRoute = ChangelogRouteImport.update({
+  id: '/changelog',
+  path: '/changelog',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BuyRoute = BuyRouteImport.update({
   id: '/buy',
   path: '/buy',
@@ -104,6 +122,9 @@ export interface FileRoutesByFullPath {
   '/blog': typeof BlogRouteRouteWithChildren
   '/legal': typeof LegalRouteRouteWithChildren
   '/buy': typeof BuyRoute
+  '/changelog': typeof ChangelogRoute
+  '/privacy': typeof PrivacyRoute
+  '/terms': typeof TermsRoute
   '/app': typeof AuthAppRouteRouteWithChildren
   '/login': typeof GuestLoginRoute
   '/signup': typeof GuestSignupRoute
@@ -118,6 +139,9 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/legal': typeof LegalRouteRouteWithChildren
   '/buy': typeof BuyRoute
+  '/changelog': typeof ChangelogRoute
+  '/privacy': typeof PrivacyRoute
+  '/terms': typeof TermsRoute
   '/login': typeof GuestLoginRoute
   '/signup': typeof GuestSignupRoute
   '/blog/$slug': typeof BlogSlugRoute
@@ -135,6 +159,9 @@ export interface FileRoutesById {
   '/blog': typeof BlogRouteRouteWithChildren
   '/legal': typeof LegalRouteRouteWithChildren
   '/buy': typeof BuyRoute
+  '/changelog': typeof ChangelogRoute
+  '/privacy': typeof PrivacyRoute
+  '/terms': typeof TermsRoute
   '/_auth/app': typeof AuthAppRouteRouteWithChildren
   '/_guest/login': typeof GuestLoginRoute
   '/_guest/signup': typeof GuestSignupRoute
@@ -152,6 +179,9 @@ export interface FileRouteTypes {
     | '/blog'
     | '/legal'
     | '/buy'
+    | '/changelog'
+    | '/privacy'
+    | '/terms'
     | '/app'
     | '/login'
     | '/signup'
@@ -166,6 +196,9 @@ export interface FileRouteTypes {
     | '/'
     | '/legal'
     | '/buy'
+    | '/changelog'
+    | '/privacy'
+    | '/terms'
     | '/login'
     | '/signup'
     | '/blog/$slug'
@@ -182,6 +215,9 @@ export interface FileRouteTypes {
     | '/blog'
     | '/legal'
     | '/buy'
+    | '/changelog'
+    | '/privacy'
+    | '/terms'
     | '/_auth/app'
     | '/_guest/login'
     | '/_guest/signup'
@@ -200,11 +236,35 @@ export interface RootRouteChildren {
   BlogRouteRoute: typeof BlogRouteRouteWithChildren
   LegalRouteRoute: typeof LegalRouteRouteWithChildren
   BuyRoute: typeof BuyRoute
+  ChangelogRoute: typeof ChangelogRoute
+  PrivacyRoute: typeof PrivacyRoute
+  TermsRoute: typeof TermsRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/changelog': {
+      id: '/changelog'
+      path: '/changelog'
+      fullPath: '/changelog'
+      preLoaderRoute: typeof ChangelogRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/buy': {
       id: '/buy'
       path: '/buy'
@@ -386,6 +446,9 @@ const rootRouteChildren: RootRouteChildren = {
   BlogRouteRoute: BlogRouteRouteWithChildren,
   LegalRouteRoute: LegalRouteRouteWithChildren,
   BuyRoute: BuyRoute,
+  ChangelogRoute: ChangelogRoute,
+  PrivacyRoute: PrivacyRoute,
+  TermsRoute: TermsRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
 }
 export const routeTree = rootRouteImport

@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import {
   BatteryCharging02Icon,
   Cancel02Icon,
@@ -13,7 +14,6 @@ import {
   Tick02Icon,
 } from "@hugeicons/core-free-icons";
 import type { IconSvgElement } from "@hugeicons/react";
-import { Link } from "@tanstack/react-router";
 
 import { useCheckout } from "#/components/buy-button";
 import { Icon } from "#/components/icon";

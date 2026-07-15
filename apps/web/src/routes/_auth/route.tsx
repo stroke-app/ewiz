@@ -1,5 +1,6 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 
+import { usePostHogIdentify } from "#/components/analytics/posthog";
 import { authQueryOptions } from "#/lib/auth/queries";
 
 /**
@@ -9,7 +10,7 @@ import { authQueryOptions } from "#/lib/auth/queries";
  * The returned context from beforeLoad is also available to all child routes & loaders.
  */
 export const Route = createFileRoute("/_auth")({
-  component: Outlet,
+  component: AuthLayout,
   beforeLoad: async ({ context }) => {
     /**
      * beforeLoad runs on every navigation and prefetch, so we use TanStack Query
@@ -37,3 +38,10 @@ export const Route = createFileRoute("/_auth")({
     return { user };
   },
 });
+
+function AuthLayout() {
+  // The user is already loaded by beforeLoad, so this identifies them in
+  // PostHog without any extra fetch.
+  usePostHogIdentify();
+  return <Outlet />;
+}
