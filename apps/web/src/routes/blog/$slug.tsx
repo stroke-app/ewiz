@@ -1,21 +1,25 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 
+import { articleSchema, breadcrumbSchema, JsonLd } from "#/components/seo/json-ld";
 import { Button } from "#/components/ui/button";
 import { getPost } from "#/lib/blog/posts";
+import { seo } from "#/lib/seo";
 
 export const Route = createFileRoute("/blog/$slug")({
   component: PostPage,
   head: ({ params }) => {
     const post = getPost(params.slug);
+    if (!post) {
+      return { ...seo({ title: "Post not found", path: `/blog/${params.slug}` }) };
+    }
     return {
-      meta: post
-        ? [
-            { title: `${post.title} — Battlify` },
-            { name: "description", content: post.description },
-            { property: "og:title", content: post.title },
-            { property: "og:description", content: post.description },
-          ]
-        : [{ title: "Post not found — Battlify" }],
+      ...seo({
+        title: post.title,
+        description: post.description,
+        path: `/blog/${post.slug}`,
+        type: "article",
+        keywords: [post.tag.toLowerCase(), "battery health", "lithium-ion", "macbook battery"],
+      }),
     };
   },
 });
@@ -45,6 +49,20 @@ function PostPage() {
 
   return (
     <article>
+      <JsonLd
+        data={articleSchema({
+          title: post.title,
+          description: post.description,
+          slug: post.slug,
+          datePublished: post.date,
+        })}
+      />
+      <JsonLd
+        data={breadcrumbSchema([
+          { name: "Blog", path: "/blog" },
+          { name: post.title, path: `/blog/${post.slug}` },
+        ])}
+      />
       <Link
         to="/blog"
         className="text-sm text-muted-foreground transition-colors hover:text-foreground"
@@ -78,7 +96,7 @@ function PostPage() {
           Let Battlify handle the hard part.
         </h2>
         <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted-foreground">
-          Charge limiting, sleep-safe enforcement, and heat-aware charging — the science above,
+          Charge limiting, sleep-safe enforcement, and heat-aware charging. The science above,
           turned into a setting you configure once. $2.99, free for 30 days.
         </p>
         <div className="mt-5 flex justify-center">
