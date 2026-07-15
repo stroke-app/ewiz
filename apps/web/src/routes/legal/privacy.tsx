@@ -1,6 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 
+import { seo } from "#/lib/seo";
+
 export const Route = createFileRoute("/legal/privacy")({
+  head: () => ({
+    ...seo({
+      title: "Privacy Policy",
+      description:
+        "How Battlify collects, uses, and protects your information. Essential cookies only, no tracking or advertising profiles.",
+      path: "/legal/privacy",
+    }),
+  }),
   component: PrivacyPage,
 });
 
@@ -16,7 +26,7 @@ function PrivacyPage() {
       </h2>
       <div className="space-y-4 text-sm leading-relaxed text-muted-foreground">
         <p>
-          This Privacy Policy explains how <code>[LEGAL_ENTITY]</code> (&ldquo;Battlify,&rdquo;
+          This Privacy Policy explains how Nischal Dahal (&ldquo;Battlify,&rdquo;
           &ldquo;we,&rdquo; &ldquo;us&rdquo;) collects, uses, and protects your information when you
           visit the Battlify website, create an account, or purchase a license. It covers the
           marketing and licensing website only. The Battlify desktop app connects to your Mac&apos;s
@@ -48,7 +58,7 @@ function PrivacyPage() {
         <p>
           <span className="font-medium text-foreground">Device data for licensing.</span> To lock a
           license to a single Mac, the desktop app derives a{" "}
-          <span className="font-medium text-foreground">device code</span> — a one-way hash of your
+          <span className="font-medium text-foreground">device code</span>, a one-way hash of your
           Mac&apos;s hardware identifier. We store this device code together with your purchase
           record so a license can be tied to one machine. The device code cannot be reversed to
           reveal your hardware identifier.
@@ -103,7 +113,7 @@ function PrivacyPage() {
         <p>We rely on a small number of trusted providers to run Battlify:</p>
         <ul className="list-disc space-y-2 pl-6">
           <li>
-            <span className="font-medium text-foreground">Dodo Payments</span> — payment processing
+            <span className="font-medium text-foreground">Dodo Payments</span>, payment processing
             and Merchant of Record. See their{" "}
             <a
               href="https://dodopayments.com/"
@@ -116,7 +126,7 @@ function PrivacyPage() {
             .
           </li>
           <li>
-            <span className="font-medium text-foreground">Cloudflare</span> — website hosting and
+            <span className="font-medium text-foreground">Cloudflare</span>, website hosting and
             database (Workers and D1). See their{" "}
             <a
               href="https://www.cloudflare.com/privacypolicy/"
@@ -134,7 +144,7 @@ function PrivacyPage() {
       <h2 className="font-display mt-10 mb-3 text-xl font-semibold">7. Cookies &amp; security</h2>
       <div className="space-y-4 text-sm leading-relaxed text-muted-foreground">
         <p>
-          We use <span className="font-medium text-foreground">essential cookies only</span> — the
+          We use <span className="font-medium text-foreground">essential cookies only</span>, the
           authentication and session cookies needed to keep you signed in and to secure your
           account. We do{" "}
           <span className="font-medium text-foreground">not use analytics or tracking cookies</span>
@@ -175,12 +185,12 @@ function PrivacyPage() {
       <div className="space-y-4 text-sm leading-relaxed text-muted-foreground">
         <p>
           Questions about this Privacy Policy or your data? Contact{" "}
-          <code>[LEGAL_ENTITY]</code> at{" "}
+          Nischal Dahal at{" "}
           <a
-            href="mailto:[CONTACT_EMAIL]"
+            href="mailto:nischaldahal01395@gmail.com"
             className="text-primary underline underline-offset-4"
           >
-            [CONTACT_EMAIL]
+            nischaldahal01395@gmail.com
           </a>
           .
         </p>

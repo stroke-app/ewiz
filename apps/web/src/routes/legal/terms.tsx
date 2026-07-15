@@ -1,6 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 
+import { seo } from "#/lib/seo";
+
 export const Route = createFileRoute("/legal/terms")({
+  head: () => ({
+    ...seo({
+      title: "Terms of Service",
+      description:
+        "The terms that govern your use of Battlify: license grant, acceptable use, payment and refunds, and more.",
+      path: "/legal/terms",
+    }),
+  }),
   component: TermsPage,
 });
 
@@ -18,7 +28,7 @@ function TermsPage() {
         <p>
           These Terms of Service (&ldquo;Terms&rdquo;) govern your use of the Battlify website, your
           account, and the Battlify desktop app (together, the &ldquo;Service&rdquo;), provided by{" "}
-          <code>[LEGAL_ENTITY]</code> (&ldquo;Battlify,&rdquo; &ldquo;we,&rdquo; &ldquo;us&rdquo;).
+          Nischal Dahal (&ldquo;Battlify,&rdquo; &ldquo;we,&rdquo; &ldquo;us&rdquo;).
           By creating an account, purchasing a license, or using the Service, you agree to these
           Terms. If you do not agree, do not use the Service.
         </p>
@@ -98,8 +108,8 @@ function TermsPage() {
             purchases are generally non-refundable
           </span>
           . If you believe your situation warrants a refund, you may send a request to{" "}
-          <a href="mailto:[CONTACT_EMAIL]" className="text-primary underline underline-offset-4">
-            [CONTACT_EMAIL]
+          <a href="mailto:nischaldahal01395@gmail.com" className="text-primary underline underline-offset-4">
+            nischaldahal01395@gmail.com
           </a>
           ; approved refunds are handled through Dodo Payments.
         </p>
@@ -108,7 +118,7 @@ function TermsPage() {
       <h2 className="font-display mt-10 mb-3 text-xl font-semibold">7. Intellectual property</h2>
       <div className="space-y-4 text-sm leading-relaxed text-muted-foreground">
         <p>
-          Battlify, its name, branding, and code are owned by <code>[LEGAL_ENTITY]</code> and are
+          Battlify, its name, branding, and code are owned by Nischal Dahal and are
           protected by intellectual property laws. Your license grants you a right to use the
           software, not ownership of it. Open-source components included in Battlify remain governed
           by their own respective licenses, as noted in the{" "}
@@ -141,7 +151,7 @@ function TermsPage() {
       <h2 className="font-display mt-10 mb-3 text-xl font-semibold">9. Limitation of liability</h2>
       <div className="space-y-4 text-sm leading-relaxed text-muted-foreground">
         <p>
-          To the maximum extent permitted by law, <code>[LEGAL_ENTITY]</code> will not be liable for
+          To the maximum extent permitted by law, Nischal Dahal will not be liable for
           any indirect, incidental, special, consequential, or punitive damages, or for any loss of
           data, hardware, or profits, arising out of or related to your use of the Service. Our
           total liability for any claim relating to the Service will not exceed the amount you paid
@@ -154,8 +164,8 @@ function TermsPage() {
         <p>
           We may suspend or terminate your access to the Service and your license if you violate
           these Terms or use the Service in a way that harms us or others. Provisions that by their
-          nature should survive termination — including intellectual property, disclaimers, and
-          limitation of liability — will survive.
+          nature should survive termination, including intellectual property, disclaimers, and
+          limitation of liability, will survive.
         </p>
       </div>
 
@@ -183,9 +193,9 @@ function TermsPage() {
       <h2 className="font-display mt-10 mb-3 text-xl font-semibold">13. Contact</h2>
       <div className="space-y-4 text-sm leading-relaxed text-muted-foreground">
         <p>
-          Questions about these Terms? Contact <code>[LEGAL_ENTITY]</code> at{" "}
-          <a href="mailto:[CONTACT_EMAIL]" className="text-primary underline underline-offset-4">
-            [CONTACT_EMAIL]
+          Questions about these Terms? Contact Nischal Dahal at{" "}
+          <a href="mailto:nischaldahal01395@gmail.com" className="text-primary underline underline-offset-4">
+            nischaldahal01395@gmail.com
           </a>
           .
         </p>
