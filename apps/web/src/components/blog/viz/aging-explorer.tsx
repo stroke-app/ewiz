@@ -156,7 +156,7 @@ export function AgingExplorer() {
       caption={
         <>
           The two killers <strong className="text-foreground">multiply</strong>. Push the ceiling to
-          100% <em>and</em> let it run hot and the aging rate compounds — the curve nose-dives. Pull
+          100% <em>and</em> let it run hot and the aging rate compounds: the curve nose-dives. Pull
           both back toward the dashed ideal and the same battery is still near-full years later.
           (Illustrative model, but the direction is real.)
         </>

@@ -18,7 +18,7 @@ export function useCheckout() {
     if (isPending || loading) return;
 
     if (!user) {
-      toast.info("Sign in to buy Battlify — it only takes a second.");
+      toast.info("Sign in to buy Battlify. It only takes a second.");
       navigate({ to: "/login" });
       return;
     }
