@@ -9,6 +9,7 @@ import { Analytics } from "#/components/analytics/posthog";
 import { ThemeProvider } from "#/components/theme-provider";
 import { Toaster } from "#/components/ui/sonner";
 import type { AuthQueryResult } from "#/lib/auth/queries";
+import { seo } from "#/lib/seo";
 
 import appCss from "#/styles.css?url";
 
@@ -25,36 +26,19 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
   // },
   head: () => ({
     meta: [
-      {
-        charSet: "utf-8",
-      },
-      {
-        name: "viewport",
-        content: "width=device-width, initial-scale=1",
-      },
-      {
-        title: "Battlify — Make macOS stop wrecking your battery",
-      },
-      {
-        name: "description",
-        content:
-          "Charge limiting, heat-aware charging, sleep-safe enforcement, and save modes for Apple Silicon Macs. Menu bar battery care that stays out of your way.",
-      },
-      {
-        property: "og:title",
-        content: "Battlify — Make macOS stop wrecking your battery",
-      },
-      {
-        property: "og:description",
-        content:
-          "Charge limiting, heat-aware charging, and sleep-safe enforcement from your menu bar.",
-      },
+      { charSet: "utf-8" },
+      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      // Site-wide defaults. Each route overrides title/description/canonical
+      // and adds its own og:url via the seo() helper.
+      ...seo().meta,
     ],
     links: [
-      {
-        rel: "icon",
-        href: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔋</text></svg>",
-      },
+      // Scalable SVG for modern browsers, PNG fallbacks, and the Apple
+      // touch icon for home-screen bookmarks. All derived from the Battlify mark.
+      { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
+      { rel: "icon", href: "/favicon-32.png", type: "image/png", sizes: "32x32" },
+      { rel: "icon", href: "/icon-192.png", type: "image/png", sizes: "192x192" },
+      { rel: "apple-touch-icon", href: "/apple-touch-icon.png", sizes: "180x180" },
       { rel: "stylesheet", href: appCss },
     ],
   }),
