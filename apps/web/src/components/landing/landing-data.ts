@@ -6,39 +6,32 @@ export const LINKS = {
 
 export type MomentArt = "bar" | "thermo" | "moon" | "led";
 
-// Full-bleed feature "moments", alternating light and dark, each with its own art.
+// The four narrative beats of "the fix", each a scene with its own micro-visual.
+// Rendered as a sequenced, alternating scroll story, not a flat card grid.
 export const MOMENTS = [
   {
-    eye: "Charge limit",
+    eye: "Hold the line",
     title: "Stops at a number you love.",
-    body: "Pick any ceiling from 50% up to 100%, and Battlify keeps it right there. It holds the level with a small buffer so the charger isn't clicking on and off all day. A battery that lives around 80% simply lasts a lot longer. And when you're about to head out, one tap tops it up to 100%, then it drops back on its own.",
-    note: 'It works with both of Apple\'s charging schemes: the older CH0B/CH0C keys and the newer CHTE on macOS 26 "Tahoe".',
-    tone: "light",
-    flip: false,
+    body: "Pick any ceiling from 50 to 100 percent and Battlify keeps it right there, with a small buffer so the charger is not clicking on and off all day. A battery that lives around 80 percent simply lasts longer. Heading out? One tap tops it up to 100, then it drops back on its own.",
+    note: 'Works with both of Apple\'s charging schemes: the older CH0B/CH0C keys and the newer CHTE on macOS 26 "Tahoe".',
     art: "bar",
   },
   {
-    eye: "Sleep-safe",
-    title: "Holds the line, even asleep.",
-    body: "Most limiters clock out the second your Mac falls asleep, so macOS quietly sneaks you back up to 100% overnight. Battlify doesn't. It can stop charging right before sleep, or keep the Mac awake on wall power so your limit never slips.",
-    tone: "dark",
-    flip: true,
+    eye: "Even asleep",
+    title: "Holds through the night.",
+    body: "Most limiters clock out the second your Mac falls asleep, and macOS quietly creeps you back to 100 percent by morning. Battlify does not. It stops charging just before sleep, or keeps the Mac awake on wall power, so your limit never slips overnight.",
     art: "moon",
   },
   {
-    eye: "Heat-aware",
-    title: "Never breaks a sweat.",
-    body: "Heat ages a battery faster than charge cycles ever do. Set a temperature you're happy with, and charging pauses the moment things get warm, then picks back up once they cool off. The menu always tells you why it paused, so it never feels broken.",
-    tone: "light",
-    flip: false,
+    eye: "Keeps its cool",
+    title: "Backs off when it runs hot.",
+    body: "Heat ages a battery faster than cycles ever will, and every 10 degrees roughly doubles the damage. Set a temperature you are happy with and charging pauses the moment things warm up, then resumes once they cool. The menu always tells you why, so it never feels broken.",
     art: "thermo",
   },
   {
-    eye: "MagSafe LED",
-    title: "Your cable, in the know.",
-    body: "Battlify drives the MagSafe light straight from the real charge state. It glows amber while charging, and turns green the instant it's holding at your limit. One look at the cable and you know what's going on, without opening a thing.",
-    tone: "dark",
-    flip: true,
+    eye: "One glance",
+    title: "Your cable tells the truth.",
+    body: "Battlify drives the MagSafe light straight from the real charge state. Amber while it fills, green the instant it is holding at your limit. One look at the cable and you know exactly what is happening, without opening a thing.",
     art: "led",
   },
 ] as const satisfies ReadonlyArray<{
@@ -46,8 +39,6 @@ export const MOMENTS = [
   title: string;
   body: string;
   note?: string;
-  tone: "light" | "dark";
-  flip: boolean;
   art: MomentArt;
 }>;
 
@@ -88,5 +79,34 @@ export const TESTIMONIALS = [
     quote: "$2.99 for something this polished feels almost unfair. Instant buy.",
     who: "Power user",
     src: "Email",
+  },
+] as const;
+
+// Plain-language answers to the questions people actually ask before buying.
+// Also serialized into FAQPage JSON-LD, so keep the answers self-contained.
+export const FAQS = [
+  {
+    q: "Which Macs does Battlify support?",
+    a: "Battlify runs on Apple Silicon Macs (M1 and later) on macOS 14 Sonoma or newer, including macOS 26 Tahoe. It is a native menu bar app, so there is no Dock icon and almost no energy cost.",
+  },
+  {
+    q: "Does a charge limit really make my battery last longer?",
+    a: "Yes. Lithium-ion batteries wear out fastest when they sit full and warm. Holding the charge around 80 percent keeps the battery in its low-stress range, which slows the loss of capacity over time.",
+  },
+  {
+    q: "Does the limit hold while my Mac is asleep?",
+    a: "It can. Battlify either stops charging just before sleep or keeps the Mac awake on wall power, so macOS cannot quietly push you back to 100 percent overnight.",
+  },
+  {
+    q: "How much does Battlify cost?",
+    a: "Battlify is a one-time purchase of $2.99. There is no subscription, updates are free for life, and you can try every feature free for 30 days before you decide.",
+  },
+  {
+    q: "Can I move my license to another Mac?",
+    a: "Yes. A license is locked to one Mac at a time, and you can move it to a new machine once every 30 days.",
+  },
+  {
+    q: "Is my data private?",
+    a: "Battlify does the battery work locally on your Mac and does not route your usage through our servers. The website stores only the account and license details needed to sell and support the app.",
   },
 ] as const;
