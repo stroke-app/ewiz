@@ -1,17 +1,21 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { LegalLayout, Section } from "#/components/legal/legal-layout";
+import { seo } from "#/lib/seo";
+
+const termsSeo = seo({
+  title: "Terms of Service",
+  description:
+    "The terms that govern your use of Battlify, the menu bar battery care app for Apple Silicon Macs.",
+  // Canonical points at /legal/terms, and this URL is noindex, so search
+  // engines index a single terms page even though both remain reachable.
+  path: "/legal/terms",
+});
 
 export const Route = createFileRoute("/terms")({
   head: () => ({
-    meta: [
-      { title: "Terms of Service — Battlify" },
-      {
-        name: "description",
-        content:
-          "The terms that govern your use of Battlify, the menu-bar battery care app for Apple Silicon Macs.",
-      },
-    ],
+    links: termsSeo.links,
+    meta: [...termsSeo.meta, { name: "robots", content: "noindex, follow" }],
   }),
   component: TermsPage,
 });
@@ -47,13 +51,13 @@ function TermsPage() {
         <p>
           The app is provided <b>as is</b>. It talks to low-level battery and charging controls on
           your Mac, and while it&apos;s built carefully and conservatively, you use it at your own
-          discretion — see the warranty and liability sections below.
+          discretion. See the warranty and liability sections below.
         </p>
       </Section>
 
       <Section n="03" title="Accounts">
         <p>
-          You don&apos;t need an account to try Battlify — it&apos;s free to use for 30 days with no
+          You don&apos;t need an account to try Battlify. It&apos;s free to use for 30 days with no
           sign-up. You only create an account when you buy a license, so we can attach it to you and
           let you manage it. Sign-in is handled through <b>GitHub</b> or <b>Google</b>; we never see
           or store a password.
@@ -74,8 +78,8 @@ function TermsPage() {
 
       <Section n="05" title="Trial, payments, and refunds">
         <p>
-          Battlify is free for 30 days of actual use — the countdown only advances on days you open
-          the app — so you can decide before paying anything. Checkout is handled securely by{" "}
+          Battlify is free for 30 days of actual use. The countdown only advances on days you open
+          the app, so you can decide before paying anything. Checkout is handled securely by{" "}
           <b>Dodo Payments</b>, our merchant of record; we never see your card details.
         </p>
         <p>

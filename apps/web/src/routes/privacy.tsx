@@ -1,17 +1,21 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { LegalLayout, Section } from "#/components/legal/legal-layout";
+import { seo } from "#/lib/seo";
+
+const privacySeo = seo({
+  title: "Privacy Policy",
+  description:
+    "How Battlify handles your data: the app runs on your Mac, and our servers only touch your account and license.",
+  // Canonical points at /legal/privacy, and this URL is noindex, so search
+  // engines index a single privacy page even though both remain reachable.
+  path: "/legal/privacy",
+});
 
 export const Route = createFileRoute("/privacy")({
   head: () => ({
-    meta: [
-      { title: "Privacy Policy — Battlify" },
-      {
-        name: "description",
-        content:
-          "How Battlify handles your data: the app runs on your Mac, and our servers only touch your account and license.",
-      },
-    ],
+    links: privacySeo.links,
+    meta: [...privacySeo.meta, { name: "robots", content: "noindex, follow" }],
   }),
   component: PrivacyPage,
 });
@@ -48,7 +52,7 @@ function PrivacyPage() {
           <li>
             Basic identity from your <b>GitHub</b> or <b>Google</b> sign-in (name, email, avatar).
           </li>
-          <li>Session data — cookies and security metadata — so you stay signed in.</li>
+          <li>Session data, meaning cookies and security metadata, so you stay signed in.</li>
           <li>
             License details, including a device code so a license can be bound to one Mac at a time.
           </li>
@@ -75,13 +79,13 @@ function PrivacyPage() {
       <Section n="05" title="Third parties we rely on">
         <ul>
           <li>
-            <b>Dodo Payments</b> — our merchant of record, processes checkout and billing. We never
+            <b>Dodo Payments</b>, our merchant of record, processes checkout and billing. We never
             see your card details.
           </li>
           <li>
-            <b>GitHub</b> and <b>Google</b> — for sign-in, when you choose to create an account.
+            <b>GitHub</b> and <b>Google</b>, for sign-in when you choose to create an account.
           </li>
-          <li>Our hosting provider — serves this website and the account/license API.</li>
+          <li>Our hosting provider, which serves this website and the account/license API.</li>
         </ul>
         <p>Each operates under its own privacy policy.</p>
       </Section>
