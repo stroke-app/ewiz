@@ -50,7 +50,7 @@ function AppIndex() {
     mutationFn: (paymentId: string) => $claimLicense({ data: { paymentId } }),
     onSuccess: (data) => {
       queryClient.setQueryData(licenseQueryOptions().queryKey, data);
-      toast.success("Payment confirmed — now link your Mac to get your key.");
+      toast.success("Payment confirmed. Now link your Mac to get your key.");
       // Clean the checkout params out of the URL so a refresh doesn't re-claim.
       void navigate({ to: "/app", search: {}, replace: true });
     },
@@ -104,7 +104,7 @@ function DeviceCodeForm({
     mutationFn: (deviceCode: string) => $bindDevice({ data: { deviceCode } }),
     onSuccess: (data) => {
       queryClient.setQueryData(licenseQueryOptions().queryKey, data);
-      toast.success(`License key ready — locked to ${data.deviceCode}.`);
+      toast.success(`License key ready, locked to ${data.deviceCode}.`);
       setCode("");
       onSuccess?.();
     },
@@ -148,7 +148,7 @@ function LinkMacCard() {
         <div className="flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary">
           <Icon icon={LaptopIcon} className="size-6" />
         </div>
-        <h1 className="text-xl font-semibold">One step left — link your Mac</h1>
+        <h1 className="text-xl font-semibold">One step left: link your Mac</h1>
         <p className="max-w-sm text-sm text-muted-foreground">
           Your license is locked to a single Mac. Enter the device code from the app and your key
           appears here.
@@ -186,7 +186,7 @@ function LicenseCard({ license }: { license: LicenseDTO }) {
       toast.success("License key copied.");
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      toast.error("Couldn't copy — select the key and copy manually.");
+      toast.error("Couldn't copy. Select the key and copy manually.");
     }
   };
 
@@ -244,7 +244,7 @@ function LicenseCard({ license }: { license: LicenseDTO }) {
           </li>
           <li>
             <span className="mr-2 text-foreground">3.</span>Click{" "}
-            <span className="text-foreground">Activate</span> — it verifies offline, no internet
+            <span className="text-foreground">Activate</span>. It verifies offline, no internet
             needed.
           </li>
         </ol>
@@ -258,7 +258,7 @@ function LicenseCard({ license }: { license: LicenseDTO }) {
                 <h2 className="text-sm font-medium">Moving to a new Mac?</h2>
                 <p className="text-xs text-muted-foreground">
                   {rebindLockedUntil
-                    ? `This license moved recently — you can move it again on ${rebindLockedUntil}.`
+                    ? `This license moved recently. You can move it again on ${rebindLockedUntil}.`
                     : "Re-mint your key with the new Mac's device code. Allowed once every 30 days."}
                 </p>
               </div>
