@@ -222,17 +222,21 @@ final class IdleSaverStore: ObservableObject {
                 bluetooth = RadioControl.isBluetoothOn
                 if bluetooth == true { RadioControl.setBluetooth(false) }
             }
-            await MainActor.run {
-                guard let self, self.resting else { return }
-                self.savedLowPowerMode = lowPower
-                self.savedWiFi = wifi
-                self.savedBluetooth = bluetooth
-                // Display last, and still last now that the rest is asynchronous: doing it
-                // first would darken the screen while the work it's waiting on is still
-                // running, which reads as resting having stalled.
-                self.displayOff()
-            }
+            // A main-actor method, not `MainActor.run { guard let self … }`: see
+            // `ChargeLimitStore.autoInstallHelperIfNeeded` for why.
+            await self?.finishBeginResting(lowPower: lowPower, wifi: wifi, bluetooth: bluetooth)
         }
+    }
+
+    private func finishBeginResting(lowPower: Bool?, wifi: Bool?, bluetooth: Bool?) {
+        guard resting else { return }
+        savedLowPowerMode = lowPower
+        savedWiFi = wifi
+        savedBluetooth = bluetooth
+        // Display last, and still last now that the rest is asynchronous: doing it
+        // first would darken the screen while the work it's waiting on is still
+        // running, which reads as resting having stalled.
+        displayOff()
     }
 
     private func endResting() {

@@ -246,22 +246,26 @@ final class ChargeLimitStore: ObservableObject {
         Task.detached { [weak self] in
             let result = Self.installByCheapestRoute(missing: missing,
                                                     daemonProtocolVersion: protocolVersion)
-            await MainActor.run {
-                guard let self else { return }
-                self.helperInstalling = false
-                guard result.ok else {
-                    // A cancelled prompt and a broken installer are indistinguishable from
-                    // here, and re-prompting helps neither. Record it and leave the button.
-                    self.autoInstallDeclined = true
-                    self.helperInstallFailure = result.message
-                    return
-                }
-                self.helperInstallFailure = nil
-                self.autoInstallDeclined = false
-            }
+            // A main-actor method rather than `MainActor.run { guard let self … }`: sending
+            // the weak capture into that closure is a data-race error on the Swift that CI
+            // builds with, though newer compilers accept it.
+            await self?.finishAutoInstall(result)
             guard result.ok else { return }
             await self?.resyncAfterInstall()
         }
+    }
+
+    private func finishAutoInstall(_ result: (ok: Bool, message: String)) {
+        helperInstalling = false
+        guard result.ok else {
+            // A cancelled prompt and a broken installer are indistinguishable from
+            // here, and re-prompting helps neither. Record it and leave the button.
+            autoInstallDeclined = true
+            helperInstallFailure = result.message
+            return
+        }
+        helperInstallFailure = nil
+        autoInstallDeclined = false
     }
 
     /// Take the least intrusive route that can actually work on this machine.
