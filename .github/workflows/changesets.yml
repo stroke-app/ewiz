@@ -22,6 +22,7 @@ jobs:
           node-version: 20
       - run: npm install
       - name: Create Version PR
+        id: changesets
         uses: changesets/action@v1
         with:
           version: npm run version
@@ -37,7 +38,11 @@ jobs:
       # A tag pushed with GITHUB_TOKEN deliberately cannot trigger another workflow,
       # so pushing it is not enough — the release is started explicitly with
       # workflow_dispatch, which is the documented exception to that rule.
+      # Only once main has nothing pending. The action leaves this checkout on the version
+      # branch with the changesets already consumed, so a check of the files here found
+      # none and released v0.18.0 from the Version PR's branch before it was merged.
       - name: Tag the version and start the release
+        if: steps.changesets.outputs.hasChangesets == 'false'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |

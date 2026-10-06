@@ -1,4 +1,4 @@
-# battlify
+# ewiz
 
 ## 0.18.0
 
