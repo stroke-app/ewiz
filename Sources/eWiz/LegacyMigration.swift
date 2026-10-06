@@ -12,6 +12,7 @@ enum LegacyMigration {
     static func run() {
         renameBundleIfNeeded()
         quitOldApp()
+        watchForOldApp()
         guard !UserDefaults.standard.bool(forKey: doneKey) else { return }
         migrateDefaults()
         LegacyBattlify.merge(LegacyBattlify.userSupportDirectory, into: EWizPaths.userConfigDirectory)
@@ -58,6 +59,18 @@ enum LegacyMigration {
     private static func quitOldApp() {
         for app in NSRunningApplication.runningApplications(withBundleIdentifier: LegacyBattlify.bundleID) {
             app.forceTerminate()
+        }
+    }
+
+    /// And one that starts later. Battlify's login item outlives the rename (macOS ties it
+    /// to the old bundle ID, and only that app can remove it), so on a Mac where someone
+    /// dragged eWiz in beside Battlify rather than over it, every login started Battlify
+    /// too, found its helper gone and asked for a password to put it back.
+    private static func watchForOldApp() {
+        NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didLaunchApplicationNotification, object: nil, queue: .main) { note in
+            let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication
+            if app?.bundleIdentifier == LegacyBattlify.bundleID { app?.forceTerminate() }
         }
     }
 }
