@@ -1,19 +1,5 @@
+import { LATEST, LINKS } from "#/components/landing/landing-data";
 import { absoluteUrl, SITE } from "#/lib/seo";
-
-/**
- * Renders a JSON-LD structured-data block. Crawlers read application/ld+json
- * from anywhere in the document, so we render it inline in the route body.
- * Content is serialized and injected as raw text (JSON-LD is not HTML).
- */
-export function JsonLd({ data }: { data: Record<string, unknown> }) {
-  return (
-    <script
-      type="application/ld+json"
-      // eslint-disable-next-line react/no-danger
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
-    />
-  );
-}
 
 /** The publisher/brand. Referenced by other schemas via @id. */
 export function organizationSchema() {
@@ -22,10 +8,10 @@ export function organizationSchema() {
     "@type": "Organization",
     "@id": `${absoluteUrl("/")}#organization`,
     name: SITE.name,
-    alternateName: ["Battlify app", "Battlify for Mac"],
+    alternateName: ["eWiz app", "eWiz for Mac", "Battlify"],
     url: absoluteUrl("/"),
-    logo: absoluteUrl("/og.png"),
-    sameAs: ["https://github.com/broisnischal/battlify", "https://x.com/broisnischal"],
+    logo: absoluteUrl("/brand/ewiz-icon-1024.png"),
+    sameAs: [LINKS.github, LINKS.x],
   };
 }
 
@@ -36,7 +22,7 @@ export function websiteSchema() {
     "@type": "WebSite",
     "@id": `${absoluteUrl("/")}#website`,
     name: SITE.name,
-    alternateName: "Battlify app",
+    alternateName: "eWiz app",
     url: absoluteUrl("/"),
     description: SITE.description,
     publisher: { "@id": `${absoluteUrl("/")}#organization` },
@@ -50,14 +36,27 @@ export function softwareApplicationSchema() {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
     name: SITE.name,
-    alternateName: ["Battlify app", "Battlify for Mac", "Download Battlify"],
+    alternateName: ["eWiz app", "eWiz for Mac", "Download eWiz", "Battlify"],
     applicationCategory: "UtilitiesApplication",
     operatingSystem: "macOS 14+",
     description: SITE.description,
     url: absoluteUrl("/"),
     image: absoluteUrl("/og.png"),
-    downloadUrl: "https://github.com/broisnischal/battlify/releases",
-    softwareVersion: "0.10.1",
+    downloadUrl: LATEST.dmg,
+    installUrl: absoluteUrl("/download"),
+    releaseNotes: absoluteUrl("/changelog"),
+    screenshot: absoluteUrl("/og.png"),
+    softwareRequirements: "macOS 14 Sonoma or later on Apple Silicon (M1 or newer)",
+    featureList: [
+      "Charge limit from 50 to 100 percent that holds while the Mac sleeps",
+      "Heat-aware charging that pauses when the battery runs warm",
+      "Sealed Sleep: a closed lid that loses no charge",
+      "Automation rules and charging schedules",
+      "One-tap save modes",
+      "MagSafe LED that shows the real charge state",
+      "Battery health, history and power adapter details",
+    ],
+    softwareVersion: LATEST.version,
     offers: {
       "@type": "Offer",
       price: "2.99",
@@ -93,7 +92,7 @@ export function articleSchema(post: ArticleSchemaInput) {
     author: {
       "@type": "Person",
       name: "Nischal Dahal",
-      url: "https://github.com/broisnischal",
+      url: LINKS.site,
     },
     publisher: { "@id": `${absoluteUrl("/")}#organization` },
     mainEntityOfPage: { "@type": "WebPage", "@id": url },
@@ -122,6 +121,7 @@ export function breadcrumbSchema(crumbs: Array<{ name: string; path: string }>) 
  */
 export function siteNavigationSchema() {
   const items = [
+    { name: "Download", path: "/download" },
     { name: "Blog", path: "/blog" },
     { name: "Changelog", path: "/changelog" },
     { name: "Privacy Policy", path: "/legal/privacy" },

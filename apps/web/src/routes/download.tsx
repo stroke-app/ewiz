@@ -1,128 +1,147 @@
+import { SiApple, SiGithub, SiHomebrew } from "@icons-pack/react-simple-icons";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { DownloadIcon } from "lucide-react";
+import {
+  ArrowUpRightIcon,
+  CheckIcon,
+  CopyIcon,
+  DownloadIcon,
+  TriangleAlertIcon,
+} from "lucide-react";
+import { useState } from "react";
 
-import { LINKS } from "#/components/landing/landing-data";
-import { Logo } from "#/components/logo";
-import { breadcrumbSchema, JsonLd, softwareApplicationSchema } from "#/components/seo/json-ld";
+import { BREW_INSTALL, LATEST, LINKS } from "#/components/landing/landing-data";
+import { breadcrumbSchema, softwareApplicationSchema } from "#/components/seo/json-ld";
+import { Container, SitePage } from "#/components/site/site-shell";
+import { Button } from "#/components/ui/button";
 import { seo } from "#/lib/seo";
-
-/** Kept in sync with appcast.json / the latest GitHub release. */
-const VERSION = "0.10.1";
-
-const REQUIREMENTS = [
-  { label: "macOS 14 Sonoma or newer", detail: "Including macOS 26 Tahoe" },
-  { label: "Apple Silicon", detail: "M1 and later, arm64 native" },
-  { label: "About 12 MB", detail: "Menu bar only, no Dock icon" },
-];
 
 export const Route = createFileRoute("/download")({
   head: () => ({
     ...seo({
-      title: "Download Battlify",
+      title: "Download for Mac",
       description:
-        "Download Battlify for macOS. Native menu bar battery care for Apple Silicon Macs. Free for 30 days, then a one-time $2.99.",
+        "Download eWiz for macOS. Native menu bar battery care for Apple Silicon Macs. Free for 30 days, then a one-time $2.99.",
       path: "/download",
-      keywords: ["download battlify", "battlify download", "battlify mac", "battlify app"],
+      keywords: ["download eWiz", "eWiz download", "eWiz mac", "eWiz app"],
+      jsonLd: [
+        softwareApplicationSchema(),
+        breadcrumbSchema([{ name: "Download", path: "/download" }]),
+      ],
     }),
   }),
   component: DownloadPage,
 });
 
+const PILL =
+  "inline-flex h-8 items-center gap-1.5 rounded-lg border border-border bg-surface-1 px-3 text-[15px] transition-colors hover:bg-surface-2";
+
 function DownloadPage() {
   return (
-    <div className="min-h-svh bg-background text-foreground">
-      <JsonLd data={softwareApplicationSchema()} />
-      <JsonLd data={breadcrumbSchema([{ name: "Download", path: "/download" }])} />
+    <SitePage>
+      <Container className="max-w-[38rem] pt-10">
+        <DownloadIcon className="mx-auto size-24 text-surface-4" strokeWidth={1.75} aria-hidden />
 
-      <header className="sticky top-0 z-50 border-b border-border/60 bg-background/70 backdrop-blur-xl">
-        <div className="mx-auto flex h-16 max-w-3xl items-center justify-between px-6">
-          <Link to="/">
-            <Logo />
-          </Link>
-          <Link
-            to="/"
-            className="text-sm text-muted-foreground transition-colors hover:text-foreground"
-          >
-            ← Back to Battlify
-          </Link>
-        </div>
-      </header>
-
-      <main className="mx-auto max-w-3xl px-6 py-20">
-        <p className="text-xs font-semibold tracking-[0.14em] text-primary uppercase">Download</p>
-        <h1 className="font-display mt-3 text-4xl font-bold tracking-tight">Download Battlify</h1>
-        <p className="mt-3 max-w-xl text-base leading-relaxed text-muted-foreground">
-          Native menu bar battery care for your Mac. Try every feature free for 30 days, then keep
-          it forever for a one-time $2.99.
+        <h1 className="mt-14 text-xl font-medium">Download eWiz</h1>
+        <p className="mt-1 text-lg text-muted-foreground">
+          Currently available for macOS on Apple Silicon.
         </p>
 
-        <div className="mt-8 flex flex-wrap items-center gap-3">
-          <a
-            href={LINKS.releases}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-3 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
-          >
-            <DownloadIcon className="size-4" />
-            Download for Mac
+        <div className="mt-6 flex items-end justify-between gap-4 border-b border-border pb-2">
+          <p className="text-lg text-muted-foreground">
+            Version - <span className="text-foreground tabular-nums">{LATEST.version}</span>
+          </p>
+          <Button render={<Link to="/changelog" />} nativeButton={false} className="text-[15px]">
+            View Changelog
+            <ArrowUpRightIcon />
+          </Button>
+        </div>
+
+        <div className="flex items-center justify-between gap-4 border-b border-border py-4">
+          <span className="flex items-center gap-3 text-lg">
+            <SiApple className="size-5" aria-hidden />
+            macOS
+          </span>
+          <a href={LATEST.dmg} className={PILL}>
+            Apple Silicon
           </a>
-          <a
-            href={LINKS.releases}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 rounded-lg border border-border px-5 py-3 text-sm font-medium transition-colors hover:bg-muted"
-          >
+        </div>
+
+        <div className="flex items-center justify-between gap-4 border-b border-border py-4">
+          <span className="flex items-center gap-3 text-lg">
+            <SiGithub className="size-5" aria-hidden />
+            Earlier versions
+          </span>
+          <a href={LINKS.releases} target="_blank" rel="noreferrer" className={PILL}>
             All releases
           </a>
         </div>
-        <p className="mt-3 text-xs text-muted-foreground">
-          Version {VERSION} · No account required to try · Free for 30 days
-        </p>
 
-        <section className="mt-14">
-          <h2 className="font-display text-xl font-bold tracking-tight">Requirements</h2>
-          <ul className="mt-4 divide-y divide-border rounded-2xl border border-border bg-card">
-            {REQUIREMENTS.map((r) => (
-              <li key={r.label} className="flex items-baseline justify-between gap-4 p-5">
-                <span className="font-medium">{r.label}</span>
-                <span className="text-sm text-muted-foreground">{r.detail}</span>
+        <div className="border-b border-border py-4">
+          <span className="flex items-center gap-3 text-lg">
+            <SiHomebrew className="size-5" aria-hidden />
+            Homebrew
+          </span>
+          <BrewCommand />
+        </div>
+
+        <div className="mt-10 flex gap-3 rounded-lg border border-border bg-surface-1 p-4">
+          <TriangleAlertIcon className="mt-1 size-5 shrink-0 text-warning" aria-hidden />
+          <div>
+            <h2 className="text-lg font-medium">Unsigned application</h2>
+            <p className="mt-0.5 leading-relaxed text-muted-foreground">
+              These builds are not signed by Apple yet, so macOS may block the first launch:
+            </p>
+            <ul className="mt-2 space-y-1 text-muted-foreground">
+              <li>
+                · <span className="text-foreground">Right-click</span> the app in Applications and
+                choose <span className="text-foreground">Open</span>, or
               </li>
-            ))}
-          </ul>
-        </section>
-
-        <section className="mt-10 rounded-2xl border border-primary/30 bg-primary/5 p-6">
-          <h2 className="font-display text-lg font-bold tracking-tight">Every update, included</h2>
-          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-            Your license covers every future version for life. See what shipped recently on the{" "}
-            <Link to="/changelog" className="text-primary underline underline-offset-4">
-              changelog
-            </Link>
-            , or read the battery science behind Battlify on the{" "}
-            <Link to="/blog" className="text-primary underline underline-offset-4">
-              blog
-            </Link>
-            .
-          </p>
-        </section>
-      </main>
-
-      <footer className="border-t border-border">
-        <div className="mx-auto flex max-w-3xl flex-col items-center justify-between gap-4 px-6 py-8 text-sm text-muted-foreground sm:flex-row">
-          <p>© 2026 Battlify · built by broisnischal</p>
-          <div className="flex items-center gap-5">
-            <Link to="/changelog" className="transition-colors hover:text-foreground">
-              Changelog
-            </Link>
-            <Link to="/legal/privacy" className="transition-colors hover:text-foreground">
-              Privacy
-            </Link>
-            <Link to="/legal/terms" className="transition-colors hover:text-foreground">
-              Terms
-            </Link>
+              <li>
+                · allow it in{" "}
+                <span className="text-foreground">System Settings → Privacy &amp; Security</span>.
+              </li>
+            </ul>
           </div>
         </div>
-      </footer>
+
+        <dl className="mt-6 grid gap-3 text-[15px] sm:grid-cols-3">
+          {[
+            { k: "macOS", v: "14 Sonoma or newer" },
+            { k: "Chip", v: "Apple Silicon (M1+)" },
+            { k: "Trial", v: "30 days, every feature" },
+          ].map((r) => (
+            <div key={r.k} className="rounded-lg border border-border px-3 py-2">
+              <dt className="text-sm text-muted-foreground">{r.k}</dt>
+              <dd>{r.v}</dd>
+            </div>
+          ))}
+        </dl>
+      </Container>
+    </SitePage>
+  );
+}
+
+/** The cask install line with a one-click copy. */
+function BrewCommand() {
+  const [copied, setCopied] = useState(false);
+  return (
+    <div className="mt-3 flex items-center gap-2 rounded-lg border border-border bg-surface-1 py-1.5 pr-1.5 pl-3">
+      <code className="min-w-0 flex-1 overflow-x-auto font-mono text-sm whitespace-nowrap [font-variant-ligatures:none]">
+        <span className="text-muted-foreground select-none">$ </span>
+        {BREW_INSTALL}
+      </code>
+      <button
+        type="button"
+        onClick={async () => {
+          await navigator.clipboard.writeText(BREW_INSTALL);
+          setCopied(true);
+          window.setTimeout(() => setCopied(false), 1600);
+        }}
+        aria-label={copied ? "Copied" : "Copy install command"}
+        className="flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-surface-2 hover:text-foreground"
+      >
+        {copied ? <CheckIcon className="size-4 text-success" /> : <CopyIcon className="size-4" />}
+      </button>
     </div>
   );
 }

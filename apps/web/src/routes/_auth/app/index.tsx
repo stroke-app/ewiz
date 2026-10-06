@@ -159,8 +159,8 @@ function LinkMacCard() {
         <h2 className="text-sm font-medium">Find your device code</h2>
         <ol className="flex flex-col gap-2 text-sm text-muted-foreground">
           <li>
-            <span className="mr-2 text-foreground">1.</span>On your Mac, open Battlify → menu bar
-            icon → <span className="text-foreground">Settings → License</span>.
+            <span className="mr-2 text-foreground">1.</span>On your Mac, open eWiz → menu bar icon →{" "}
+            <span className="text-foreground">Settings → License</span>.
           </li>
           <li>
             <span className="mr-2 text-foreground">2.</span>Copy the{" "}
@@ -204,7 +204,7 @@ function LicenseCard({ license }: { license: LicenseDTO }) {
         <div className="flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary">
           <Icon icon={CheckmarkBadge02Icon} className="size-6" />
         </div>
-        <h1 className="text-xl font-semibold">You own Battlify</h1>
+        <h1 className="text-xl font-semibold">You own eWiz</h1>
         <p className="text-sm text-muted-foreground">
           Licensed to <span className="text-foreground">{license.email}</span> · perpetual
           {license.deviceCode ? (
@@ -236,7 +236,7 @@ function LicenseCard({ license }: { license: LicenseDTO }) {
         <h2 className="text-sm font-medium">Activate the desktop app</h2>
         <ol className="flex flex-col gap-2 text-sm text-muted-foreground">
           <li>
-            <span className="mr-2 text-foreground">1.</span>Open Battlify → menu bar icon →{" "}
+            <span className="mr-2 text-foreground">1.</span>Open eWiz → menu bar icon →{" "}
             <span className="text-foreground">Settings → License</span>.
           </li>
           <li>
@@ -277,9 +277,9 @@ function LicenseCard({ license }: { license: LicenseDTO }) {
           <>
             <h2 className="text-sm font-medium">Get an updated key for your Mac</h2>
             <p className="text-xs text-muted-foreground">
-              Your key predates device locking and won't activate current versions of Battlify.
-              Enter the device code from Battlify's license window to replace it with a key locked
-              to your Mac.
+              Your key predates device locking and won't activate current versions of eWiz. Enter
+              the device code from eWiz's license window to replace it with a key locked to your
+              Mac.
             </p>
             <DeviceCodeForm submitLabel="Update my key" />
           </>
@@ -298,7 +298,7 @@ function PurchaseCard({ name }: { name?: string }) {
         <div className="flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary">
           <Icon icon={SparklesIcon} className="size-6" />
         </div>
-        <h1 className="text-xl font-semibold">Unlock Battlify{name ? `, ${name}` : ""}</h1>
+        <h1 className="text-xl font-semibold">Unlock eWiz{name ? `, ${name}` : ""}</h1>
         <p className="max-w-sm text-sm text-muted-foreground">
           One payment, yours forever. After checkout you'll link your Mac with the device code from
           the app, and your license key appears right here.
@@ -312,7 +312,7 @@ function PurchaseCard({ name }: { name?: string }) {
         </div>
         <Button size="lg" className="w-full" onClick={buy} disabled={loading} type="button">
           {loading ? <Icon icon={Loading03Icon} className="animate-spin" /> : null}
-          {loading ? "Opening checkout…" : "Buy Battlify"}
+          {loading ? "Opening checkout…" : "Buy eWiz"}
         </Button>
         <p className="text-xs text-muted-foreground">Secure checkout via Dodo Payments.</p>
       </div>

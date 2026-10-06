@@ -12,18 +12,20 @@ import { toast } from "sonner";
 
 import { AuthField } from "#/components/auth/auth-field";
 import { Icon } from "#/components/icon";
-import { BatteryMark } from "#/components/logo";
+import { AppIcon } from "#/components/logo";
 import { SignInSocialButton } from "#/components/sign-in-social-button";
 import { Button } from "#/components/ui/button";
 import { authClient } from "#/lib/auth/auth-client";
 import { authQueryOptions } from "#/lib/auth/queries";
+import { seo } from "#/lib/seo";
 
 export const Route = createFileRoute("/_guest/signup")({
+  head: () => ({ ...seo({ title: "Create your account", path: "/signup", noindex: true }) }),
   component: SignupForm,
 });
 
 function SignupForm() {
-  const { redirectUrl } = Route.useRouteContext();
+  const { redirectUrl, providers } = Route.useRouteContext();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
@@ -70,10 +72,10 @@ function SignupForm() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-1.5">
-        <Link to="/" aria-label="Battlify" className="mb-2 w-fit">
-          <BatteryMark className="size-8 text-foreground" accent />
+        <Link to="/" aria-label="eWiz" className="mb-2 w-fit">
+          <AppIcon className="size-11" />
         </Link>
-        <h1 className="font-display text-2xl font-bold tracking-tight">Create your account</h1>
+        <h1 className="text-xl font-semibold">Create your account</h1>
         <p className="text-sm text-muted-foreground">
           Already have one?{" "}
           <Link to="/login" className="text-primary hover:underline">
@@ -129,24 +131,32 @@ function SignupForm() {
         </Button>
       </form>
 
-      <div className="relative text-center text-xs tracking-wide text-muted-foreground uppercase after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border">
-        <span className="relative z-10 bg-background px-3">Or continue with</span>
-      </div>
+      {providers.google || providers.github ? (
+        <>
+          <div className="relative text-center text-xs tracking-wide text-muted-foreground uppercase after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border">
+            <span className="relative z-10 bg-background px-3">Or continue with</span>
+          </div>
 
-      <div className="grid gap-3">
-        <SignInSocialButton
-          provider="google"
-          callbackURL={redirectUrl}
-          disabled={isPending}
-          icon={<Icon icon={GoogleIcon} className="size-4" />}
-        />
-        <SignInSocialButton
-          provider="github"
-          callbackURL={redirectUrl}
-          disabled={isPending}
-          icon={<Icon icon={GithubIcon} className="size-4" />}
-        />
-      </div>
+          <div className="grid gap-3">
+            {providers.google ? (
+              <SignInSocialButton
+                provider="google"
+                callbackURL={redirectUrl}
+                disabled={isPending}
+                icon={<Icon icon={GoogleIcon} className="size-4" />}
+              />
+            ) : null}
+            {providers.github ? (
+              <SignInSocialButton
+                provider="github"
+                callbackURL={redirectUrl}
+                disabled={isPending}
+                icon={<Icon icon={GithubIcon} className="size-4" />}
+              />
+            ) : null}
+          </div>
+        </>
+      ) : null}
     </div>
   );
 }

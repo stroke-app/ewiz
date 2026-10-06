@@ -2,7 +2,7 @@ import { ArrowRight02Icon } from "@hugeicons/core-free-icons";
 import { createFileRoute, Link } from "@tanstack/react-router";
 
 import { Icon } from "#/components/icon";
-import { breadcrumbSchema, JsonLd } from "#/components/seo/json-ld";
+import { breadcrumbSchema } from "#/components/seo/json-ld";
 import { POSTS } from "#/lib/blog/posts";
 import { seo } from "#/lib/seo";
 
@@ -12,48 +12,47 @@ const BLOG_DESCRIPTION =
 export const Route = createFileRoute("/blog/")({
   component: BlogIndex,
   head: () => ({
-    ...seo({ title: "Blog", description: BLOG_DESCRIPTION, path: "/blog" }),
+    ...seo({
+      title: "Battery science blog",
+      description: BLOG_DESCRIPTION,
+      path: "/blog",
+      jsonLd: [breadcrumbSchema([{ name: "Blog", path: "/blog" }])],
+    }),
   }),
 });
 
 function BlogIndex() {
   return (
     <div>
-      <JsonLd data={breadcrumbSchema([{ name: "Blog", path: "/blog" }])} />
-      <p className="text-[11px] font-semibold tracking-[0.16em] text-primary uppercase">Blog</p>
-      <h1 className="font-display mt-3 text-4xl font-bold tracking-tight text-balance">
-        Battery science, without the hand-waving.
-      </h1>
-      <p className="mt-3 max-w-xl text-muted-foreground">
-        How lithium-ion batteries actually work, what really wears them out, and the habits that
-        keep yours healthy for years.
+      <h1 className="text-xl font-semibold">Blog</h1>
+      <p className="text-muted-foreground">
+        How lithium-ion batteries work, what wears them out, and how to keep yours healthy.
       </p>
 
-      <div className="mt-10 flex flex-col gap-4">
+      <div className="mt-8 flex flex-col gap-4 border-t border-border pt-8">
         {POSTS.map((post) => (
           <Link
             key={post.slug}
             to="/blog/$slug"
             params={{ slug: post.slug }}
-            className="group rounded-2xl border border-border bg-card p-6 transition-colors hover:border-primary/40"
+            className="group rounded-lg border border-border bg-surface-1 px-4 py-3 transition-colors hover:bg-surface-2"
           >
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <span className="rounded-full bg-primary/10 px-2 py-0.5 font-medium text-primary">
+            <div className="flex items-start justify-between gap-4">
+              <h2 className="text-lg font-medium">{post.title}</h2>
+              <span className="mt-1 shrink-0 rounded bg-primary/15 px-1.5 text-xs text-primary">
                 {post.tag}
               </span>
-              <span>{post.displayDate}</span>
-              <span aria-hidden>·</span>
-              <span>{post.readingMinutes} min read</span>
             </div>
-            <h2 className="mt-3 text-xl font-semibold tracking-tight">{post.title}</h2>
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{post.description}</p>
-            <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-primary">
-              Read the post
+            <p className="mt-0.5 line-clamp-2 text-muted-foreground">{post.description}</p>
+            <p className="mt-2 flex items-center gap-1.5 text-sm text-muted-foreground">
+              <span className="text-foreground">{post.displayDate}</span>
+              <span aria-hidden>·</span>
+              {post.readingMinutes} min read
               <Icon
                 icon={ArrowRight02Icon}
-                className="size-4 transition-transform group-hover:translate-x-0.5"
+                className="ml-auto size-4 transition-transform group-hover:translate-x-0.5"
               />
-            </span>
+            </p>
           </Link>
         ))}
       </div>

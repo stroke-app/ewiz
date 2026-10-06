@@ -6,7 +6,7 @@ import { seo } from "#/lib/seo";
 const privacySeo = seo({
   title: "Privacy Policy",
   description:
-    "How Battlify handles your data: the app runs on your Mac, and our servers only touch your account and license.",
+    "How eWiz handles your data: the app runs on your Mac, and our servers only touch your account and license.",
   // Canonical points at /legal/privacy, and this URL is noindex, so search
   // engines index a single privacy page even though both remain reachable.
   path: "/legal/privacy",
@@ -28,7 +28,7 @@ function PrivacyPage() {
       updated="July 14, 2026"
       intro={
         <p>
-          The short version: the Battlify app works entirely on your Mac, and our servers only ever
+          The short version: the eWiz app works entirely on your Mac, and our servers only ever
           handle accounts and licenses. There&apos;s no telemetry, no analytics in the app, and no
           ad tracking anywhere.
         </p>
@@ -36,7 +36,7 @@ function PrivacyPage() {
     >
       <Section n="01" title="What stays on your Mac">
         <p>
-          Everything Battlify does to look after your battery happens locally. Your charge limit,
+          Everything eWiz does to look after your battery happens locally. Your charge limit,
           temperature threshold, sleep behavior, MagSafe LED preference, and every battery and
           charging reading it uses <b>never leave your device</b>. The desktop app sends us no usage
           analytics and no telemetry, full stop.
@@ -103,7 +103,7 @@ function PrivacyPage() {
         <p>
           For any privacy question, open an issue on{" "}
           <a
-            href="https://github.com/broisnischal/battlify/issues"
+            href="https://github.com/stroke-app/ewiz/issues"
             target="_blank"
             rel="noopener noreferrer"
           >

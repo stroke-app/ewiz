@@ -13,7 +13,11 @@ import { Route as TermsRouteImport } from './routes/terms'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
 import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as LlmsDottxtRouteImport } from './routes/llms[.]txt'
+import { Route as LlmsFullDottxtRouteImport } from './routes/llms-full[.]txt'
+import { Route as LicenseRouteImport } from './routes/license'
 import { Route as DownloadRouteImport } from './routes/download'
+import { Route as DonateRouteImport } from './routes/donate'
 import { Route as ChangelogRouteImport } from './routes/changelog'
 import { Route as BuyRouteImport } from './routes/buy'
 import { Route as LegalRouteRouteImport } from './routes/legal/route'
@@ -51,9 +55,29 @@ const PrivacyRoute = PrivacyRouteImport.update({
   path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LlmsDottxtRoute = LlmsDottxtRouteImport.update({
+  id: '/llms.txt',
+  path: '/llms.txt',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LlmsFullDottxtRoute = LlmsFullDottxtRouteImport.update({
+  id: '/llms-full.txt',
+  path: '/llms-full.txt',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LicenseRoute = LicenseRouteImport.update({
+  id: '/license',
+  path: '/license',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DownloadRoute = DownloadRouteImport.update({
   id: '/download',
   path: '/download',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DonateRoute = DonateRouteImport.update({
+  id: '/donate',
+  path: '/donate',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ChangelogRoute = ChangelogRouteImport.update({
@@ -141,7 +165,11 @@ export interface FileRoutesByFullPath {
   '/legal': typeof LegalRouteRouteWithChildren
   '/buy': typeof BuyRoute
   '/changelog': typeof ChangelogRoute
+  '/donate': typeof DonateRoute
   '/download': typeof DownloadRoute
+  '/license': typeof LicenseRoute
+  '/llms-full.txt': typeof LlmsFullDottxtRoute
+  '/llms.txt': typeof LlmsDottxtRoute
   '/privacy': typeof PrivacyRoute
   '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -161,7 +189,11 @@ export interface FileRoutesByTo {
   '/legal': typeof LegalRouteRouteWithChildren
   '/buy': typeof BuyRoute
   '/changelog': typeof ChangelogRoute
+  '/donate': typeof DonateRoute
   '/download': typeof DownloadRoute
+  '/license': typeof LicenseRoute
+  '/llms-full.txt': typeof LlmsFullDottxtRoute
+  '/llms.txt': typeof LlmsDottxtRoute
   '/privacy': typeof PrivacyRoute
   '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -184,7 +216,11 @@ export interface FileRoutesById {
   '/legal': typeof LegalRouteRouteWithChildren
   '/buy': typeof BuyRoute
   '/changelog': typeof ChangelogRoute
+  '/donate': typeof DonateRoute
   '/download': typeof DownloadRoute
+  '/license': typeof LicenseRoute
+  '/llms-full.txt': typeof LlmsFullDottxtRoute
+  '/llms.txt': typeof LlmsDottxtRoute
   '/privacy': typeof PrivacyRoute
   '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -207,7 +243,11 @@ export interface FileRouteTypes {
     | '/legal'
     | '/buy'
     | '/changelog'
+    | '/donate'
     | '/download'
+    | '/license'
+    | '/llms-full.txt'
+    | '/llms.txt'
     | '/privacy'
     | '/robots.txt'
     | '/sitemap.xml'
@@ -227,7 +267,11 @@ export interface FileRouteTypes {
     | '/legal'
     | '/buy'
     | '/changelog'
+    | '/donate'
     | '/download'
+    | '/license'
+    | '/llms-full.txt'
+    | '/llms.txt'
     | '/privacy'
     | '/robots.txt'
     | '/sitemap.xml'
@@ -249,7 +293,11 @@ export interface FileRouteTypes {
     | '/legal'
     | '/buy'
     | '/changelog'
+    | '/donate'
     | '/download'
+    | '/license'
+    | '/llms-full.txt'
+    | '/llms.txt'
     | '/privacy'
     | '/robots.txt'
     | '/sitemap.xml'
@@ -273,7 +321,11 @@ export interface RootRouteChildren {
   LegalRouteRoute: typeof LegalRouteRouteWithChildren
   BuyRoute: typeof BuyRoute
   ChangelogRoute: typeof ChangelogRoute
+  DonateRoute: typeof DonateRoute
   DownloadRoute: typeof DownloadRoute
+  LicenseRoute: typeof LicenseRoute
+  LlmsFullDottxtRoute: typeof LlmsFullDottxtRoute
+  LlmsDottxtRoute: typeof LlmsDottxtRoute
   PrivacyRoute: typeof PrivacyRoute
   RobotsDottxtRoute: typeof RobotsDottxtRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
@@ -311,11 +363,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/llms.txt': {
+      id: '/llms.txt'
+      path: '/llms.txt'
+      fullPath: '/llms.txt'
+      preLoaderRoute: typeof LlmsDottxtRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/llms-full.txt': {
+      id: '/llms-full.txt'
+      path: '/llms-full.txt'
+      fullPath: '/llms-full.txt'
+      preLoaderRoute: typeof LlmsFullDottxtRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/license': {
+      id: '/license'
+      path: '/license'
+      fullPath: '/license'
+      preLoaderRoute: typeof LicenseRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/download': {
       id: '/download'
       path: '/download'
       fullPath: '/download'
       preLoaderRoute: typeof DownloadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/donate': {
+      id: '/donate'
+      path: '/donate'
+      fullPath: '/donate'
+      preLoaderRoute: typeof DonateRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/changelog': {
@@ -507,7 +587,11 @@ const rootRouteChildren: RootRouteChildren = {
   LegalRouteRoute: LegalRouteRouteWithChildren,
   BuyRoute: BuyRoute,
   ChangelogRoute: ChangelogRoute,
+  DonateRoute: DonateRoute,
   DownloadRoute: DownloadRoute,
+  LicenseRoute: LicenseRoute,
+  LlmsFullDottxtRoute: LlmsFullDottxtRoute,
+  LlmsDottxtRoute: LlmsDottxtRoute,
   PrivacyRoute: PrivacyRoute,
   RobotsDottxtRoute: RobotsDottxtRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,

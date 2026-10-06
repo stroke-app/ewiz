@@ -4,7 +4,6 @@ import { FAQS } from "#/components/landing/landing-data";
 import { LandingPage } from "#/components/landing/landing-page";
 import {
   faqSchema,
-  JsonLd,
   organizationSchema,
   siteNavigationSchema,
   softwareApplicationSchema,
@@ -22,6 +21,14 @@ export const Route = createFileRoute("/")({
         "battery care macos",
         "apple silicon battery",
         "menu bar battery app",
+        "eWiz",
+      ],
+      jsonLd: [
+        organizationSchema(),
+        websiteSchema(),
+        siteNavigationSchema(),
+        softwareApplicationSchema(),
+        faqSchema(FAQS.map((f) => ({ question: f.q, answer: f.a }))),
       ],
     }),
   }),
@@ -29,14 +36,5 @@ export const Route = createFileRoute("/")({
 });
 
 function HomePage() {
-  return (
-    <>
-      <JsonLd data={organizationSchema()} />
-      <JsonLd data={websiteSchema()} />
-      <JsonLd data={siteNavigationSchema()} />
-      <JsonLd data={softwareApplicationSchema()} />
-      <JsonLd data={faqSchema(FAQS.map((f) => ({ question: f.q, answer: f.a })))} />
-      <LandingPage />
-    </>
-  );
+  return <LandingPage />;
 }

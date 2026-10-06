@@ -20,6 +20,24 @@ export const BATTLIFY_PRODUCT_SLUG = "battlify";
 
 export const auth = betterAuth({
   baseURL: env.VITE_BASE_URL,
+  // The old host stays attached for already-installed apps; accept auth
+  // requests from it too so sign-in doesn't fail on origin checks there.
+  trustedOrigins: [env.VITE_BASE_URL, "https://battlify.discerns.app"],
+  // https://better-auth.com/docs/concepts/users-accounts#account-linking
+  // One person, one account: GitHub, Google and email sign-ins with the same
+  // address resolve to the same user (and the same license). Both providers
+  // verify the email they return, so they are trusted to link.
+  account: {
+    accountLinking: {
+      enabled: true,
+      trustedProviders: ["google", "github"],
+      // Email/password sign-ups are never verified here (no verification
+      // mail is sent), so the default `true` makes every Google/GitHub
+      // sign-in for an existing account fail with "account_not_linked".
+      // Linking marks the email verified, since the provider vouched for it.
+      requireLocalEmailVerified: false,
+    },
+  },
   telemetry: {
     enabled: false,
   },

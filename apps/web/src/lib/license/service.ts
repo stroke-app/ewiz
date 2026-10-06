@@ -79,12 +79,12 @@ export async function issueLicenseForUser(args: IssueLicenseArgs) {
 export async function bindDeviceForUser(userId: string, rawDeviceCode: string) {
   const row = await getLicenseForUser(userId);
   if (!row) {
-    throw new Error("Buy Battlify first — then you can link your Mac here.");
+    throw new Error("Buy eWiz first — then you can link your Mac here.");
   }
 
   if (!isValidDeviceCode(rawDeviceCode)) {
     throw new Error(
-      "That doesn't look like a device code. It's 12 characters like 7F3A-92C1-D04B, shown in Battlify's license window on your Mac.",
+      "That doesn't look like a device code. It's 12 characters like 7F3A-92C1-D04B, shown in eWiz's license window on your Mac.",
     );
   }
   const deviceCode = normalizeDeviceCode(rawDeviceCode);

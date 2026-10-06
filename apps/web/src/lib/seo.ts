@@ -7,15 +7,16 @@ import { env } from "#/env/client";
  * production without hardcoding a domain.
  */
 export const SITE = {
-  name: "Battlify",
-  /** Used as the default and as the " | Battlify" suffix on inner pages. */
-  titleDefault: "Battlify: Menu bar battery care for your Mac",
+  name: "eWiz",
+  /** Used as the default and as the " | eWiz" suffix on inner pages. */
+  titleDefault: "eWiz: Menu bar battery care for your Mac",
   description:
-    "Battlify is a native menu bar app for Apple Silicon Macs. Set a charge limit that holds, pause charging when the battery runs warm, and keep your limit even while the Mac sleeps.",
+    "eWiz is a native menu bar app for Apple Silicon Macs: a charge limit that holds even asleep, heat-aware charging and Sealed Sleep.",
   locale: "en_US",
   twitter: "@broisnischal",
   /** 1200x630 share image lives in /public. */
   ogImage: "/og.png",
+  ogImageAlt: "eWiz: make macOS stop wrecking your battery",
 } as const;
 
 /** Trim a trailing slash so we never emit a double slash when joining paths. */
@@ -29,12 +30,17 @@ export function absoluteUrl(path = "/"): string {
   return `${baseUrl()}${clean}`;
 }
 
+type LdJsonValue = string | number | boolean | null | LdJsonValue[] | LdJsonObject;
+type LdJsonObject = { [key: string]: LdJsonValue };
+
 type MetaTag =
   | { title: string }
   | { name: string; content: string }
   | { property: string; content: string };
 
 type LinkTag = { rel: string; href: string };
+
+type ScriptTag = { type: "application/ld+json"; children: string };
 
 export interface SeoOptions {
   /** Page title without the brand suffix. Omit on the home page. */
@@ -48,6 +54,10 @@ export interface SeoOptions {
   type?: "website" | "article";
   /** Extra keywords, comma-joined into the keywords meta. */
   keywords?: string[];
+  /** Structured data, rendered as <script type="application/ld+json"> in <head>. */
+  jsonLd?: LdJsonObject[];
+  /** Keep the page out of search results (auth and account pages). */
+  noindex?: boolean;
 }
 
 /**
@@ -55,8 +65,20 @@ export interface SeoOptions {
  *
  *   head: () => ({ ...seo({ title: "Blog", path: "/blog" }) })
  */
-export function seo(options: SeoOptions = {}): { meta: MetaTag[]; links: LinkTag[] } {
-  const { title, description = SITE.description, path = "/", type = "website", keywords } = options;
+export function seo(options: SeoOptions = {}): {
+  meta: MetaTag[];
+  links: LinkTag[];
+  scripts: ScriptTag[];
+} {
+  const {
+    title,
+    description = SITE.description,
+    path = "/",
+    type = "website",
+    keywords,
+    jsonLd = [],
+    noindex = false,
+  } = options;
 
   const fullTitle = title ? `${title} | ${SITE.name}` : SITE.titleDefault;
   const url = absoluteUrl(path);
@@ -78,6 +100,7 @@ export function seo(options: SeoOptions = {}): { meta: MetaTag[]; links: LinkTag
     { property: "og:image", content: image },
     { property: "og:image:width", content: "1200" },
     { property: "og:image:height", content: "630" },
+    { property: "og:image:alt", content: SITE.ogImageAlt },
     { property: "og:locale", content: SITE.locale },
 
     { name: "twitter:card", content: "summary_large_image" },
@@ -87,11 +110,25 @@ export function seo(options: SeoOptions = {}): { meta: MetaTag[]; links: LinkTag
     { name: "twitter:title", content: fullTitle },
     { name: "twitter:description", content: description },
     { name: "twitter:image", content: image },
+    { name: "twitter:image:alt", content: SITE.ogImageAlt },
   ];
+
+  if (noindex) {
+    meta.push({ name: "robots", content: "noindex, follow" });
+  }
 
   if (keywords?.length) {
     meta.push({ name: "keywords", content: keywords.join(", ") });
   }
 
-  return { meta, links: [{ rel: "canonical", href: url }] };
+  // JSON-LD goes in <head> rather than the page body: third-party loaders
+  // (PostHog) insert their script before the first <script> on the page, and
+  // React 19 only tolerates foreign nodes at the top level of <head>/<body>
+  // during hydration. `<` is escaped so the JSON can never close the tag.
+  const scripts = jsonLd.map((data) => ({
+    type: "application/ld+json" as const,
+    children: JSON.stringify(data).replace(/</g, "\\u003c"),
+  }));
+
+  return { meta, links: [{ rel: "canonical", href: url }], scripts };
 }

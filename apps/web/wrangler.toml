@@ -1,12 +1,17 @@
 name = "battlify"
 account_id = "16b2c363a412bfaaec2a5a2572964728"
 compatibility_date = "2025-10-01"
-main = "@tanstack/react-start/server-entry"
+main = "./src/server.ts"
 compatibility_flags = ["nodejs_compat"]
 preview_urls = true
 
-# Official custom domain (zone discerns.app already configured in Cloudflare)
-routes = [{ pattern = "battlify.discerns.app", custom_domain = true }]
+# Primary domain is ewiz.app (its zone must be on this Cloudflare account).
+# The old battlify.discerns.app host stays attached so links baked into
+# already-installed copies of the Mac app keep working.
+routes = [
+  { pattern = "ewiz.app", custom_domain = true },
+  { pattern = "battlify.discerns.app", custom_domain = true },
+]
 
 [[d1_databases]]
 binding = "DB"
@@ -15,7 +20,7 @@ database_id = "b0fd3951-0e5c-4f20-b467-b29936eb6d44"
 migrations_dir = "drizzle"
 
 [vars]
-VITE_BASE_URL = "https://battlify.discerns.app"
+VITE_BASE_URL = "https://ewiz.app"
 DODO_PAYMENTS_ENVIRONMENT = "live_mode"
 # Secrets: set via `wrangler secret put <NAME>`
 # BETTER_AUTH_SECRET, DODO_PAYMENTS_API_KEY, DODO_PAYMENTS_WEBHOOK_SECRET,

@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 
+import { breadcrumbSchema } from "#/components/seo/json-ld";
 import { seo } from "#/lib/seo";
 
 export const Route = createFileRoute("/legal/privacy")({
@@ -7,8 +8,9 @@ export const Route = createFileRoute("/legal/privacy")({
     ...seo({
       title: "Privacy Policy",
       description:
-        "How Battlify collects, uses, and protects your information. Essential cookies only, no tracking or advertising profiles.",
+        "How eWiz collects, uses, and protects your information. Essential cookies only, no tracking or advertising profiles.",
       path: "/legal/privacy",
+      jsonLd: [breadcrumbSchema([{ name: "Privacy Policy", path: "/legal/privacy" }])],
     }),
   }),
   component: PrivacyPage,
@@ -17,28 +19,30 @@ export const Route = createFileRoute("/legal/privacy")({
 function PrivacyPage() {
   return (
     <article>
-      <p className="text-xs font-semibold tracking-[0.14em] text-primary uppercase">Legal</p>
-      <h1 className="font-display mt-3 text-4xl font-bold tracking-tight">Privacy Policy</h1>
+      <p className="text-sm font-medium text-primary uppercase">Legal</p>
+      <h1 className="mt-1 text-4xl font-bold tracking-tight">Privacy Policy</h1>
       <p className="mt-3 text-sm text-muted-foreground">Effective January 5, 2026</p>
 
-      <h2 className="font-display mt-10 mb-3 text-xl font-semibold">
+      <h2 className="mt-10 mb-3 text-2xl font-semibold tracking-tight">
         1. What this Privacy Policy covers
       </h2>
-      <div className="space-y-4 text-sm leading-relaxed text-muted-foreground">
+      <div className="space-y-4 leading-7 text-foreground/85">
         <p>
-          This Privacy Policy explains how Nischal Dahal (&ldquo;Battlify,&rdquo;
-          &ldquo;we,&rdquo; &ldquo;us&rdquo;) collects, uses, and protects your information when you
-          visit the Battlify website, create an account, or purchase a license. It covers the
-          marketing and licensing website only. The Battlify desktop app connects to your Mac&apos;s
-          power management locally and does not route your data through our servers.
+          This Privacy Policy explains how Nischal Dahal (&ldquo;eWiz,&rdquo; &ldquo;we,&rdquo;
+          &ldquo;us&rdquo;) collects, uses, and protects your information when you visit the eWiz
+          website, create an account, or purchase a license. It covers the marketing and licensing
+          website only. The eWiz desktop app connects to your Mac&apos;s power management locally
+          and does not route your data through our servers.
         </p>
         <p>
           By using the website or purchasing a license, you agree to the practices described here.
         </p>
       </div>
 
-      <h2 className="font-display mt-10 mb-3 text-xl font-semibold">2. Information we collect</h2>
-      <div className="space-y-4 text-sm leading-relaxed text-muted-foreground">
+      <h2 className="mt-10 mb-3 text-2xl font-semibold tracking-tight">
+        2. Information we collect
+      </h2>
+      <div className="space-y-4 leading-7 text-foreground/85">
         <p>
           <span className="font-medium text-foreground">Account data.</span> When you create an
           account, we store your name and email address. If you sign in with GitHub or Google, we
@@ -65,8 +69,10 @@ function PrivacyPage() {
         </p>
       </div>
 
-      <h2 className="font-display mt-10 mb-3 text-xl font-semibold">3. How we use information</h2>
-      <div className="space-y-4 text-sm leading-relaxed text-muted-foreground">
+      <h2 className="mt-10 mb-3 text-2xl font-semibold tracking-tight">
+        3. How we use information
+      </h2>
+      <div className="space-y-4 leading-7 text-foreground/85">
         <p>We use the information we collect to:</p>
         <ul className="list-disc space-y-2 pl-6">
           <li>Create and manage your account and license.</li>
@@ -79,8 +85,8 @@ function PrivacyPage() {
         </ul>
       </div>
 
-      <h2 className="font-display mt-10 mb-3 text-xl font-semibold">4. Data retention</h2>
-      <div className="space-y-4 text-sm leading-relaxed text-muted-foreground">
+      <h2 className="mt-10 mb-3 text-2xl font-semibold tracking-tight">4. Data retention</h2>
+      <div className="space-y-4 leading-7 text-foreground/85">
         <p>
           We keep your information only as long as necessary for the purposes described in this
           policy, to support your license, and to meet legal or accounting requirements. If you ask
@@ -90,17 +96,17 @@ function PrivacyPage() {
         </p>
       </div>
 
-      <h2 className="font-display mt-10 mb-3 text-xl font-semibold">5. Disclosure of information</h2>
-      <div className="space-y-4 text-sm leading-relaxed text-muted-foreground">
+      <h2 className="mt-10 mb-3 text-2xl font-semibold tracking-tight">
+        5. Disclosure of information
+      </h2>
+      <div className="space-y-4 leading-7 text-foreground/85">
         <p>We do not sell your personal information. We disclose information only:</p>
         <ul className="list-disc space-y-2 pl-6">
           <li>
             To service providers who help us operate the website, process payments, and host our
             data, and only to the extent they need it to perform those services.
           </li>
-          <li>
-            When required by law, regulation, legal process, or a valid government request.
-          </li>
+          <li>When required by law, regulation, legal process, or a valid government request.</li>
           <li>
             In connection with a merger, acquisition, or sale of assets, in which case we will
             notify you before your information becomes subject to a different privacy policy.
@@ -108,9 +114,9 @@ function PrivacyPage() {
         </ul>
       </div>
 
-      <h2 className="font-display mt-10 mb-3 text-xl font-semibold">6. Third-party services</h2>
-      <div className="space-y-4 text-sm leading-relaxed text-muted-foreground">
-        <p>We rely on a small number of trusted providers to run Battlify:</p>
+      <h2 className="mt-10 mb-3 text-2xl font-semibold tracking-tight">6. Third-party services</h2>
+      <div className="space-y-4 leading-7 text-foreground/85">
+        <p>We rely on a small number of trusted providers to run eWiz:</p>
         <ul className="list-disc space-y-2 pl-6">
           <li>
             <span className="font-medium text-foreground">Dodo Payments</span>, payment processing
@@ -141,8 +147,10 @@ function PrivacyPage() {
         </ul>
       </div>
 
-      <h2 className="font-display mt-10 mb-3 text-xl font-semibold">7. Cookies &amp; security</h2>
-      <div className="space-y-4 text-sm leading-relaxed text-muted-foreground">
+      <h2 className="mt-10 mb-3 text-2xl font-semibold tracking-tight">
+        7. Cookies &amp; security
+      </h2>
+      <div className="space-y-4 leading-7 text-foreground/85">
         <p>
           We use <span className="font-medium text-foreground">essential cookies only</span>, the
           authentication and session cookies needed to keep you signed in and to secure your
@@ -152,8 +160,8 @@ function PrivacyPage() {
         </p>
         <p>
           Your license verifies <span className="font-medium text-foreground">offline</span>: the
-          license key is a signed token the app checks on your Mac, so Battlify does not phone home
-          to use your license and does not route your data through our servers.
+          license key is a signed token the app checks on your Mac, so eWiz does not phone home to
+          use your license and does not route your data through our servers.
         </p>
         <p>
           We take reasonable technical and organizational measures to protect your information. No
@@ -163,17 +171,19 @@ function PrivacyPage() {
         </p>
       </div>
 
-      <h2 className="font-display mt-10 mb-3 text-xl font-semibold">8. Children</h2>
-      <div className="space-y-4 text-sm leading-relaxed text-muted-foreground">
+      <h2 className="mt-10 mb-3 text-2xl font-semibold tracking-tight">8. Children</h2>
+      <div className="space-y-4 leading-7 text-foreground/85">
         <p>
-          Battlify is not directed to children. We do not knowingly collect personal information
-          from anyone under the age of 13. If you believe a child has provided us with personal
+          eWiz is not directed to children. We do not knowingly collect personal information from
+          anyone under the age of 13. If you believe a child has provided us with personal
           information, please contact us and we will delete it.
         </p>
       </div>
 
-      <h2 className="font-display mt-10 mb-3 text-xl font-semibold">9. Changes to this policy</h2>
-      <div className="space-y-4 text-sm leading-relaxed text-muted-foreground">
+      <h2 className="mt-10 mb-3 text-2xl font-semibold tracking-tight">
+        9. Changes to this policy
+      </h2>
+      <div className="space-y-4 leading-7 text-foreground/85">
         <p>
           We may update this Privacy Policy from time to time. When we make material changes, we
           will update the effective date above and, where appropriate, notify you. Your continued
@@ -181,11 +191,10 @@ function PrivacyPage() {
         </p>
       </div>
 
-      <h2 className="font-display mt-10 mb-3 text-xl font-semibold">10. Contact</h2>
-      <div className="space-y-4 text-sm leading-relaxed text-muted-foreground">
+      <h2 className="mt-10 mb-3 text-2xl font-semibold tracking-tight">10. Contact</h2>
+      <div className="space-y-4 leading-7 text-foreground/85">
         <p>
-          Questions about this Privacy Policy or your data? Contact{" "}
-          Nischal Dahal at{" "}
+          Questions about this Privacy Policy or your data? Contact Nischal Dahal at{" "}
           <a
             href="mailto:nischaldahal01395@gmail.com"
             className="text-primary underline underline-offset-4"
