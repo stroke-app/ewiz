@@ -1,5 +1,436 @@
 # battlify
 
+## 0.18.0
+
+### Minor Changes
+
+- 5bdbb4b: **Always Active** can now switch itself on and off instead of only being held by hand.
+
+  **Always Active hours** (Settings → Schedule) hold the Mac awake on a weekly
+  timetable — for example weekdays from 9 AM for 9 hours. While at least one window is
+  enabled, the switch means "hold during these hours": inside a window the lid-closed
+  hold applies, outside it the Mac sleeps normally, with no need to remember to turn it
+  off. Windows may wrap past midnight, so an overnight window belongs to the day it
+  starts on. With no windows set the switch behaves exactly as before.
+
+  **Turn off automatically** (Settings → Charging, under Always Active) sets a deadline —
+  30 minutes to 8 hours, or "don't turn off". The deadline lives in the root daemon's
+  config, so it still fires while the Mac is asleep or eWiz isn't running, and it
+  clears the switch rather than leaving an on toggle that no longer holds anything.
+
+  The Always Active section shows which hours are set and whether it is **HOLDING** or
+  **WAITING** right now, and the clamshell display saver follows the same verdict — it
+  no longer forces the internal display off outside a scheduled window.
+
+- 5bdbb4b: **Caffeine no longer holds the screen awake on battery.**
+
+  Caffeine held a `PreventUserIdleDisplaySleep` assertion — the same one `caffeinate -d`
+  takes — for as long as it was on, whatever the power source. Left on and unplugged, that
+  kept the display lit on an idle Mac (and, because macOS won't system-sleep while the
+  display is on, kept the whole machine up): several watts, or percents of charge per hour,
+  from a feature meant to keep work running.
+
+  On battery Caffeine now downgrades the hold to system-only — the same work keeps running,
+  but the screen is allowed to sleep — and restores the full hold when you plug back in. The
+  session itself never ends, and any timer keeps running; only the reach of the hold changes.
+  The replacement assertion is taken before the old one is released, so there's no window
+  for the display to sleep during the swap.
+
+  Two new options in **Settings → Sleep & Power → Caffeine**:
+
+  - **End it when I unplug** — stop the session outright on battery, for a Mac that should
+    lose no charge at all while left alone.
+  - **Keep the screen on when on battery** — the old behaviour, for when the screen genuinely
+    has to stay lit.
+
+  The card also shows what Caffeine is holding right now, and until when.
+
+- 5bdbb4b: **The charge limit stays on.** A request that stalled the helper's control socket used
+  to block every other one, and the health check then tore the socket down and dropped
+  whatever the app had queued. Requests are now served in order with a short read bound,
+  and the check asks a question the daemon answers without its lock. The app no longer
+  pushes placeholder settings before its first answer from the helper (which could switch
+  the limit off), and edits are merged with the helper's current config instead of
+  overwriting it with a copy up to 30 seconds old.
+
+  **No more surprise password prompt.** One missed answer from the helper no longer reads
+  as "not installed"; the app asks again and only reinstalls after two misses.
+
+  **A menu-bar icon that tells the truth.** A bold bolt while current flows, a pause mark
+  while charging is held or paused, nothing on battery or when full, and a check when a
+  charge finishes, in every icon style (Pixel gets pixel-art marks). The mark springs in
+  when the state changes and drops away on unplug. The panel says "Draining to 80%" above
+  the limit rather than "Holding at 80%".
+
+  **Low-battery shake.** The icon trembles at 20%, and every 20 seconds under 10%.
+  Settings → General → Menu Bar, with a Preview button.
+
+  **Steadier panel.** Lid mode no longer inserts a row above the tiles, and the line under
+  them always takes one line, so pressing a tile never moves the layout.
+
+  **AI agents can keep the Mac awake.** A bundled MCP server lets an agent hold the Mac
+  awake for a long task, optionally with the lid closed, on a lease that ends on its own.
+
+  **Cleaner sounds.** Every theme now plays at matched loudness, without clicks, and the
+  off-key cues resolve.
+
+  **License and support.** The license window opens centred, asks before removing a
+  license, and links to support. Settings → About gains Contact Support, Report a Bug and
+  Copy Diagnostics, each filled in with what support needs.
+
+- 5bdbb4b: **Pick the plug-in animation from the menu**, not three windows deep in Settings. Quick
+  Actions gains an **Animation** button: switch it on or off, choose the style, and play it
+  on the spot to see what it looks like without unplugging anything.
+
+  **Bring your own animation.** A new **Custom** style plays a numbered image sequence from
+  `~/Library/Application Support/eWiz/ChargeAnimation` — export frames from Rive, Lottie
+  or After Effects and drop them in; Settings has a button that creates and reveals the
+  folder and tells you how many frames it found. Frames are read in filename order, capped
+  at 120, cached until the folder changes, and scaled to fit while preserving aspect, so a
+  square export isn't stretched across a 16:10 display. With no frames present it plays the
+  dot grid rather than flashing an empty screen. No third-party runtime, no binary format to
+  parse: an image sequence is the one export every motion tool agrees on.
+
+  **The charging animation runs at twice the frame rate.** A six-step sweep at two frames a
+  second reads as a slideshow however well it's eased; the tick is 250ms now, so a sweep
+  takes about 1.5s instead of 3. It still only runs while plugged in with animation switched
+  on, and stops the moment nothing needs it.
+
+  **Two more shortcuts:** rest / wake the Mac (⌃⌥⌘R) and cycle the menu-bar icon style
+  (⌃⌥⌘I). The rest shortcut shows its banner _before_ the screen goes dark — a confirmation
+  nobody can see is not a confirmation.
+
+- 5bdbb4b: **Fans: monitoring, temperatures, and control where the hardware allows it.**
+
+  Settings › Sleep & Power now lists every fan the way a fan utility should — name (Left side /
+  Right side, as the hardware's own tools name them), its minimum, current and maximum rpm with
+  the live figure emphasised, and what is driving it — followed by a Temperatures card. Sensors
+  are discovered by walking the SMC's own key table rather than a hardcoded list, because the
+  keys differ per model and a fixed list is wrong on every Mac it wasn't written for.
+
+  Fan _control_ is offered only where the SMC accepts it. Some Macs read every fan key and
+  refuse every write — an M3 Pro on macOS 26 refuses all of them — which is not knowable in
+  advance, so eWiz tries once, remembers the answer, and says plainly that the machine
+  won't allow it rather than pretending. Where writes are accepted, Custom holds each fan at a
+  percentage of its own min…max range (a percentage rather than an rpm figure, because two fans
+  in one machine needn't share a range), 0% is each fan's minimum rather than off, control
+  returns to macOS above a temperature guard, and the daemon restores auto when it stops.
+
+  Fans reading 0 rpm on a cool Apple silicon Mac is normal, and the UI says so: they stop
+  entirely until there is heat to move.
+
+- 5bdbb4b: **Buying, licenses and support move to ewiz.app.** Buy opens ewiz.app/buy, the license
+  window links to ewiz.app/license for a lost key or a new Mac, Visit the Website and
+  Donate go to ewiz.app, and Contact Support writes to hello@ewiz.app. Every license
+  already sold keeps working, and keys issued for eWiz are accepted too.
+- 5bdbb4b: Four more menu-bar battery styles, and a charging icon that actually shows charging.
+
+  **Upright**, **Ring**, **Meter** and **Dot** join Rounded, Bars, Classic, Minimal and
+  Pixel. Upright is a standing battery filling from the bottom; Ring is a circular gauge
+  whose arc tracks the charge; Meter is a five-step signal-style scale; Dot is a circle
+  filling like liquid, for a menu bar that should stay quiet. The five horizontal styles
+  still share one drawing box so switching between them can't shift the menu-bar layout;
+  the upright and round styles are narrower by nature, which is a choice made once rather
+  than something that moves while you work. The picker is a grid now — nine tiles in one
+  row would each be too narrow to tell apart.
+
+  While charging, the fill rises from your real level towards full and restarts, instead
+  of the level disappearing behind a lone pulsing bolt. The bolt sits in a transparent
+  halo knocked out of the fill, so it stays legible from a sliver to full rather than
+  dissolving into it — and because the halo is alpha, it survives macOS's template
+  tinting in both light and dark menu bars. With the animation toggle off the icon draws
+  your true level with a steady bolt, so a static icon is never a lie. Ring gets a
+  travelling leading segment; Meter sweeps its steps.
+
+- 5bdbb4b: Menu-bar text options, a Power Adapter card, and CSV export for history.
+
+  - **Menu bar display** is now a choice of _Icon only / Percentage / Time remaining / Percentage & time_ instead of a percentage on-off switch. Time remaining shows time to full while charging and time to empty on battery, and falls back to the percentage whenever macOS has no estimate. Existing preferences migrate (percentage off → Icon only).
+  - **Power Adapter card** in Battery Details: adapter name, negotiated wattage, supply voltage/current, manufacturer, model, and serial. When the adapter advertises more power than the Mac negotiated, it says so — that gap is almost always the cable.
+  - **Export history as CSV** from the History window: samples, daily summary, or lid sessions, for the range currently on screen.
+
+- 5bdbb4b: **The menu panel, rebuilt to look like it belongs in the menu bar.**
+
+  320pt wide with 16pt margins, the geometry the system's own panels use. Rules stop at the
+  text margin rather than cutting the panel into bands, row labels sit at the system size,
+  and the surface is one flat opaque fill: the `NSVisualEffectView` it used to have sampled
+  whatever window was behind it, so the same menu read as near-black over the desktop and as
+  washed grey over an editor, and every fill inside it drifted with the background it was a
+  percentage of.
+
+  Three defects went with it. The save-mode picker is drawn here now instead of being an
+  `NSSegmentedControl`, which arrived as first responder wearing a focus ring no system panel
+  draws and sized every segment to its own label. The panel's window is sized to its content,
+  because `MenuBarExtra(.window)` grows its window with the content and never shrinks it back
+  — the leftover strip was bare, see-through window above the panel. And the window's opaque
+  square backing is cleared, so the rounded corners stop having dark right angles tucked
+  behind them.
+
+  **Sounds you can choose.** Five voicings of the same three cues: Warm, Glass (a bell's
+  inharmonic partials, not an octave stack), Pluck, Blip and Tick, which is transients only
+  for anyone who wants to be told without being sung to. The picker plays as you change it.
+
+  **A long close now costs nothing, and a short one still opens instantly.** Apple silicon
+  has no `standbydelay`: `hibernatemode` is either 3 (memory powered, instant lid, ~0.1%/h) or
+  25 (memory down, nothing to lose, 15–30s to come back). So the delay is implemented instead
+  of configured — on the way into a closed-lid sleep on battery the daemon books its own wake,
+  and if the Mac is still shut when that wake lands, memory goes off and it re-sleeps into
+  hibernation. Tunable under Sealed Sleep, 20 minutes by default.
+
+  **A Lid tile** in the quick actions, in place of Sleep: one press holds caffeine, Always
+  Active and the battery permission together, which is the set anyone working with the lid
+  shut turns on by hand. Sleep is still on its shortcut.
+
+  Fixed: "prevent idle sleep" was ANDed with the charge limit being on, so Extreme Performance
+  — which asks for no idle sleep and deliberately turns the limit off — could never hold the
+  assertion, and a Mac left on a long render idled out from under it.
+
+  The plug-in animation is off in this build and marked as coming in the next one. It plays
+  over whatever you're doing, so it ships when it's right.
+
+- 5bdbb4b: **Animations were silently doing nothing if Reduce Motion was on.** Every animation in
+  the app — the charging icon, the charge-complete flash, the plug-in overlay — was gated
+  behind macOS's Reduce Motion, so on a Mac with it enabled, turning "animate the charging
+  icon" on had no visible effect whatsoever. Reduce Motion is still respected by default,
+  but Settings → Sleep & Power now offers **Animate anyway**, shown only when Reduce Motion
+  is actually on, and every animation reads the same resolved answer instead of each one
+  checking for itself.
+
+  **The animations were also linear, and linear reads as mechanical.** Nothing physical
+  moves at constant velocity. Progress now runs through real easing curves
+  (`cubic-bezier(0.23, 1, 0.32, 1)` and friends, solved the same way a browser solves
+  `cubic-bezier()`), and the timings came down to where a state change belongs:
+
+  - The charging fill sweeps in 6 steps rather than 8, front-loaded by the ease-out, so it
+    surges and settles instead of crawling. The menu-bar tick can't safely go faster — each
+    one relayouts the status item — so a shorter cycle is what buys the speed.
+  - Connect and disconnect morph in ~220ms (was 630ms and linear), which puts them in the
+    same band as a dropdown. Ease-out, never ease-in: withholding motion at the start is
+    what makes a short animation still feel slow.
+  - The overlay's dot wave has a narrow front (0.3 of the cycle, was 0.6) — at the old
+    width most of the screen lit at once and it read as "dots everywhere" rather than a
+    ripple crossing it.
+
+  **The menu-bar glyph now reacts to power changes.** Plug in and the bolt grows out of a
+  flat spark; unplug and it collapses back into one, both by real shape interpolation.
+
+  **Six more shortcuts:** brightness up and down (⌃⌥⌘] and ⌃⌥⌘[), battery saver (⌃⌥⌘E),
+  don't-charge (⌃⌥⌘H), and Wi-Fi and Bluetooth toggles — the last two ship deliberately
+  unbound, since cutting Wi-Fi by a mistyped chord is not a surprise worth shipping.
+
+- 5bdbb4b: **Don't charge while plugged in.** A switch that runs the Mac off the adapter and leaves
+  the battery exactly where it is — no charging, whatever the level and whatever the limit
+  says. It sits above the limit, schedules and ready-by top-ups deliberately: it's the
+  switch you reach for when the battery should be left alone, and being second-guessed by
+  another setting would defeat it. Only an explicit pause overrides it. On Macs with a
+  MagSafe light, the light holds **amber** while it's on, so the state is visible without
+  opening anything. Available in the menu, in Settings → Charging, and on ⌃⌥⌘H.
+
+  **Plug-in feedback (experimental).** Two opt-in bits of feedback for the moment the
+  adapter connects:
+
+  - **Trackpad taps** — two on connect, one on unplug, three when the charge limit is
+    reached. It needs a Force Touch trackpad, and does nothing with the lid shut (the
+    trackpad is asleep with it); there's no API to detect the hardware, so Settings says so
+    rather than pretending to gate it.
+  - **A charging animation** over the screen for about a second: **Dot Grid** (a grid of
+    dots ripples out from the port, each dot jittering as the wave passes), **Rings** (rings
+    push out with the charge level in the middle), or **Glow** (a soft light rising off the
+    bottom edge). The window is click-through, sits on the screen the pointer is on, and is
+    torn down afterwards rather than kept around. Duration is capped at 2 seconds — it
+    covers the screen, so it has to be over before it becomes something to wait out — and
+    Reduce Motion replaces the motion with the level fading in place.
+
+  **Morphing glyphs.** The charging bolt now breathes between a slim and a fat bolt, and
+  the charge-complete flash grows that bolt into a checkmark, both via real shape
+  interpolation (`PathMorph`: outlines resampled by arc length, closed rings rotated into
+  least-travel alignment) rather than cross-fading two glyphs over each other. Covered by
+  eight unit tests.
+
+- 5bdbb4b: Removed fan control and Endurance mode.
+
+  **Fan control** is gone. Apple silicon refuses SMC fan writes — it returns success and
+  leaves the key reading what it was, which is why the feature spent three releases
+  learning to detect its own failure. On the hardware it did work on, it was a fan-speed
+  utility bolted to a battery app.
+
+  The one part that stays is the part that can't safely be deleted: forced fan mode lives
+  in the SMC and outlives the build that set it, across quit, log-out and restart. The
+  helper now hands every forced fan back to macOS once, at startup, and never touches them
+  again. A Mac left pinned by an older build fixes itself the first time this version runs.
+
+  **Endurance** is gone too. It dimmed the screen, turned on Low Power Mode, trimmed
+  background wake and switched Bluetooth off — overlapping Super Saver on three of four
+  levers, and driven by a drain meter whose reading depended more on what you were doing
+  than on whether the mode was on.
+
+  Existing configs load unchanged; the settings both features wrote are ignored and
+  dropped on the next save.
+
+- 5bdbb4b: **Battlify is now eWiz.** New name, same app: settings, license key, history and the
+  charge limit all carry over by themselves.
+
+  On first launch eWiz copies Battlify's settings across, and its helper takes over from
+  Battlify's, moving the config, charge history and limit ownership with it. A copy of
+  Battlify that updates itself installs eWiz in place, and eWiz then renames its own
+  bundle. Homebrew users move across with `brew upgrade`. Licenses sold as Battlify keep
+  working.
+
+  macOS treats eWiz as a new app, so it asks once more for notifications and the helper,
+  and Launch at Login needs switching on again.
+
+- 5bdbb4b: Add a **"Give your Mac a rest"** reminder. When your Mac has been running for over a
+  week, eWiz gently suggests an occasional restart — which clears out memory and
+  helps it run cooler — with a one-tap **Restart…** (or **Later** to snooze). The wording
+  sharpens when the battery is running warm. It shows as a dismissible banner in the menu
+  and, if notifications are on, a notification. Toggle it under Settings › Notifications
+  ("Suggest an occasional restart").
+- 5bdbb4b: **Rest the Mac without closing the lid.** Closing the lid is the usual way to make a Mac
+  stop spending power — screen and keyboard backlight out, the machine quiesced. This does
+  the same thing with the lid open, and puts back exactly what it changed when you return.
+
+  - **Rest Now** in the menu's Quick Actions and in Settings → Sleep & Power.
+  - **Automatically when you're away**, after 5–120 minutes with no keyboard, mouse or
+    trackpad activity anywhere in the session (not just in eWiz). It never rests while
+    an external display is connected — that usually means someone is looking at something.
+  - Optionally **Low Power Mode while resting**, snapshotted first and restored on wake, so
+    it puts back what you had rather than imposing a default.
+  - Optionally **Wi-Fi and Bluetooth off**, off by default: losing the network mid-download
+    or mid-call costs more than the power it saves. Only radios eWiz switched off are
+    switched back on.
+  - Optionally **sleep outright** after a further delay, for leaving it overnight lid-up.
+
+  Any input at all ends it. Fans are left alone and the Settings copy says why: Apple
+  silicon refuses SMC fan writes, and the fans wind down by themselves once the Mac is
+  genuinely idle — which is the thing resting it achieves.
+
+- 5bdbb4b: **Sealed Sleep** — close the lid and the charge stops moving.
+
+  A closed Mac isn't off. Memory stays powered for as long as the lid is shut, and macOS
+  wakes the machine on a timer for maintenance, for the network, and to answer Find My.
+  Each wake is seconds. Over a weekend they add up to a number nobody expects.
+
+  There is one lever that removes the trickle rather than trimming it: powering memory
+  down and writing it to disk. Sealed Sleep pulls that lever (`hibernatemode 25`,
+  `standby 1`) and then switches off everything that would hold the Mac up before it can
+  get there — Power Nap, wake-for-network, TCP keep-alive, terminal sessions — plus Wi-Fi
+  and Bluetooth as the lid actually closes.
+
+  What's new beyond the settings themselves:
+
+  - **A checklist instead of a promise.** Nine named causes of closed-lid drain, each
+    shown as sealed or still costing power. Two aren't eWiz's call and say so: Find My
+    can't reach a sealed Mac, and a keep-awake you turned on deliberately stays on until
+    you release it.
+  - **Verified writes.** `pmset` exits 0 for keys a Mac silently ignores, so everything is
+    read back and anything refused is named rather than quietly counted as success.
+  - **Measured, not projected.** The charge is read at close and again at open, so the
+    panel reports what the last closed-lid stretch actually cost, per hour and per night.
+  - **Reversible.** Every displaced setting is snapshotted on the way in and written back
+    on the way out, including the two radio preferences the app owns.
+  - **Held against everything that used to undo it.** A save mode switch, or a Mac that
+    drifted after a macOS update, no longer silently unseals it.
+
+  The cost is stated where the switch is, because it applies to every sleep and not just
+  the long ones: opening the lid takes fifteen to thirty seconds while memory is read back
+  from disk.
+
+  Replaces the **Deep sleep** picker and **Super Save when lid closed** — three controls
+  aimed at one outcome, none of them sufficient alone. Anyone who had chosen Deep sleep
+  keeps it: that setting migrates to Sealed Sleep on first launch.
+
+### Patch Changes
+
+- 5bdbb4b: **Fixed: the charge limit could be crossed while the Mac slept, charging to full.**
+
+  Enforcement is a tick loop in the root daemon, and that loop is frozen for the whole
+  time the Mac is asleep — so whatever the SMC was last told is what stands. Sleep while
+  charging below the limit and macOS carries on charging, unsupervised, to 100%.
+
+  Cutting charging on the way into sleep was the protection, but it had two holes. It was
+  gated behind the "Stop charging before sleep" option, which is off by default, so a
+  limit set by itself wasn't protected at all. And the request came from the app, over the
+  control socket, which means it only happened while the app was running — quit eWiz,
+  log out, or have it crash, and the protection vanished with no sign that it had.
+
+  The daemon now registers for sleep and wake notifications itself, on its own thread and
+  run loop, so the cut happens whether or not anything is running in user space. It
+  applies whenever a charge limit is enforced, not only when the option is ticked: the
+  limit exists to keep the battery off full, and there is no way to stop at it while
+  frozen. Charge still creeps towards the limit across the maintenance wakes macOS takes
+  anyway — the tick runs during those and re-enables charging while below the resume
+  threshold — and enforcement is re-evaluated the moment the Mac powers back on instead of
+  waiting out the tick interval. The app's own pre-sleep request stays, so older app builds
+  keep working; both paths are idempotent.
+
+- 5bdbb4b: **Fixed: the app could hang on a helper that looked perfectly healthy.** launchd reported the
+  job running, the binary and plist were in place, the process was alive — and every request the
+  app made got "connection refused", so the app blocked forever with nothing to show for it.
+
+  The cause was an install race one step further along than the installer guards for: two
+  daemons overlap briefly, the second removes the first's socket and binds its own, then the
+  second goes away. The survivor is still listening on a socket that no longer has a name.
+  Every health signal says fine; nothing can reach it.
+
+  Socket, bind and listen failures are now fatal — a helper with no control channel is worse
+  than none, because launchd keeps it and stops trying, whereas exiting gets it restarted with a
+  clean bind. The enforcement loop also checks that the socket path still refers to the socket it
+  bound, and exits if it doesn't, which is the only way that state is visible from inside the
+  process. Startup logs the path it's serving, so diagnosing this is now one line of log.
+
+- 5bdbb4b: The dot-grid charging animation read as a boomerang: three fronts launched diagonally out
+  of the port, one after another, which looked like something swinging out and back rather
+  than a battery charging.
+
+  It's a dot-matrix charge meter now, closer to what a Nothing phone shows. The whole matrix
+  stays faintly lit for the duration — before, only the moving band was drawn, so there was
+  no grid to move _through_, just a stripe crossing the screen, which made the motion the
+  subject instead of the charge. Dots below your actual charge level are lit brighter, so the
+  animation says how full the battery is, and the level appears in monospace in the middle.
+  The highlight rises once, from the bottom edge to the fill line, and stops: charging goes
+  up, and anything that repeats or reverses reads as a loading spinner.
+
+- 5bdbb4b: **Shortcuts added by an update never reached anyone who had already launched the app.**
+  Saved bindings were loaded exactly as stored, so every action introduced after a user's
+  first launch arrived unbound — it appeared in Settings › Shortcuts with "Not set" beside it
+  and nothing ever shipped it. Defaults are now applied to actions this install has never
+  seen, tracked by id, so a shortcut you deliberately cleared stays cleared and nothing gets
+  re-seeded on every launch. In practice that means don't-charge (⌃⌥⌘H), brightness
+  (⌃⌥⌘] / ⌃⌥⌘[), battery saver (⌃⌥⌘E), rest/wake (⌃⌥⌘R) and cycle icon style (⌃⌥⌘I) turn up
+  bound on the next launch, and a combination already assigned to something else is left
+  alone.
+
+  **Resting now ends within a couple of seconds of you touching the Mac.** It was checked on
+  the same 60-second timer used to notice you'd gone away, so the display woke on the keypress
+  while Low Power Mode and the radios stayed held for up to a minute — the Mac felt throttled
+  after you'd come back to it. While resting, the check runs every two seconds instead, with a
+  four-second grace window at the start so the keystroke that began resting doesn't
+  immediately end it.
+
+  **Defensive: two actions sharing one shortcut are repaired on load.** Assigning through the
+  recorder moves a taken combination rather than duplicating it, so this shouldn't happen — but
+  if a saved file ever holds the same chord twice, Carbon registers exactly one of them and the
+  other silently never fires, with nothing in the UI to hint at it. The first action in the
+  canonical order keeps the chord and the rest are cleared, because an action that plainly has
+  no shortcut can be fixed in Settings while one that looks bound and does nothing cannot even
+  be diagnosed.
+
+  **Shortcuts without ⌃ or ⌥ are now flagged.** A global ⌘D or ⇧⌘D is grabbed before every
+  other app sees it, so binding one quietly breaks Duplicate, Send and whatever else that chord
+  means in the app you're using. Settings › Shortcuts says so next to the binding rather than
+  refusing it — it's a legitimate choice, just one worth making on purpose.
+
+- 5bdbb4b: Shortcut banners now show the icon of the action that fired — a bolt for force
+  discharge, a coffee cup for keep awake, a gauge for save mode — instead of the app
+  icon, which looked identical whatever you pressed. The glyph comes from the same
+  catalogue key each row shows in Settings › Shortcuts, so the two can't drift apart.
+  Pro-gated actions show a lock, and a missing helper or unsupported hardware shows an
+  alert. Messages without a glyph still fall back to the app icon, in the same tile, so
+  nothing shifts.
+
+  Shortcut pills read as a keyboard shortcut again. `⌃⌥⌘P` was set solid in a
+  monospaced face at 12pt, which collapsed the modifiers into one dense mark; each glyph
+  now gets real space, with a slightly wider gap before the key name.
+
 ## 0.17.0
 
 ### Minor Changes
