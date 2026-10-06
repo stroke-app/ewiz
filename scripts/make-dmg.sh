@@ -20,15 +20,6 @@ STAGE="$(mktemp -d)"
 cp -R "$APP" "$STAGE/eWiz.app"
 ln -s /Applications "$STAGE/Applications"   # drag-to-install target
 
-# The bridge for installs from before the rename. A Battlify copy's updater looks for
-# Battlify.app in the image by name and swaps it over itself, so without this every
-# existing user's update fails with "the update disk image didn't contain Battlify.app".
-# Hidden, so a person opening the image sees one app. On first launch the build renames
-# its own bundle to eWiz.app (see LegacyMigration). Drop it once those installs have
-# had time to come across.
-cp -R "$APP" "$STAGE/Battlify.app"
-chflags hidden "$STAGE/Battlify.app"
-
 echo "==> Building $DMG"
 rm -f "$DMG"
 hdiutil create -volname "eWiz" \

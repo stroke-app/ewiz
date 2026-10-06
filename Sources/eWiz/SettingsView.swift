@@ -172,11 +172,7 @@ struct SettingsView: View {
         ScrollView {
             VStack(spacing: 0) {
                 VStack(spacing: 8) {
-                    BatteryGlyph(percentage: 100, bolt: true,
-                                 color: Color(ChargePalette.legible(1)), width: 40)
-                        .frame(width: 76, height: 76)
-                        .background(.quaternary.opacity(0.4),
-                                    in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    AppIconView(size: 96)
                     Text("eWiz")
                         .font(.title2.weight(.semibold))
                     Text("Version \(updater.currentVersion)")

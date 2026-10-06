@@ -11,12 +11,8 @@ struct LicenseView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             HStack(spacing: 12) {
-                // The app's own mark, as on the About tab, not a stock symbol.
-                BatteryGlyph(percentage: 100, bolt: true,
-                             color: Color(ChargePalette.legible(1)), width: 30)
-                    .frame(width: 52, height: 52)
-                    .background(.quaternary.opacity(0.4),
-                                in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                // The app's own icon, as on the About tab.
+                AppIconView(size: 60)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("eWiz").font(.title2.weight(.semibold))
                     Text(license.statusText).font(.callout).foregroundStyle(.secondary)
