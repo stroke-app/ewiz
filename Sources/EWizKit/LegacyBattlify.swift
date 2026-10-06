@@ -9,9 +9,6 @@ import Foundation
 /// Every key sold was signed against them, so renaming either would void them all.
 public enum LegacyBattlify {
     public static let bundleID = "com.battlify.app"
-    /// The bundle's file name. An older copy's updater looks for exactly this inside the
-    /// update's disk image, which is why releases carry a hidden copy under it.
-    public static let appBundleName = "Battlify.app"
     public static let helperLabel = "com.battlify.helper"
     public static let helperBinary = "/usr/local/bin/battlify-helper"
     public static let helperPlist = "/Library/LaunchDaemons/com.battlify.helper.plist"
