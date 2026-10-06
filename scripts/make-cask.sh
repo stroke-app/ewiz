@@ -24,6 +24,9 @@ cask "ewiz" do
   depends_on macos: :sonoma
   depends_on arch: :arm64
 
+  # eWiz installs signed updates itself; brew shouldn't treat that as drift.
+  auto_updates true
+
   app "eWiz.app"
 
   # The app is signed ad-hoc (not notarized yet). Homebrew quarantines downloads

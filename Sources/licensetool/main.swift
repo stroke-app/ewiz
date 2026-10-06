@@ -54,6 +54,27 @@ case "sign":
         exit(1)
     }
 
+case "sign-update":
+    // Release tooling: sign a DMG for the update feed. The key comes from
+    // UPDATE_SIGNING_PRIVATE_KEY, so it never sits on a command line or in a log.
+    guard let path = value("--file"),
+          let priv = ProcessInfo.processInfo.environment["UPDATE_SIGNING_PRIVATE_KEY"], !priv.isEmpty else {
+        FileHandle.standardError.write(Data(
+            "usage: UPDATE_SIGNING_PRIVATE_KEY=<b64> licensetool sign-update --file <dmg>\n".utf8))
+        exit(64)
+    }
+    do {
+        let signed = try UpdateSignature.sign(fileAt: URL(fileURLWithPath: path), privateKeyBase64: priv)
+        // Checked against the key the app ships with before it's printed, so a release
+        // signed with the wrong key fails here rather than on every user's Mac.
+        try UpdateSignature.verify(fileAt: URL(fileURLWithPath: path), sha256: signed.sha256,
+                                   signature: signed.signature)
+        print("\(signed.sha256) \(signed.signature)")
+    } catch {
+        FileHandle.standardError.write(Data("error: \(error) (is this the key matching UpdateSignature.publicKeyBase64?)\n".utf8))
+        exit(1)
+    }
+
 case "device":
     if let code = DeviceIdentity.deviceCode() {
         print(code)
@@ -85,6 +106,8 @@ default:
     licensetool — eWiz license keys
 
       genkey                              Generate an Ed25519 keypair
+      sign-update --file <dmg>            Sign a release DMG for the update feed
+                                          (key in UPDATE_SIGNING_PRIVATE_KEY)
       sign --priv <b64> --email <e>       Mint a license token bound to one Mac
            --device <code>                (device code shown in the app's license window)
            [--name <n>] [--days <n>]      (omit --days for a perpetual license)
