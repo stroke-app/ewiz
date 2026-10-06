@@ -66,7 +66,8 @@ final class UpdaterManager: ObservableObject {
     /// Download and install the update in place, then relaunch. Falls back to opening
     /// the DMG if the automatic path is blocked (e.g. app lives somewhere unwritable).
     func installUpdate() {
-        guard !installing, let url = available?.url else { return }
+        guard !installing, let update = available else { return }
+        let url = update.url
         let bundlePath = Bundle.main.bundlePath
         let parent = (bundlePath as NSString).deletingLastPathComponent
 
@@ -77,11 +78,13 @@ final class UpdaterManager: ObservableObject {
             return
         }
 
-        // No signing identity means nothing to verify the replacement against, and a
-        // signature check with nothing to check against is decoration. Hand it to the
-        // browser instead, where the user downloads it themselves and Gatekeeper applies.
-        guard let team = HelperService.teamIdentifier else {
-            showInfoAlert("This build isn't Developer ID signed, so eWiz won't replace itself automatically. Opening the download so you can install it manually.")
+        // Two ways to trust a download: a Developer ID team for the replacement to match,
+        // or the release key's signature in the feed (`UpdateSignature`), which is what an
+        // ad-hoc build has. With neither there is nothing to check the replacement against,
+        // and a check against nothing is decoration: hand it to the browser instead.
+        let team = HelperService.teamIdentifier
+        guard team != nil || update.isSigned else {
+            showInfoAlert("This update isn't signed, so eWiz can't check it before installing it. Opening the download so you can install it yourself.")
             downloadAvailable()
             return
         }
@@ -93,7 +96,7 @@ final class UpdaterManager: ObservableObject {
         Task.detached {
             do {
                 try await Self.performInstall(from: url, bundlePath: bundlePath, pid: pid,
-                                              bundleID: bundleID, team: team)
+                                              bundleID: bundleID, team: team, expected: update)
                 // The swap script now waits for us to quit, then relaunches.
                 await MainActor.run { NSApplication.shared.terminate(nil) }
             } catch {
@@ -165,7 +168,8 @@ final class UpdaterManager: ObservableObject {
     /// Download, mount, and hand off to a detached script that waits for this process
     /// to exit, swaps the bundle, and relaunches. Off the main actor — local files only.
     nonisolated private static func performInstall(from url: URL, bundlePath: String, pid: Int32,
-                                                   bundleID: String, team: String) async throws {
+                                                   bundleID: String, team: String?,
+                                                   expected: AppUpdate) async throws {
         let fm = FileManager.default
         let tmp = NSTemporaryDirectory()
         let stamp = UUID().uuidString
@@ -175,6 +179,18 @@ final class UpdaterManager: ObservableObject {
         let dmgPath = tmp + "ewiz-update-\(stamp).dmg"
         try? fm.removeItem(atPath: dmgPath)
         try fm.moveItem(atPath: downloaded.path, toPath: dmgPath)
+
+        // 1a. Signed releases are checked before the image is even mounted: the digest has
+        //     to match and the signature has to be the release key's.
+        if let sha = expected.sha256, let signature = expected.signature {
+            do {
+                try UpdateSignature.verify(fileAt: URL(fileURLWithPath: dmgPath), sha256: sha,
+                                           signature: signature)
+            } catch {
+                try? fm.removeItem(atPath: dmgPath)
+                throw UpdaterError.rejected("it doesn't match the signature eWiz releases carry")
+            }
+        }
 
         // 2. Mount it on a private, non-browsable mount point.
         let mountPoint = tmp + "ewiz-mnt-\(stamp)"
@@ -193,7 +209,16 @@ final class UpdaterManager: ObservableObject {
         // 3a. Before a swap script is even written. Everything past this point runs
         //     detached, after this process has exited, with nobody left to refuse.
         do {
-            try verify(bundleAt: srcApp, matchesTeam: team)
+            if let team {
+                try verify(bundleAt: srcApp, matchesTeam: team)
+            } else {
+                // Signed release, ad-hoc app: the image was verified above. Still refuse
+                // anything that isn't this app, so a signed image can't swap in another.
+                let id = NSDictionary(contentsOfFile: srcApp + "/Contents/Info.plist")?["CFBundleIdentifier"] as? String
+                guard id == bundleID else {
+                    throw UpdaterError.rejected("it contains \(id ?? "an app with no bundle ID"), not \(bundleID)")
+                }
+            }
         } catch {
             try? runTool("/usr/bin/hdiutil", ["detach", mountPoint, "-quiet"])
             try? fm.removeItem(atPath: dmgPath)

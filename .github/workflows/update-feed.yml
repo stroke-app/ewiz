@@ -27,6 +27,7 @@ jobs:
       - name: Update ewiz-releases/appcast.json
         env:
           GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+          REPO_TOKEN: ${{ github.token }}
           TAG: ${{ github.event.release.tag_name || inputs.tag }}
         run: |
           set -euo pipefail
@@ -40,7 +41,14 @@ jobs:
           DMG_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/eWiz-${VERSION}.dmg"
           NOTES="eWiz ${VERSION}"
 
-          NEW=$(printf '{"version":"%s","url":"%s","notes":"%s"}' "$VERSION" "$DMG_URL" "$NOTES")
+          # Publish the appcast the release carries, so the signature comes with it. A
+          # release from before signing has none; fall back to the bare entry.
+          if GH_TOKEN="$REPO_TOKEN" gh release download "$TAG" --repo "$GITHUB_REPOSITORY" \
+               --pattern appcast.json --output /tmp/appcast.json 2>/dev/null; then
+            NEW=$(python3 -c 'import json; print(json.dumps(json.load(open("/tmp/appcast.json")), separators=(",", ":")))')
+          else
+            NEW=$(printf '{"version":"%s","url":"%s","notes":"%s"}' "$VERSION" "$DMG_URL" "$NOTES")
+          fi
           echo "New feed: $NEW"
 
           SHA=$(gh api "repos/${FEED_REPO}/contents/appcast.json" --jq .sha)

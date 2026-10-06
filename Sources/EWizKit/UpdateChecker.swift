@@ -5,11 +5,22 @@ public struct AppUpdate: Sendable, Equatable {
     public let version: String
     public let url: URL          // DMG download
     public let notes: String
-    public init(version: String, url: URL, notes: String) {
+    /// The DMG's SHA-256 and the release key's signature over it, when the release was
+    /// signed. Together they let an ad-hoc build install the update itself; see
+    /// `UpdateSignature`. Absent from feeds written before signing existed.
+    public let sha256: String?
+    public let signature: String?
+    public init(version: String, url: URL, notes: String,
+                sha256: String? = nil, signature: String? = nil) {
         self.version = version
         self.url = url
         self.notes = notes
+        self.sha256 = sha256
+        self.signature = signature
     }
+
+    /// Whether this release can be checked without a Developer ID.
+    public var isSigned: Bool { sha256 != nil && signature != nil }
 }
 
 /// Checks a public JSON "appcast" for a newer version. The feed looks like:
@@ -23,11 +34,21 @@ public enum UpdateChecker {
         req.cachePolicy = .reloadIgnoringLocalCacheData
         let (data, _) = try await URLSession.shared.data(for: req)
 
-        struct Feed: Decodable { let version: String; let url: URL; let notes: String? }
-        let feed = try JSONDecoder().decode(Feed.self, from: data)
-
+        let feed = try decode(data)
         guard isNewer(feed.version, than: currentVersion) else { return nil }
-        return AppUpdate(version: feed.version, url: feed.url, notes: feed.notes ?? "")
+        return feed
+    }
+
+    /// The feed's contents. Unknown fields are ignored, so a feed can grow without breaking
+    /// the copies already installed.
+    public static func decode(_ data: Data) throws -> AppUpdate {
+        struct Feed: Decodable {
+            let version: String; let url: URL; let notes: String?
+            let sha256: String?; let signature: String?
+        }
+        let feed = try JSONDecoder().decode(Feed.self, from: data)
+        return AppUpdate(version: feed.version, url: feed.url, notes: feed.notes ?? "",
+                         sha256: feed.sha256, signature: feed.signature)
     }
 
     /// Numeric semver comparison: "0.2.0" > "0.1.9". Non-numeric parts are ignored.
