@@ -8,7 +8,7 @@ cask "ewiz" do
   url "https://github.com/broisnischal/ewiz/releases/download/v#{version}/eWiz-#{version}.dmg"
   name "eWiz"
   desc "Menu bar battery saver and charge limiter for Apple Silicon Macs"
-  homepage "https://github.com/broisnischal/ewiz"
+  homepage "https://ewiz.app"
 
   depends_on macos: :sonoma
   depends_on arch: :arm64

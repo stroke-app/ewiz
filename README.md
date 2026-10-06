@@ -7,7 +7,8 @@
 Charge limiting, heat-aware charging, sleep-safe enforcement, and one-tap save
 modes — all from your menu bar, built for Apple Silicon.
 
-<a href="https://ewiz.gumroad.com/l/ewiz"><b>Download</b></a> ·
+<a href="https://ewiz.app"><b>Website</b></a> ·
+<a href="https://ewiz.app/buy"><b>Buy</b></a> ·
 <a href="https://github.com/broisnischal/ewiz/releases"><b>Releases</b></a> ·
 <a href="https://github.com/broisnischal/ewiz/issues"><b>Feedback</b></a>
 
@@ -235,7 +236,7 @@ your neck.
 
 **$2.99 to own.** One-time payment (plus tax) — no subscription, no add-ons. Pay
 with **Apple Pay** in a couple of taps, in-app or
-[here](https://ewiz.gumroad.com/l/ewiz).
+[on ewiz.app](https://ewiz.app/buy).
 
 ## Build from source
 
@@ -258,7 +259,7 @@ it adds the swift-testing framework search paths automatically. CI runs it on ev
 push and pull request.
 
 See [`DISTRIBUTION.md`](DISTRIBUTION.md) for signing, notarization, the GitHub
-Actions release pipeline, Gumroad setup, and the auto-update feed.
+Actions release pipeline, licensing on ewiz.app, and the auto-update feed.
 
 ## Contributing & releases
 

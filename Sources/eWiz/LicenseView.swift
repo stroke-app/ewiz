@@ -6,7 +6,7 @@ struct LicenseView: View {
     @State private var confirmingRemoval = false
 
     // Checkout page; mints an Ed25519 license key on purchase.
-    private let buyURL = URL(string: "https://ewiz.app/buy")!
+    private let buyURL = EWizLinks.buy
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
@@ -85,6 +85,9 @@ struct LicenseView: View {
             Image(systemName: "questionmark.circle").foregroundStyle(.secondary)
             Text("Lost your key or moving to a new Mac?")
                 .font(.caption).foregroundStyle(.secondary)
+            Link("Find your key", destination: EWizLinks.license)
+                .font(.caption)
+            Text("·").font(.caption).foregroundStyle(.secondary)
             Button("Contact Support") {
                 let summary = "eWiz \(SupportInfo.version)\nmacOS \(ProcessInfo.processInfo.operatingSystemVersionString)\nLicense: \(license.statusText)"
                 if let url = SupportInfo.emailURL(subject: "eWiz license", summary: summary,

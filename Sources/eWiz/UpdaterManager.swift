@@ -13,7 +13,7 @@ final class UpdaterManager: ObservableObject {
     @Published private(set) var lastResult: String?
 
     /// Public update feed (any host reachable without auth).
-    let feedURL = URL(string: "https://raw.githubusercontent.com/broisnischal/ewiz-releases/main/appcast.json")!
+    let feedURL = EWizLinks.updateFeed
 
     let currentVersion: String =
         (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) ?? "0.0.0"

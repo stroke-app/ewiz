@@ -61,25 +61,52 @@ export NOTARY_KEY_ID=...  NOTARY_ISSUER_ID=...  NOTARY_KEY_PATH=~/AuthKey_XXXX.p
 
 ## 4. Selling it (payments + licensing)
 
-You don't sell through GitHub. Host the notarized DMG behind a storefront and
-gate the app with a **license key**. eWiz uses **Gumroad** (one-time $2.99,
-Apple Pay at checkout) with online license verification — already built:
+eWiz is sold on **ewiz.app**: a one-time $2.99, with a use-based 30-day trial
+(`LicenseManager` only spends a free day on a day the app is actually used). Keys
+are verified **offline**: the website signs them with an Ed25519 private key, the
+app checks them against the public key in `Sources/EWizKit/License.swift`. Nothing
+phones home after purchase.
 
-- `Sources/EWizKit/Gumroad.swift` — verifies keys via Gumroad's license API
-  (handles refunds/chargebacks).
-- `LicenseManager` / `LicenseView` — **use-based 30-day trial** (free days are only
-  spent on days the app is actually used), activation window, control gating.
+### Pages ewiz.app has to serve
 
-**Setup:**
-1. Create a Gumroad product, set price **$2.99**, and enable **"Generate license
-   keys"** (Settings → check *"Generate a unique license key per sale"*).
-2. Set your product permalink in two places:
-   - `Gumroad.productPermalink` in `Sources/EWizKit/Gumroad.swift`
-   - `buyURL` in `Sources/eWiz/LicenseView.swift`
-3. Rebuild + release. Buyers paste the key Gumroad emails them into the app's
-   Activate window; the app verifies it online and unlocks.
+Every address the app links to is in `Sources/EWizKit/EWizLinks.swift`:
 
-Apple Pay needs no code — it's offered automatically in Gumroad's checkout.
+| Page | Linked from | What it does |
+|---|---|---|
+| `https://ewiz.app` | Settings › About › Visit the Website, the Homebrew cask | Home page |
+| `https://ewiz.app/buy` | License window › Buy, README | Checkout. Asks for the buyer's **device code** (shown in the license window, `XXXX-XXXX-XXXX`) and emails a key signed for it |
+| `https://ewiz.app/license` | License window › Find your key, the "isn't linked to a Mac" error | Look up a lost key by email, or issue one for a new Mac |
+| `https://ewiz.app/donate` | Settings › About › Donate | Donations |
+| `hello@ewiz.app` | Contact Support, the license window's help link | Support mailbox; the app pre-fills version, macOS and diagnostics |
+
+Source, issues and the update feed stay on GitHub (`broisnischal/ewiz`,
+`broisnischal/ewiz-releases`).
+
+### Minting keys
+
+A key is `base64url(payload).base64url(signature)`, unpadded, where the signature is
+Ed25519 over the exact payload bytes. The payload is JSON:
+
+| Field | Meaning |
+|---|---|
+| `e` | buyer's email (required) |
+| `n` | buyer's name (required, may be empty) |
+| `iat` | issued at, Unix seconds |
+| `exp` | expiry, Unix seconds; leave out for a perpetual license |
+| `p` | product: `"battlify"` for now. Every version accepts it; `"ewiz"` is accepted from the eWiz builds on, so switch once installs from before the rename have updated |
+| `d` | device code, 12 hex digits, upper case (dashes optional) |
+
+`scripts/license-mint.mjs` is a dependency-free Node reference for the checkout:
+
+```bash
+LICENSE_SIGNING_PRIVATE_KEY=<base64> \
+  node scripts/license-mint.mjs --email a@b.com --device 7F3A-92C1-D04B --name "A B"
+swift run licensetool verify --token <token> --device 7F3A-92C1-D04B   # check it
+```
+
+The private key must be the one `License.publicKeyBase64` was made from. Keep it
+in the website's secrets as `LICENSE_SIGNING_PRIVATE_KEY`, never in the app or this
+repo. A new key pair would void every key already sold.
 
 ## 5. Homebrew note
 

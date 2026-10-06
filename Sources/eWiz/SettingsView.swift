@@ -215,13 +215,13 @@ struct SettingsView: View {
                     }
                     divider
                     linkRow("Donate", systemImage: "heart",
-                            url: "https://nischal-dahal.com.np/donate")
+                            url: EWizLinks.donate.absoluteString)
                     divider
                     linkRow("Check It Out on GitHub", systemImage: "code",
-                            url: "https://github.com/broisnischal/ewiz")
+                            url: EWizLinks.source.absoluteString)
                     divider
                     linkRow("Visit the Website", systemImage: "compass",
-                            url: "https://nischal-dahal.com.np")
+                            url: EWizLinks.website.absoluteString)
                 }
                 .padding(.vertical, 20)
 

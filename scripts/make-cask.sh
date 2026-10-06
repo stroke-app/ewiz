@@ -19,7 +19,7 @@ cask "ewiz" do
   url "$DMG_URL"
   name "eWiz"
   desc "Menu bar battery saver and charge limiter for Apple Silicon Macs"
-  homepage "https://github.com/broisnischal/ewiz"
+  homepage "https://ewiz.app"
 
   depends_on macos: :sonoma
   depends_on arch: :arm64

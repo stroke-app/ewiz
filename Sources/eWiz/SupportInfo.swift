@@ -10,8 +10,7 @@ import EWizKit
 /// them out itself.
 @MainActor
 enum SupportInfo {
-    static let email = "nischaldahal01395@gmail.com"
-    private static let newIssue = "https://github.com/broisnischal/ewiz/issues/new"
+    static let email = EWizLinks.supportEmail
     private static let logPath = "/var/log/ewiz-helper.log"
 
     static var version: String {
@@ -82,7 +81,7 @@ enum SupportInfo {
 
     /// A new GitHub issue with a template and the summary filled in.
     static func issueURL(summary: String) -> URL? {
-        var parts = URLComponents(string: newIssue)
+        var parts = URLComponents(url: EWizLinks.newIssue, resolvingAgainstBaseURL: false)
         let body = """
             **What happened**
 

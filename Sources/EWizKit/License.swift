@@ -44,7 +44,7 @@ public enum LicenseError: Error, CustomStringConvertible {
         case .expired: return "This license has expired."
         case .wrongDevice: return "This license is registered to a different Mac."
         case .missingDevice:
-            return "This key isn't linked to a Mac. Sign in at ewiz.app to get an updated key for this one."
+            return "This key isn't linked to a Mac. Get an updated key for this one at ewiz.app/license."
         }
     }
 }
@@ -57,6 +57,11 @@ public enum License {
     /// The app's name when the first keys were sold, and part of every key's signed
     /// payload. Not renamed with the app: changing it would void every key out there.
     public static let product = "battlify"
+
+    /// Products a key may name. `battlify` is what's minted today: every version still
+    /// installed accepts it. `ewiz` is accepted from this build on, so ewiz.app can switch
+    /// to minting it once installs from before the rename have updated.
+    public static let acceptedProducts: Set<String> = ["battlify", "ewiz"]
 
     /// Embedded Ed25519 public key (base64, 32 bytes). The private key lives on the
     /// license server as LICENSE_SIGNING_PRIVATE_KEY.
@@ -86,7 +91,7 @@ public enum License {
         guard let info = try? decoder.decode(LicenseInfo.self, from: payload) else {
             throw LicenseError.malformed
         }
-        guard info.product == product else { throw LicenseError.wrongProduct }
+        guard acceptedProducts.contains(info.product) else { throw LicenseError.wrongProduct }
         if let exp = info.expiresAt, exp < now { throw LicenseError.expired }
         guard let bound = info.deviceID else { throw LicenseError.missingDevice }
         if let mine = deviceID {
