@@ -52,6 +52,7 @@ export function softwareApplicationSchema() {
       "Heat-aware charging that pauses when the battery runs warm",
       "Sealed Sleep: a closed lid that loses no charge",
       "Automation rules and charging schedules",
+      "AI agents (MCP) can keep the Mac awake on a timer",
       "One-tap save modes",
       "MagSafe LED that shows the real charge state",
       "Battery health, history and power adapter details",

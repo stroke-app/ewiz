@@ -8,6 +8,21 @@ export type Release = { v: string; date: string; title: string; groups: Group[];
  */
 export const RELEASES: Release[] = [
   {
+    v: "0.18.2",
+    date: "Oct 6, 2026",
+    title: "AI Agents",
+    groups: [
+      {
+        heading: "New",
+        items: [
+          "AI Agents in Settings › Automation: let Claude, Cursor and other MCP apps keep the Mac awake through a long build, test run or download, on a timer that ends by itself",
+          "One-click connect for Claude Desktop and Cursor, and a copyable command for Claude Code",
+          "See which agent is keeping the Mac awake, and for how long",
+        ],
+      },
+    ],
+  },
+  {
     v: "0.18.1",
     date: "Oct 6, 2026",
     title: "A new icon",

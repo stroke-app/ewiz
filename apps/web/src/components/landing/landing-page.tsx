@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import {
   ActivityIcon,
   ArrowUpRightIcon,
+  BotIcon,
   BatteryChargingIcon,
   CheckIcon,
   ClockIcon,
@@ -180,7 +181,7 @@ function Hero({
    the visitor takes over.
    ========================================================================== */
 type FeatureView =
-  | { kind: "settings"; tab: SettingsTab }
+  | { kind: "settings"; tab: SettingsTab; scroll?: number }
   | { kind: "history" }
   | { kind: "details" };
 
@@ -211,6 +212,13 @@ const FEATURES: Array<{
     title: "Automation rules",
     body: "While this is true, do that. Build rules from a dozen conditions, from a connected display to a Wi-Fi network. Each one undoes itself when it stops matching.",
     view: { kind: "settings", tab: "Automation" },
+  },
+  {
+    id: "agents",
+    icon: BotIcon,
+    title: "AI agents, kept in check",
+    body: "Let Claude, Cursor and other MCP apps keep your Mac awake through a long build or test run, on a timer that ends by itself. One click connects them.",
+    view: { kind: "settings", tab: "Automation", scroll: 486 },
   },
   {
     id: "schedule",
@@ -336,6 +344,7 @@ function Features({
                 {view.kind === "settings" ? (
                   <SettingsWindow
                     tab={tab}
+                    scroll={!tabOverride && view.kind === "settings" ? (view.scroll ?? 0) : 0}
                     onTab={(t) => {
                       setAuto(false);
                       setTabOverride(t);

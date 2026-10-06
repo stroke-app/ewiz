@@ -10,6 +10,7 @@ const FEATURES = [
   "Sealed Sleep: one switch turns off every wake source behind a closed lid, shows each one as sealed, and measures what the last close cost.",
   "Automation rules: 'while this is true, do that', from a dozen conditions such as a connected display or a Wi-Fi network. Rules undo themselves when they stop matching.",
   "Schedules and Ready By: hold overnight, then top up in time; charge on a weekly timetable or turn charge power down.",
+  "AI Agents: Claude, Cursor and other MCP apps can keep the Mac awake through a long build, test run or download, on a timer that ends by itself. One-click connect for Claude Desktop and Cursor; a copyable command for Claude Code.",
   "One-tap save modes: Off, Normal and Super Saver flip a bundle of settings at once.",
   "MagSafe LED: orange while charging, green when holding at the limit.",
   "Insight: battery health, cycle count, temperature, capacity, live power flow, adapter details and a history of every charge and lid-closed session (CSV export).",

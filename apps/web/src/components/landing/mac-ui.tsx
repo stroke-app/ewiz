@@ -1035,6 +1035,51 @@ function AutomationTab() {
       ].map(([k, v]) => (
         <Row key={k} title={k} right={<span className="text-[12px] text-(--m-text-2)">{v}</span>} />
       ))}
+      <AgentsSection />
+    </>
+  );
+}
+
+function AgentsSection() {
+  const [s, t] = useToggles({ agents: true, lid: false });
+  const [copied, setCopied] = useState(false);
+  return (
+    <>
+      <SectionHeader>AI Agents</SectionHeader>
+      <Row
+        title="Let AI agents keep this Mac awake"
+        subtitle="Claude, Cursor and other MCP apps can hold it awake through a long build, test run or download, on a timer that ends by itself."
+        right={t("agents")}
+      />
+      {s.agents ? (
+        <>
+          <Row
+            title="Allow it with the lid closed"
+            subtitle="Turns on Always Active until the agent's timer runs out."
+            right={t("lid")}
+          />
+          <Note icon={CoffeeIcon}>Keeping awake: Running the test suite · 42m left</Note>
+          <Row
+            title="Claude Desktop"
+            subtitle="Connected."
+            right={<CheckIcon className="size-[14px] text-(--m-good)" strokeWidth={2.6} />}
+          />
+          <Row
+            title="Cursor"
+            subtitle="Adds eWiz to its MCP servers."
+            right={<SmallButton>Connect</SmallButton>}
+          />
+          <Row
+            title="Claude Code"
+            subtitle="Run this once in Terminal to add eWiz."
+            right={
+              <button type="button" tabIndex={-1} onClick={() => setCopied(true)}>
+                <SmallButton>{copied ? "Copied" : "Copy Command"}</SmallButton>
+              </button>
+            }
+          />
+        </>
+      ) : null}
     </>
   );
 }
@@ -1219,9 +1264,11 @@ export function SettingsWindow({
   iconStyle,
   onIconStyle,
   height = 600,
+  scroll = 0,
   className,
   style,
 }: {
+  scroll?: number;
   tab: SettingsTab;
   onTab: (t: SettingsTab) => void;
   iconStyle: IconStyle;
@@ -1261,7 +1308,11 @@ export function SettingsWindow({
         })}
       </div>
       <div className="min-h-0 flex-1 overflow-hidden">
-        <div key={tab} className="animate-fade mx-auto w-[468px] pb-[16px]">
+        <div
+          key={tab}
+          className="animate-fade mx-auto w-[468px] pb-[16px] transition-transform duration-500"
+          style={scroll ? { transform: `translateY(-${scroll}px)` } : undefined}
+        >
           {tab === "Charging" ? <ChargingTab /> : null}
           {tab === "Schedule" ? <ScheduleTab /> : null}
           {tab === "Automation" ? <AutomationTab /> : null}
