@@ -20,6 +20,9 @@ struct SettingsView: View {
     @EnvironmentObject private var hotkeys: HotkeyStore
     /// "Copied" beside Copy Diagnostics for a moment after it's pressed.
     @State private var copiedDiagnostics = false
+    @StateObject private var agents = AgentStore()
+    @State private var copiedAgentCommand = false
+    @State private var copiedAgentConfig = false
     @Environment(\.openWindow) private var openWindow
     @State private var installError: String?
     @State private var selection: Tab = .charging
@@ -799,7 +802,124 @@ struct SettingsView: View {
             } else {
                 helperCard
             }
+            agentsCard
         }
+    }
+
+    // MARK: - AI agents
+
+    /// The MCP server that ships inside the app, made visible: a switch for whether agents
+    /// may use it, a one-click connection for the clients whose config eWiz can write, and
+    /// what an agent is holding right now. Without this the server was a binary nobody
+    /// knew was in the bundle, reachable only by typing a path into a terminal.
+    private var agentsCard: some View {
+        card("AI Agents") {
+            toggleRow("Let AI agents keep this Mac awake",
+                      "Claude, Cursor and other MCP apps can hold it awake through a long build, test run or download, on a timer that ends by itself.",
+                      isOn: $settings.agentsEnabled)
+            if settings.agentsEnabled {
+                divider
+                toggleRow("Allow it with the lid closed",
+                          "Turns on Always Active until the agent's timer runs out.",
+                          isOn: $settings.agentsAllowLidClosed)
+                divider
+                agentHoldsRows
+                divider
+                ForEach(AgentStore.Client.allCases) { client in
+                    agentClientRow(client)
+                    divider
+                }
+                agentCopyRow(title: "Claude Code",
+                             caption: agents.claudeCode == .connected
+                                ? "Connected." : "Run this once in Terminal to add eWiz.",
+                             button: "Copy Command", copied: $copiedAgentCommand,
+                             text: agents.claudeCodeCommand)
+                divider
+                agentCopyRow(title: "Other MCP apps",
+                             caption: "Paste this into the app's MCP server settings.",
+                             button: "Copy Config", copied: $copiedAgentConfig,
+                             text: agents.configSnippet)
+                if let note = agents.note {
+                    divider
+                    infoRow(note, systemImage: "info")
+                }
+            }
+        }
+        .task {
+            agents.refreshClients()
+            while !Task.isCancelled {
+                agents.refreshHolds()
+                try? await Task.sleep(nanoseconds: 5_000_000_000)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var agentHoldsRows: some View {
+        if agents.holds.isEmpty {
+            infoRow("No agent is keeping the Mac awake right now.", systemImage: "moon")
+        } else {
+            ForEach(agents.holds) { hold in
+                infoRow(agentHoldText(hold), systemImage: "coffee")
+            }
+        }
+    }
+
+    private func agentHoldText(_ hold: AgentStore.Hold) -> String {
+        guard let end = hold.endsAt else { return "Keeping awake: \(hold.reason)" }
+        let minutes = max(1, Int((end.timeIntervalSinceNow / 60).rounded()))
+        let left = minutes >= 60 ? "\(minutes / 60)h \(minutes % 60)m" : "\(minutes)m"
+        return "Keeping awake: \(hold.reason) · \(left) left"
+    }
+
+    private func agentClientRow(_ client: AgentStore.Client) -> some View {
+        let state = agents.connections[client] ?? .notInstalled
+        return HStack(spacing: 10) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(client.name).font(.callout)
+                Text({
+                    switch state {
+                    case .notInstalled: return "Not installed on this Mac."
+                    case .notConnected: return "Adds eWiz to its MCP servers."
+                    case .connected:    return "Connected."
+                    case .elsewhere:    return "Connected to another copy of eWiz. Connect again to use this one."
+                    }
+                }()).font(.caption).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer()
+            switch state {
+            case .notInstalled:
+                EmptyView()
+            case .connected:
+                HugeIcon("check", size: 14).foregroundStyle(DS.Status.good)
+            case .notConnected, .elsewhere:
+                Button("Connect") { agents.connect(client) }.controlSize(.small)
+            }
+        }
+        .padding(.horizontal, rowInset).padding(.vertical, DS.Space.s + 2)
+    }
+
+    private func agentCopyRow(title: String, caption: String, button: String,
+                              copied: Binding<Bool>, text: String) -> some View {
+        HStack(spacing: 10) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).font(.callout)
+                Text(caption).font(.caption).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer()
+            Button(copied.wrappedValue ? "Copied" : button) {
+                agents.copy(text)
+                copied.wrappedValue = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                    copied.wrappedValue = false
+                    agents.refreshClients()
+                }
+            }
+            .controlSize(.small)
+        }
+        .padding(.horizontal, rowInset).padding(.vertical, DS.Space.s + 2)
     }
 
     /// A Wi-Fi rule is set up, but macOS won't hand over the network name yet.

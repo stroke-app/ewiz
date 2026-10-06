@@ -144,7 +144,7 @@ final class AgentAwake: @unchecked Sendable {
         let props: [String: Any] = [
             kIOPMAssertionTypeKey: kIOPMAssertPreventUserIdleSystemSleep,
             kIOPMAssertionLevelKey: NSNumber(value: kIOPMAssertionLevelOn),
-            kIOPMAssertionNameKey: "eWiz MCP: \(reason)",
+            kIOPMAssertionNameKey: AgentAccess.assertionPrefix + reason,
             kIOPMAssertionTimeoutKey: NSNumber(value: max(1, Int(until.timeIntervalSince(now).rounded()))),
             kIOPMAssertionTimeoutActionKey: kIOPMAssertionTimeoutActionRelease,
         ]

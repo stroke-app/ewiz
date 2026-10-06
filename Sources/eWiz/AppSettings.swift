@@ -1,6 +1,7 @@
 import Foundation
 import Combine
 import AppKit
+import EWizKit
 
 /// What text (if any) sits next to the menu-bar battery icon.
 enum MenuBarDisplay: String, CaseIterable, Identifiable {
@@ -47,6 +48,15 @@ final class AppSettings: ObservableObject {
     }
     @Published var batteryIconStyle: BatteryIconStyle {
         didSet { defaults.set(batteryIconStyle.rawValue, forKey: Keys.iconStyle) }
+    }
+    /// AI agents may keep the Mac awake through `ewiz-mcp`. The MCP server reads this from
+    /// the app's preferences on every request; see `AgentAccess`.
+    @Published var agentsEnabled: Bool {
+        didSet { defaults.set(agentsEnabled, forKey: AgentAccess.enabledKey) }
+    }
+    /// And may do it with the lid closed, which switches Always Active on.
+    @Published var agentsAllowLidClosed: Bool {
+        didSet { defaults.set(agentsAllowLidClosed, forKey: AgentAccess.lidClosedKey) }
     }
     /// Shake the menu-bar glyph as the battery runs out. See `LowBatteryAlarm`.
     @Published var shakeOnLowBattery: Bool {
@@ -180,6 +190,8 @@ final class AppSettings: ObservableObject {
             .flatMap(BatteryIconStyle.init(rawValue:)) ?? .rounded
         notificationsEnabled = defaults.bool(forKey: Keys.notifications)
         shakeOnLowBattery = defaults.object(forKey: Keys.shakeOnLow) as? Bool ?? true
+        agentsEnabled = defaults.object(forKey: AgentAccess.enabledKey) as? Bool ?? true
+        agentsAllowLidClosed = defaults.object(forKey: AgentAccess.lidClosedKey) as? Bool ?? true
         caffeineEndOnBattery = defaults.bool(forKey: Keys.caffeineEndOnBattery)
         // Migrated once, not simply re-defaulted. Anyone who ran an earlier build has a
         // `false` on disk — written either by the old default or by trying the switch and
