@@ -1,6 +1,6 @@
 name: Update appcast feed
 
-# Keeps the in-app update feed (broisnischal/ewiz-releases/appcast.json) in
+# Keeps the in-app update feed (stroke-app/ewiz-releases/appcast.json) in
 # sync with the latest *published* release. Runs on publish — not on tag push —
 # so the DMG download URL it points at is actually live (releases start as drafts).
 #
@@ -36,7 +36,7 @@ jobs:
           fi
 
           VERSION="${TAG#v}"
-          FEED_REPO="broisnischal/ewiz-releases"
+          FEED_REPO="stroke-app/ewiz-releases"
           DMG_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/eWiz-${VERSION}.dmg"
           NOTES="eWiz ${VERSION}"
 

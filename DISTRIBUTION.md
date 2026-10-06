@@ -79,8 +79,8 @@ Every address the app links to is in `Sources/EWizKit/EWizLinks.swift`:
 | `https://ewiz.app/donate` | Settings › About › Donate | Donations |
 | `hello@ewiz.app` | Contact Support, the license window's help link | Support mailbox; the app pre-fills version, macOS and diagnostics |
 
-Source, issues and the update feed stay on GitHub (`broisnischal/ewiz`,
-`broisnischal/ewiz-releases`).
+Source, issues and the update feed stay on GitHub (`stroke-app/ewiz`,
+`stroke-app/ewiz-releases`).
 
 ### Minting keys
 
@@ -122,7 +122,7 @@ an in-app "Update available" banner with a one-click download.
 
 - Feed format: `{ "version": "0.2.0", "url": "https://…/eWiz-0.2.0.dmg", "notes": "…" }`
 - The app reads `UpdaterManager.feedURL` (currently
-  `raw.githubusercontent.com/broisnischal/ewiz-releases/main/appcast.json`).
+  `raw.githubusercontent.com/stroke-app/ewiz-releases/main/appcast.json`).
 - The release workflow generates `dist/appcast.json` (via `scripts/make-appcast.sh`)
   and attaches it to the GitHub Release.
 

@@ -23,11 +23,11 @@ public enum EWizLinks {
     public static let supportEmail = "hello@ewiz.app"
 
     /// Source and issues stay on GitHub.
-    public static let source = URL(string: "https://github.com/broisnischal/ewiz")!
-    public static let newIssue = URL(string: "https://github.com/broisnischal/ewiz/issues/new")!
+    public static let source = URL(string: "https://github.com/stroke-app/ewiz")!
+    public static let newIssue = URL(string: "https://github.com/stroke-app/ewiz/issues/new")!
 
     /// The update feed. On GitHub rather than the website: CI publishes it on every
     /// release, and installs from before the rename still read it at its old address.
     public static let updateFeed =
-        URL(string: "https://raw.githubusercontent.com/broisnischal/ewiz-releases/main/appcast.json")!
+        URL(string: "https://raw.githubusercontent.com/stroke-app/ewiz-releases/main/appcast.json")!
 }

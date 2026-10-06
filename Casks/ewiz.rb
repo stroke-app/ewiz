@@ -1,11 +1,11 @@
 # Reference copy. The authoritative, always-current cask is published by CI to
-# the tap repo (broisnischal/ewiz-releases → Casks/ewiz.rb) with the real
+# the tap repo (stroke-app/ewiz-releases → Casks/ewiz.rb) with the real
 # sha256 of each release's DMG. See scripts/make-cask.sh.
 cask "ewiz" do
   version "0.8.1"
   sha256 :no_check
 
-  url "https://github.com/broisnischal/ewiz/releases/download/v#{version}/eWiz-#{version}.dmg"
+  url "https://github.com/stroke-app/ewiz/releases/download/v#{version}/eWiz-#{version}.dmg"
   name "eWiz"
   desc "Menu bar battery saver and charge limiter for Apple Silicon Macs"
   homepage "https://ewiz.app"

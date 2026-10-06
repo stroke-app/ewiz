@@ -9,8 +9,8 @@ modes — all from your menu bar, built for Apple Silicon.
 
 <a href="https://ewiz.app"><b>Website</b></a> ·
 <a href="https://ewiz.app/buy"><b>Buy</b></a> ·
-<a href="https://github.com/broisnischal/ewiz/releases"><b>Releases</b></a> ·
-<a href="https://github.com/broisnischal/ewiz/issues"><b>Feedback</b></a>
+<a href="https://github.com/stroke-app/ewiz/releases"><b>Releases</b></a> ·
+<a href="https://github.com/stroke-app/ewiz/issues"><b>Feedback</b></a>
 
 ![Platform](https://img.shields.io/badge/macOS-14%2B-blue)
 ![Arch](https://img.shields.io/badge/Apple%20Silicon-arm64-black)
@@ -187,12 +187,12 @@ megabytes (no framework-linked app does), but it also won't sit there draining y
 ### Homebrew (recommended)
 
 ```bash
-brew tap broisnischal/ewiz
+brew tap stroke-app/ewiz
 brew install --cask ewiz
 ```
 
 Homebrew asks you to **trust** the tap the first time (its gate for any
-third-party tap) — accept, or run `brew trust broisnischal/ewiz`. The cask
+third-party tap) — accept, or run `brew trust stroke-app/ewiz`. The cask
 clears the download quarantine on install, so the app launches straight away even
 though it isn't notarized yet.
 
@@ -201,7 +201,7 @@ Update later with `brew upgrade --cask ewiz`.
 ### Manual (DMG)
 
 1. Download the latest `eWiz-x.y.z.dmg` from
-   [Releases](https://github.com/broisnischal/ewiz/releases) and drag
+   [Releases](https://github.com/stroke-app/ewiz/releases) and drag
    **eWiz** into Applications.
 2. Because the build isn't notarized yet, macOS may say it's "damaged" — it isn't.
    Clear the quarantine flag once:

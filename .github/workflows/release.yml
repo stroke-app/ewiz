@@ -119,7 +119,7 @@ jobs:
             echo "RELEASES_TOKEN not set — skipping feed update."
             exit 0
           fi
-          FEED_REPO="broisnischal/ewiz-releases"
+          FEED_REPO="stroke-app/ewiz-releases"
           DMG_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/eWiz-${VERSION}.dmg"
           NEW=$(printf '{"version":"%s","url":"%s","notes":"%s"}' "$VERSION" "$DMG_URL" "eWiz ${VERSION}")
           echo "New feed: $NEW"
@@ -144,7 +144,7 @@ jobs:
             echo "RELEASES_TOKEN not set — skipping cask update."
             exit 0
           fi
-          TAP_REPO="broisnischal/homebrew-ewiz"
+          TAP_REPO="stroke-app/homebrew-ewiz"
           DMG_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/eWiz-${VERSION}.dmg"
           DMG_SHA=$(shasum -a 256 "dist/eWiz-${VERSION}.dmg" | awk '{print $1}')
           ./scripts/make-cask.sh "${VERSION}" "${DMG_URL}" "${DMG_SHA}"
