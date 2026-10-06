@@ -38,6 +38,15 @@ public enum Easing {
         return 1 - pow(1 - c, 5)
     }
 
+    /// Ease-out that overshoots and settles back: a spring without the solver.
+    ///
+    /// For something small arriving, where the overshoot is what makes it read as an
+    /// object with weight rather than a fade. 1.7 peaks about 10% past the target.
+    public static func outBack(_ t: Double, overshoot: Double = 1.70158) -> Double {
+        let c = clamp(t) - 1
+        return 1 + (overshoot + 1) * c * c * c + overshoot * c * c
+    }
+
     /// Plain ease-out, for when `outStrong` is too abrupt for a long, gentle sweep.
     public static func outCubic(_ t: Double) -> Double {
         let c = clamp(t)

@@ -50,8 +50,8 @@ enum ChargeSound {
         case pluck
         /// A square-wave blip. The sound of a device telling you something, on purpose.
         case blip
-        /// Just the transient. No pitch at all, for anyone who wants to be told without
-        /// being sung to.
+        /// Just a tap. No notes and no tail, for anyone who wants to be told without being
+        /// sung to.
         case tick
 
         var id: String { rawValue }
@@ -177,25 +177,29 @@ enum ChargeSound {
     private static func glass(_ cue: Cue) -> [Float] {
         let bell: [(Double, Double, Double)] = [(2.76, 0.30, 2.0), (5.40, 0.12, 3.5)]
         switch cue {
+        // Shorter than it was. Connect rang for three quarters of a second (1.05s buffer),
+        // which is a notification, not feedback: you've already looked away by then. The
+        // tail is still the longest of the five; it just ends while you're still there.
         case .connect:
-            var mix = Mix(length: seconds(1.05))
-            mix.add(click(burst: 0.003, frequency: 5200, q: 2.2, gain: 0.10), at: 0)
-            mix.add(tone(from: 523, to: 784, sweep: 0.05, decay: 0.95, gain: 0.44,
-                         partials: bell), at: 0.003)
-            return mix.space(delay: 0.041, feedback: 0.40, mix: 0.34).finish(peak: 0.86)
+            var mix = Mix(length: seconds(0.70))
+            mix.add(click(burst: 0.003, frequency: 4600, q: 2.2, gain: 0.08), at: 0)
+            mix.add(tone(from: 523.25, to: 783.99, sweep: 0.05, decay: 0.58, gain: 0.44,
+                         partials: bell, attack: 0.002), at: 0.003)
+            return mix.space(delay: 0.041, feedback: 0.36, mix: 0.30).finish(.connect)
         case .disconnect:
-            var mix = Mix(length: seconds(0.62))
-            mix.add(tone(from: 784, to: 523, sweep: 0.07, decay: 0.52, gain: 0.34,
-                         partials: bell), at: 0)
-            return mix.space(delay: 0.037, feedback: 0.34, mix: 0.26).finish(peak: 0.56)
+            var mix = Mix(length: seconds(0.48))
+            mix.add(tone(from: 783.99, to: 523.25, sweep: 0.07, decay: 0.38, gain: 0.34,
+                         partials: bell, attack: 0.002), at: 0)
+            return mix.space(delay: 0.037, feedback: 0.30, mix: 0.24).finish(.disconnect)
         case .complete:
-            var mix = Mix(length: seconds(1.45))
-            for (index, note) in [523.0, 659.0, 784.0].enumerated() {
+            var mix = Mix(length: seconds(1.15))
+            for (index, note) in [523.25, 659.26, 783.99].enumerated() {
                 mix.add(tone(from: note, to: note * 1.004, sweep: 0.04,
-                             decay: 0.60 + 0.25 * Double(index), gain: 0.30, partials: bell),
-                        at: 0.13 * Double(index))
+                             decay: 0.48 + 0.18 * Double(index), gain: 0.30, partials: bell,
+                             attack: 0.002),
+                        at: 0.12 * Double(index))
             }
-            return mix.space(delay: 0.043, feedback: 0.42, mix: 0.36).finish(peak: 0.82)
+            return mix.space(delay: 0.043, feedback: 0.38, mix: 0.32).finish(.complete)
         }
     }
 
@@ -203,25 +207,36 @@ enum ChargeSound {
     private static func pluck(_ cue: Cue) -> [Float] {
         let wood: [(Double, Double, Double)] = [(2.0, 0.26, 3.0), (4.0, 0.16, 5.0)]
         switch cue {
+        // Two plucks up a fifth to connect, one to unplug, three to finish: the grammar the
+        // tick theme and the haptics use. Connect used to be one pluck bending up a
+        // semitone (440→466) in 30ms, which is too short to hear as a rise and too close
+        // to hear as an interval, so it came across as a pluck slightly out of tune.
+        // A real string settles *down* onto its pitch as the tension relaxes, so each pluck
+        // starts a third of a percent sharp.
         case .connect:
-            var mix = Mix(length: seconds(0.30))
-            mix.add(click(burst: 0.004, frequency: 1600, q: 1.2, gain: 0.22), at: 0)
-            mix.add(tone(from: 440, to: 466, sweep: 0.03, decay: 0.22, gain: 0.60,
-                         partials: wood), at: 0.002)
-            return mix.space(delay: 0.017, feedback: 0.22, mix: 0.14).finish(peak: 0.88)
+            var mix = Mix(length: seconds(0.34))
+            mix.add(click(burst: 0.004, frequency: 1600, q: 1.2, gain: 0.20), at: 0)
+            mix.add(tone(from: 441.5, to: 440.0, sweep: 0.02, decay: 0.16, gain: 0.52,
+                         partials: wood, attack: 0.0015), at: 0.002)
+            mix.add(tone(from: 661.5, to: 659.26, sweep: 0.02, decay: 0.22, gain: 0.56,
+                         partials: wood, attack: 0.0015), at: 0.072)
+            return mix.space(delay: 0.017, feedback: 0.22, mix: 0.14).finish(.connect)
         case .disconnect:
-            var mix = Mix(length: seconds(0.22))
-            mix.add(click(burst: 0.004, frequency: 1300, q: 1.2, gain: 0.16), at: 0)
-            mix.add(tone(from: 392, to: 330, sweep: 0.03, decay: 0.15, gain: 0.42,
-                         partials: wood), at: 0.002)
-            return mix.space(delay: 0.015, feedback: 0.18, mix: 0.10).finish(peak: 0.56)
+            var mix = Mix(length: seconds(0.24))
+            mix.add(click(burst: 0.004, frequency: 1300, q: 1.2, gain: 0.14), at: 0)
+            mix.add(tone(from: 393.3, to: 392.0, sweep: 0.02, decay: 0.17, gain: 0.44,
+                         partials: wood, attack: 0.0015), at: 0.002)
+            return mix.space(delay: 0.015, feedback: 0.18, mix: 0.10).finish(.disconnect)
         case .complete:
-            var mix = Mix(length: seconds(0.58))
-            for (index, note) in [440.0, 554.0, 659.0].enumerated() {
-                mix.add(tone(from: note, to: note * 1.003, sweep: 0.02, decay: 0.20,
-                             gain: 0.38, partials: wood), at: 0.075 * Double(index))
+            var mix = Mix(length: seconds(0.62))
+            for (index, note) in [440.0, 554.37, 659.26].enumerated() {
+                // The last one rings longest, so three plucks land as one gesture.
+                mix.add(tone(from: note * 1.003, to: note, sweep: 0.02,
+                             decay: 0.18 + 0.06 * Double(index), gain: 0.38, partials: wood,
+                             attack: 0.0015),
+                        at: 0.075 * Double(index))
             }
-            return mix.space(delay: 0.019, feedback: 0.24, mix: 0.16).finish(peak: 0.84)
+            return mix.space(delay: 0.019, feedback: 0.24, mix: 0.16).finish(.complete)
         }
     }
 
@@ -231,45 +246,64 @@ enum ChargeSound {
         switch cue {
         case .connect:
             var mix = Mix(length: seconds(0.20))
-            mix.add(tone(from: 660, to: 990, sweep: 0.05, decay: 0.15, gain: 0.50,
+            mix.add(tone(from: 659.26, to: 987.77, sweep: 0.05, decay: 0.15, gain: 0.50,
                          partials: [], wave: .square), at: 0)
-            return mix.finish(peak: 0.72)
+            return mix.finish(.connect)
         case .disconnect:
             var mix = Mix(length: seconds(0.16))
-            mix.add(tone(from: 660, to: 440, sweep: 0.04, decay: 0.12, gain: 0.40,
+            mix.add(tone(from: 659.26, to: 440, sweep: 0.04, decay: 0.12, gain: 0.40,
                          partials: [], wave: .square), at: 0)
-            return mix.finish(peak: 0.52)
+            return mix.finish(.disconnect)
         case .complete:
+            // E major, landing on the B the connect cue rises to. It was E–A–E an octave up,
+            // a suspended shape that leaves the phrase hanging instead of finishing it.
             var mix = Mix(length: seconds(0.42))
-            for (index, note) in [660.0, 880.0, 1320.0].enumerated() {
-                mix.add(tone(from: note, to: note, sweep: 0.01, decay: 0.09, gain: 0.40,
-                             partials: [], wave: .square), at: 0.10 * Double(index))
+            for (index, note) in [659.26, 830.61, 987.77].enumerated() {
+                mix.add(tone(from: note, to: note, sweep: 0.01, decay: 0.09 + 0.03 * Double(index),
+                             gain: 0.40, partials: [], wave: .square), at: 0.10 * Double(index))
             }
-            return mix.finish(peak: 0.70)
+            return mix.finish(.complete)
         }
     }
 
     /// Transients only. Two for connect, one for unplug, three for done — the same
     /// grammar the haptics use, which is the point: this is the version for people who
     /// want the information and none of the music.
+    ///
+    /// Each tap is something struck: a body that rings for about 30ms, two modes at an
+    /// inharmonic ratio (1 : 2.32, roughly a small block of hard wood), with a trace of the
+    /// strike on top for the edge. The old tap was the strike alone, a few milliseconds of
+    /// filtered noise, and that carries almost no energy: under the same −1 dBFS ceiling as
+    /// the other themes it measured 13–16 dB quieter than all of them, so choosing Tick
+    /// meant turning the volume up. A ringing body has the energy a bare edge doesn't, in
+    /// the 1–2 kHz band rather than up in the fizz, and at 30ms it is still a tap, not a
+    /// note: too short to be heard as a pitch, and the inharmonic partial stops it settling
+    /// on one.
+    private static func tap(_ frequency: Double, gain: Double) -> [Float] {
+        var mix = Mix(length: seconds(0.040))
+        mix.add(click(burst: 0.002, frequency: frequency * 1.7, q: 1.2, gain: gain * 0.30), at: 0)
+        mix.add(tone(from: frequency * 1.01, to: frequency, sweep: 0.004, decay: 0.034,
+                     gain: gain, partials: [(2.32, 0.38, 2.2)], attack: 0.0004), at: 0)
+        return mix.samples
+    }
+
     private static func tick(_ cue: Cue) -> [Float] {
         switch cue {
         case .connect:
             var mix = Mix(length: seconds(0.16))
-            mix.add(click(burst: 0.005, frequency: 2000, q: 1.5, gain: 0.55), at: 0)
-            mix.add(click(burst: 0.004, frequency: 2600, q: 1.5, gain: 0.40), at: 0.055)
-            return mix.finish(peak: 0.70)
+            mix.add(tap(1250, gain: 0.50), at: 0)
+            mix.add(tap(1580, gain: 0.50), at: 0.055)
+            return mix.finish(.connect)
         case .disconnect:
             var mix = Mix(length: seconds(0.10))
-            mix.add(click(burst: 0.005, frequency: 1500, q: 1.4, gain: 0.45), at: 0)
-            return mix.finish(peak: 0.48)
+            mix.add(tap(1000, gain: 0.45), at: 0)
+            return mix.finish(.disconnect)
         case .complete:
             var mix = Mix(length: seconds(0.26))
             for index in 0..<3 {
-                mix.add(click(burst: 0.004, frequency: 2000 + 400 * Double(index),
-                              q: 1.6, gain: 0.40), at: 0.055 * Double(index))
+                mix.add(tap(1250 + 250 * Double(index), gain: 0.40), at: 0.055 * Double(index))
             }
-            return mix.finish(peak: 0.66)
+            return mix.finish(.complete)
         }
     }
 
@@ -288,18 +322,21 @@ enum ChargeSound {
             // tick laid on top of a tone rather than as the attack *of* the tone. Lower,
             // wider (Q 1.6 rather than 3.0) and quieter turns it into body.
             mix.add(click(burst: 0.006, frequency: 2400, q: 1.6, gain: 0.26), at: 0)
-            mix.add(tone(from: 392, to: 588, sweep: 0.085, decay: 0.30, gain: 0.56), at: 0.004)
+            mix.add(tone(from: 392, to: 587.33, sweep: 0.085, decay: 0.30, gain: 0.56), at: 0.004)
             return mix.space(delay: 0.023, feedback: 0.30, mix: 0.22)
-                      .finish(peak: 0.90)
+                      .finish(.connect)
 
         case .disconnect:
-            // Half the length and two thirds the level of connect, and the tone falls.
+            // Half the length of connect, quieter (see `target(for:)`), and the same fifth
+            // falling, D5→G4: the connect cue in reverse, so the pair reads as one thing
+            // going and coming. It used to fall C5→E4, a minor sixth in no relation to the
+            // G the other two cues are built on.
             // Losing power shouldn't feel like an event you have to look up from.
             var mix = Mix(length: seconds(0.26))
             mix.add(click(burst: 0.005, frequency: 1900, q: 1.4, gain: 0.18), at: 0)
-            mix.add(tone(from: 523, to: 330, sweep: 0.060, decay: 0.17, gain: 0.38), at: 0.003)
+            mix.add(tone(from: 587.33, to: 392.0, sweep: 0.060, decay: 0.17, gain: 0.38), at: 0.003)
             return mix.space(delay: 0.019, feedback: 0.24, mix: 0.16)
-                      .finish(peak: 0.58)
+                      .finish(.disconnect)
 
         case .complete:
             // G major, ascending, 100ms apart — slow enough to hear as three notes rather
@@ -307,7 +344,7 @@ enum ChargeSound {
             // connect cue, so finishing sounds like the end of the same phrase.
             var mix = Mix(length: seconds(0.78))
             mix.add(click(burst: 0.004, frequency: 2800, q: 1.8, gain: 0.12), at: 0)
-            for (index, note) in [392.0, 494.0, 587.0].enumerated() {
+            for (index, note) in [392.0, 493.88, 587.33].enumerated() {
                 // The last note rings longest. Three notes decaying identically read as
                 // three separate events; letting the tail lengthen up the phrase makes them
                 // one gesture that lands on the third.
@@ -316,11 +353,68 @@ enum ChargeSound {
                         at: 0.10 * Double(index))
             }
             return mix.space(delay: 0.031, feedback: 0.34, mix: 0.26)
-                      .finish(peak: 0.80)
+                      .finish(.complete)
         }
     }
 
     private static func seconds(_ t: Double) -> Int { Int(t * rate) }
+
+    // MARK: - Level
+
+    /// How loud each cue is, in LUFS over its loudest 100ms. The one place the relative
+    /// weight of the cues is decided: connect and complete level with each other, and
+    /// disconnect 4.5 dB under them — an aside, not an event to look up from.
+    nonisolated fileprivate static func target(for cue: Cue) -> Double {
+        switch cue {
+        case .connect:    return -12.0
+        case .disconnect: return -16.5
+        case .complete:   return -12.0
+        }
+    }
+
+    /// −1 dBFS. Nothing here is allowed past it, whatever its loudness target asks for.
+    nonisolated fileprivate static let ceiling = 0.891
+
+    /// K-weighted loudness of the loudest 100ms, in LUFS (ITU-R BS.1770's filter, without
+    /// its 400ms block and gating, which are for programme material: a UI cue is over
+    /// inside one block, and hearing integrates over about 100ms at these lengths anyway).
+    nonisolated fileprivate static func loudness(of samples: [Float]) -> Double {
+        // Stage one, a high shelf (+4 dB above ~1.7 kHz), then a high-pass at 38 Hz: the
+        // ear's sensitivity, roughly, as two biquads.
+        func shelf() -> [Double] {
+            let a = pow(10, 3.999843853973347 / 40), w = 2 * Double.pi * 1681.974450955533 / rate
+            let alpha = sin(w) / (2 * 0.7071752369554196), c = cos(w), r = 2 * sqrt(a) * alpha
+            let a0 = (a + 1) - (a - 1) * c + r
+            return [a * ((a + 1) + (a - 1) * c + r) / a0, -2 * a * ((a - 1) + (a + 1) * c) / a0,
+                    a * ((a + 1) + (a - 1) * c - r) / a0, 2 * ((a - 1) - (a + 1) * c) / a0,
+                    ((a + 1) - (a - 1) * c - r) / a0]
+        }
+        func highPass() -> [Double] {
+            let w = 2 * Double.pi * 38.13547087602444 / rate
+            let alpha = sin(w) / (2 * 0.5003270373238773), c = cos(w), a0 = 1 + alpha
+            return [(1 + c) / 2 / a0, -(1 + c) / a0, (1 + c) / 2 / a0, -2 * c / a0, (1 - alpha) / a0]
+        }
+        func filter(_ x: [Double], _ k: [Double]) -> [Double] {
+            var y = x, x1 = 0.0, x2 = 0.0, y1 = 0.0, y2 = 0.0
+            for i in x.indices {
+                let v = k[0] * x[i] + k[1] * x1 + k[2] * x2 - k[3] * y1 - k[4] * y2
+                x2 = x1; x1 = x[i]; y2 = y1; y1 = v; y[i] = v
+            }
+            return y
+        }
+        let weighted = filter(filter(samples.map(Double.init), shelf()), highPass())
+        let window = Int(0.100 * rate), hop = Int(0.010 * rate)
+        var energy = [Double](repeating: 0, count: weighted.count + window + 1)
+        for i in weighted.indices { energy[i + 1] = energy[i] + weighted[i] * weighted[i] }
+        for i in weighted.count..<(weighted.count + window) { energy[i + 1] = energy[i] }
+        var loudest = 0.0
+        var start = 0
+        while start + window <= weighted.count + window - hop {
+            loudest = max(loudest, (energy[start + window] - energy[start]) / Double(window))
+            start += hop
+        }
+        return -0.691 + 10 * log10(loudest)
+    }
 
     /// Amplitude at sample `i` of an envelope decaying to −60 dB over `duration`.
     ///
@@ -368,10 +462,14 @@ enum ChargeSound {
             return Double(Int64(bitPattern: seed)) / Double(Int64.max)
         }
 
+        let onset = 0.0006 * rate
         for i in 0..<out.count {
             // The burst is itself shaped, so the noise doesn't start at full level: a
-            // rectangular gate has a step edge, and a step edge is a click of its own.
-            let x = i < noiseCount ? noise() * decay(i, over: burst) : 0
+            // rectangular gate has a step edge, and a step edge is a click of its own. The
+            // decay alone started at full level, so the burst also rises over 0.6ms — still
+            // well inside what the ear hears as instantaneous.
+            let rise = 0.5 - 0.5 * cos(.pi * min(1.0, Double(i) / onset))
+            let x = i < noiseCount ? noise() * decay(i, over: burst) * rise : 0
             let y = b0 * x + b2 * x2 - a1 * y1 - a2 * y2
             x2 = x1; x1 = x
             y2 = y1; y1 = y
@@ -398,10 +496,12 @@ enum ChargeSound {
                              decay decayTime: Double, gain: Double,
                              partials: [(Double, Double, Double)] = [(2.0, 0.22, 3.0),
                                                                      (3.0, 0.09, 5.0)],
-                             wave: Wave = .sine) -> [Float] {
+                             wave: Wave = .sine, attack: Double = 0.003) -> [Float] {
         let count = Int(decayTime * rate)
         var out = [Float](repeating: 0, count: count)
         let sweepSamples = max(1.0, sweep * rate)
+        let attackSamples = max(1.0, attack * rate)
+        let releaseSamples = min(Double(count), 0.004 * rate)
         var phase = 0.0
 
         for i in 0..<count {
@@ -414,20 +514,47 @@ enum ChargeSound {
             // stops a tone sounding like a test signal. One partial is a synthesiser; the
             // ear needs two or three to hear a struck object.
             func osc(_ multiple: Double) -> Double {
-                let x = sin(phase * multiple)
-                return wave == .sine ? x : (x >= 0 ? 1 : -1) * 0.5
+                wave == .sine ? sin(phase * multiple) : square(phase * multiple,
+                                                               frequency * multiple)
             }
             var voice = osc(1) * decay(i, over: decayTime)
             for (ratio, level, divisor) in partials {
                 voice += osc(ratio) * decay(i, over: decayTime / divisor) * level
             }
 
-            // A 1.5ms fade-in. Starting a sine at full amplitude is a discontinuity, and
-            // a discontinuity is a click — an unintended one, on top of the one we meant.
-            let attack = min(1.0, Double(i) / (0.0015 * rate))
-            out[i] = Float(voice * attack * gain)
+            // A raised-cosine fade-in, 3ms unless the voice asks otherwise. Starting at full
+            // amplitude is a step, and the old linear ramp still left a corner where it met
+            // the tone — measurable as a spike in the second difference, audible as a tick
+            // on top of the one we meant. The cosine has no corner at either end.
+            let rise = 0.5 - 0.5 * cos(.pi * min(1.0, Double(i) / attackSamples))
+            // And a 4ms fade-out. The envelope is at -60 dB when the voice ends, but the
+            // voice usually ends while another is still ringing, where that last step is
+            // the only edge in an otherwise smooth waveform.
+            let left = Double(count - 1 - i)
+            let fall = left < releaseSamples ? 0.5 - 0.5 * cos(.pi * left / releaseSamples) : 1
+            out[i] = Float(voice * rise * fall * gain)
         }
         return out
+    }
+
+    /// A band-limited square: odd harmonics at 1/k, tapering out between 4.5 and 7 kHz.
+    ///
+    /// The naive square (sign of a sine) has an infinite series of harmonics, and every one
+    /// past Nyquist folds back down as an inharmonic whine: measured, the old blip had
+    /// energy above 12 kHz only 17 dB under the whole cue, and a hard edge twice a cycle.
+    /// Ending the series below 7 kHz keeps the hollow square character and loses the fizz.
+    /// The taper rather than a hard stop because the blips sweep: a harmonic crossing a
+    /// hard cutoff mid-sweep switches on at full level, which is a step of its own.
+    /// Scaled to the same ±0.5 swing the old one had, so the voices it sits in don't move.
+    private static func square(_ phase: Double, _ frequency: Double) -> Double {
+        var sum = 0.0
+        var k = 1.0
+        while k * frequency < 7_000 {
+            let edge = min(1, max(0, (7_000 - k * frequency) / 2_500))
+            sum += sin(phase * k) / k * (0.5 - 0.5 * cos(.pi * edge))
+            k += 2
+        }
+        return sum * 2 / .pi      // (4/π)·Σ sin(kθ)/k is ±1; half of that
     }
 
     /// Somewhere to lay voices down at their own offsets and get a finished buffer back.
@@ -443,15 +570,6 @@ enum ChargeSound {
             }
         }
 
-        /// Scale so the loudest sample sits at `peak`, then fade the last 3ms to true
-        /// zero.
-        ///
-        /// Both halves matter. Normalising is how the cues are made comparable — the
-        /// difference in weight between connect and disconnect should be a decision, not
-        /// an accident of how many voices each happens to sum. And the fade is because an
-        /// exponential envelope is still at −60 dB when the buffer ends: 0.001 is
-        /// inaudible on its own but the *step* from it to silence is not, and it would
-        /// land on every single play.
         /// A room, cheaply.
     ///
     /// Every cue here decayed into absolute silence, which is a thing that happens nowhere
@@ -477,15 +595,34 @@ enum ChargeSound {
         return copy
     }
 
-    /// Normalise to a fixed peak, then fade the last few milliseconds.
+    /// Scale to the cue's loudness, then fade the last 3ms to true zero.
+    ///
+    /// Loudness, not peak. Every cue used to be scaled so its loudest sample hit a fixed
+    /// level, and a peak says nothing about how loud a thing sounds: a sine and a square at
+    /// the same peak are several dB apart, and a 5ms click at the same peak as a tone is
+    /// barely there. Measured, the themes sat 16 dB apart for the same cue, so changing
+    /// theme changed the volume. Each cue is now set to a K-weighted loudness (see
+    /// `loudness(of:)`) — the weight of connect against disconnect is the decision in
+    /// `target(for:)`, the same in every theme.
+    ///
+    /// A ceiling still applies, at −1 dBFS: a cue too short to reach its loudness below it
+    /// stops there rather than clipping. Only the tick theme gets there, and it lands about
+    /// 6 dB under the others by this measure — the most a 30ms tap can carry, and roughly
+    /// what a transient makes up in how sharply it's heard.
+    ///
+    /// And the fade, because an exponential envelope is still at −60 dB when the buffer
+    /// ends: 0.001 is inaudible on its own but the *step* from it to silence is not, and
+    /// it would land on every single play.
     ///
     /// Non-mutating so it can be chained after `space`, which returns a new `Mix` — a
     /// mutating method can't be called on the result of a function.
-    func finish(peak: Double) -> [Float] {
+    func finish(_ cue: Cue) -> [Float] {
             var out = samples
             let loudest = out.reduce(0.0) { max($0, Double(abs($1))) }
-            guard loudest > 0 else { return out }
-            let scale = Float(peak / loudest)
+            let measured = ChargeSound.loudness(of: out)
+            guard loudest > 0, measured.isFinite else { return out }
+            let wanted = pow(10, (ChargeSound.target(for: cue) - measured) / 20)
+            let scale = Float(min(wanted, ChargeSound.ceiling / loudest))
             for i in out.indices { out[i] *= scale }
 
             // Never end on a non-zero sample: that edge is a click, and it would undo

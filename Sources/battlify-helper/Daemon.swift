@@ -248,8 +248,9 @@ final class Daemon: @unchecked Sendable {
         }
     }
 
-    /// Every two minutes, ask the socket a real question. Called from the tick thread with
-    /// the lock released — the answer comes back on the accept thread, which needs that lock.
+    /// Every two minutes, check that something is still accepting on the socket. The probe
+    /// is answered on the accept thread without the daemon's lock, so a slow request can't
+    /// make a live listener look dead.
     private func dueForSocketProbe(_ server: ControlServer) -> Bool {
         guard Date().timeIntervalSince(lastSocketProbe) >= 120 else { return false }
         lastSocketProbe = Date()
@@ -601,7 +602,7 @@ final class Daemon: @unchecked Sendable {
         nativeDraining = nativeHolding && PowerMonitor.read().dischargeWatts > 2
         if !chargeControlSupported {
             lastPauseReason = adapterHolding ? "hold"
-                : nativeHolding ? (cfg.holdCharge ? "hold" : "limit") : nil
+                : nativeHolding ? (paused ? "paused" : cfg.holdCharge ? "hold" : "limit") : nil
         }
         updateMagSafeLED(cfg, snap, takingCharge: takingCharge(cfg, snap, desired: desired, enable: enable),
                          settling: settling)
@@ -1122,7 +1123,10 @@ final class Daemon: @unchecked Sendable {
     /// Caller holds `lock`.
     private func updateHoldAnchor(_ cfg: BattlifyConfig, _ snap: BatterySnapshot) {
         guard !chargeControlSupported else { return }
-        if cfg.holdCharge {
+        // A pause is a hold with an end time. With no charge key it has no lever of its own,
+        // so it used to do nothing at all: "Charging paused" in the panel while the battery
+        // climbed. It parks the same way the hold does.
+        if cfg.holdCharge || cfg.pauseUntil != nil {
             guard holdAnchor == nil, snap.onExternalPower else { return }
             holdAnchor = snap.percentage
             if let native = nativeLimit {
@@ -1150,7 +1154,7 @@ final class Daemon: @unchecked Sendable {
     private func nativeLimitWanted(_ cfg: BattlifyConfig, bypass: Bool) -> Int? {
         guard let native = nativeLimit else { return nil }
         // A bypass lifts the limit; it never lifts the hold, which wins over the limit anyway.
-        return NativeChargeLimit.target(holdAnchor: cfg.holdCharge ? holdAnchor : nil,
+        return NativeChargeLimit.target(holdAnchor: cfg.holdCharge || cfg.pauseUntil != nil ? holdAnchor : nil,
                                         limit: cfg.chargeLimitEnabled && !bypass ? cfg.chargeLimit : nil,
                                         in: native.steps)
     }

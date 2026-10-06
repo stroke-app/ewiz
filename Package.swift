@@ -9,6 +9,7 @@ let package = Package(
     products: [
         .executable(name: "Battlify", targets: ["Battlify"]),
         .executable(name: "battlify-helper", targets: ["battlify-helper"]),
+        .executable(name: "battlify-mcp", targets: ["battlify-mcp"]),
         .executable(name: "licensetool", targets: ["licensetool"])
     ],
     targets: [
@@ -53,6 +54,13 @@ let package = Package(
             name: "battlify-helper",
             dependencies: ["BattlifyKit"],
             path: "Sources/battlify-helper"
+        ),
+        // MCP server on stdio (runs as the user, launched by an AI agent): lets the agent
+        // keep the Mac awake for a long task, through the helper's control socket.
+        .executableTarget(
+            name: "battlify-mcp",
+            dependencies: ["BattlifyKit"],
+            path: "Sources/battlify-mcp"
         ),
         // Seller-side license key generator/signer (not shipped in the app).
         .executableTarget(

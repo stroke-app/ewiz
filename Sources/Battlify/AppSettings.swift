@@ -48,6 +48,10 @@ final class AppSettings: ObservableObject {
     @Published var batteryIconStyle: BatteryIconStyle {
         didSet { defaults.set(batteryIconStyle.rawValue, forKey: Keys.iconStyle) }
     }
+    /// Shake the menu-bar glyph as the battery runs out. See `LowBatteryAlarm`.
+    @Published var shakeOnLowBattery: Bool {
+        didSet { defaults.set(shakeOnLowBattery, forKey: Keys.shakeOnLow) }
+    }
     /// Off by default so we don't prompt for notification permission until opt-in.
     @Published var notificationsEnabled: Bool {
         didSet { defaults.set(notificationsEnabled, forKey: Keys.notifications) }
@@ -144,6 +148,7 @@ final class AppSettings: ObservableObject {
         static let animateIcon = "menubar.animateIcon"
         static let iconStyle = "menubar.iconStyle"
         static let notifications = "notifications.enabled"
+        static let shakeOnLow = "menubar.shakeOnLowBattery"
         static let caffeineEndOnBattery = "caffeine.endOnBattery"
         static let caffeineDisplayOnBattery = "caffeine.keepDisplayOnBattery"
         static let caffeineDisplayMigrated = "caffeine.keepDisplayOnBattery.defaultedOn"
@@ -174,6 +179,7 @@ final class AppSettings: ObservableObject {
         batteryIconStyle = (defaults.string(forKey: Keys.iconStyle))
             .flatMap(BatteryIconStyle.init(rawValue:)) ?? .rounded
         notificationsEnabled = defaults.bool(forKey: Keys.notifications)
+        shakeOnLowBattery = defaults.object(forKey: Keys.shakeOnLow) as? Bool ?? true
         caffeineEndOnBattery = defaults.bool(forKey: Keys.caffeineEndOnBattery)
         // Migrated once, not simply re-defaulted. Anyone who ran an earlier build has a
         // `false` on disk — written either by the old default or by trying the switch and

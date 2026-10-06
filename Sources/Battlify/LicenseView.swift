@@ -1,7 +1,9 @@
 import SwiftUI
+import BattlifyKit
 
 struct LicenseView: View {
     @EnvironmentObject private var license: LicenseManager
+    @State private var confirmingRemoval = false
 
     // Checkout page; mints an Ed25519 license key on purchase.
     private let buyURL = URL(string: "https://battlify.app/buy")!
@@ -9,8 +11,12 @@ struct LicenseView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             HStack(spacing: 12) {
-                Image(systemName: "bolt.batteryblock")
-                    .font(.largeTitle).foregroundStyle(.primary)
+                // The app's own mark, as on the About tab, not a stock symbol.
+                BatteryGlyph(percentage: 100, bolt: true,
+                             color: Color(ChargePalette.legible(1)), width: 30)
+                    .frame(width: 52, height: 52)
+                    .background(.quaternary.opacity(0.4),
+                                in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Battlify").font(.title2.weight(.semibold))
                     Text(license.statusText).font(.callout).foregroundStyle(.secondary)
@@ -19,27 +25,74 @@ struct LicenseView: View {
 
             Divider()
 
-            if case .licensed = license.state {
-                licensedView
+            if case .licensed(let name) = license.state {
+                licensedView(name)
             } else {
                 pricingView
                 activationView
             }
+
+            Divider()
+            supportFooter
         }
         .padding(24)
         .frame(width: 440)
+        // The window opens with the first button as first responder, and with Remove
+        // License the only button that was the destructive one, ringed and a Space bar
+        // away from firing. No ring, and removal now asks first anyway.
+        .focusEffectDisabled()
+        .confirmationDialog("Remove the license from this Mac?", isPresented: $confirmingRemoval) {
+            Button("Remove License", role: .destructive) { license.deactivate() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Battlify goes back to the trial, or locks if the trial is used up, until the key is entered again. Keep a copy of your key first.")
+        }
     }
 
     // MARK: - Licensed
 
     @ViewBuilder
-    private var licensedView: some View {
-        Text("Thanks for buying Battlify. Every feature is unlocked.")
-            .font(.callout).foregroundStyle(.secondary)
-            .fixedSize(horizontal: false, vertical: true)
+    private func licensedView(_ name: String) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: "checkmark.seal.fill")
+                .font(.title3).foregroundStyle(.green)
+            VStack(alignment: .leading, spacing: 3) {
+                Text("Licensed to \(name)").font(.callout.weight(.semibold))
+                Text("One-time purchase. Every feature is unlocked on this Mac, updates included.")
+                    .font(.caption).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.quaternary.opacity(0.4), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+
         HStack {
             Spacer()
-            Button("Remove License", role: .destructive) { license.deactivate() }
+            // Small and plain: the way out of a purchase isn't the action this window is for.
+            Button("Remove License…") { confirmingRemoval = true }
+                .controlSize(.small)
+        }
+    }
+
+    // MARK: - Support
+
+    /// Lost keys, a key that won't take, a new Mac: the questions people actually write in
+    /// with. The email carries the device code and app version, which is what answering
+    /// any of them needs first.
+    private var supportFooter: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "questionmark.circle").foregroundStyle(.secondary)
+            Text("Lost your key or moving to a new Mac?")
+                .font(.caption).foregroundStyle(.secondary)
+            Button("Contact Support") {
+                let summary = "Battlify \(SupportInfo.version)\nmacOS \(ProcessInfo.processInfo.operatingSystemVersionString)\nLicense: \(license.statusText)"
+                if let url = SupportInfo.emailURL(subject: "Battlify license", summary: summary,
+                                                  extra: ["Device code: \(license.deviceCode)"]) {
+                    NSWorkspace.shared.open(url)
+                }
+            }
+            .buttonStyle(.link).font(.caption)
         }
     }
 

@@ -1,0 +1,40 @@
+import Foundation
+import BattlifyKit
+
+// battlify-mcp: lets an AI agent keep this Mac awake for a long task, over MCP on stdio.
+//
+// Register with Claude Code:
+//   claude mcp add battlify -- /Applications/Battlify.app/Contents/MacOS/battlify-mcp
+//
+// stdout carries protocol messages only; anything for a human goes to stderr.
+
+setvbuf(stdout, nil, _IOLBF, 0)
+
+// Inside Battlify.app/Contents/MacOS, Bundle.main is the app, so this is the app's version.
+let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "dev"
+let awake = AgentAwake()
+let server = MCPServer(awake: awake, version: version)
+
+// A lid hold outlives this process, so it's handed back however the session ends: the
+// client closing stdin (below) or a signal (here).
+var signalSources: [DispatchSourceSignal] = []
+for sig in [SIGTERM, SIGINT, SIGHUP] {
+    signal(sig, SIG_IGN)
+    let source = DispatchSource.makeSignalSource(signal: sig, queue: .global())
+    source.setEventHandler {
+        awake.shutdown()
+        exit(0)
+    }
+    source.resume()
+    signalSources.append(source)
+}
+
+FileHandle.standardError.write(Data("battlify-mcp \(version) ready on stdio\n".utf8))
+
+while let line = readLine(strippingNewline: true) {
+    guard !line.trimmingCharacters(in: .whitespaces).isEmpty else { continue }
+    if let reply = server.handle(line: line) {
+        print(reply)
+    }
+}
+awake.shutdown()

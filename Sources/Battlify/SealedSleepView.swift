@@ -23,6 +23,17 @@ struct SealedSleepPanel: View {
     var compact = false
 
     private var state: SleepState { automation.sleepState(with: chargeLimit) }
+
+    /// The leaks this view lists and counts.
+    ///
+    /// The menu leaves out Always Active holding on battery while it's on. That's Lid mode,
+    /// switched on from the tile right under this section, which already says so. Listed
+    /// here it was a row inserted *above* the tile a moment after pressing it, and the tile
+    /// slid out from under the pointer. Settings still lists it with the rest.
+    private var leaks: [SleepLeak] {
+        guard compact, chargeLimit.keepAwake else { return state.leaks }
+        return state.leaks.filter { $0 != .keptAwakeOnBattery }
+    }
     private var result: SealedSleepResult? {
         automation.lastLidSession.flatMap(SealedSleepResult.init)
     }
@@ -90,7 +101,7 @@ struct SealedSleepPanel: View {
     private var verdict: String {
         guard chargeLimit.daemonAvailable else { return "Helper not installed" }
         guard chargeLimit.sealedSleep else { return "Ordinary macOS sleep" }
-        let remaining = state.leaks.count
+        let remaining = leaks.count
         // Nothing to say in the menu when it is simply working: the switch reads on, the
         // row is titled Sealed Sleep, and a line under it repeating that in other words is
         // the panel talking to itself. The leak counts stay, because those are news.
@@ -212,9 +223,9 @@ struct SealedSleepPanel: View {
     /// place: a label, rows, and space.
     @ViewBuilder
     private var checklist: some View {
-        let leaking = Set(state.leaks)
+        let leaking = Set(leaks)
         let shown = compact
-            ? state.leaks
+            ? leaks
             : SleepLeak.allCases.sorted { $0.weight < $1.weight }
         if !shown.isEmpty {
             VStack(spacing: compact ? DS.Space.s : 0) {

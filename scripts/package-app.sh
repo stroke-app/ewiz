@@ -18,6 +18,7 @@ cd "$REPO_DIR"
 BUILD_FLAGS=(-c release -Xswiftc -Osize -Xlinker -dead_strip)
 swift build "${BUILD_FLAGS[@]}" --product Battlify
 swift build "${BUILD_FLAGS[@]}" --product battlify-helper
+swift build "${BUILD_FLAGS[@]}" --product battlify-mcp
 BIN_DIR="$REPO_DIR/.build/release"
 
 echo "==> Assembling $APP"
@@ -74,6 +75,8 @@ fi
 # nested executable belongs for signing.
 mkdir -p "$CONTENTS/Library/LaunchDaemons"
 cp "$BIN_DIR/battlify-helper" "$CONTENTS/MacOS/battlify-helper"
+# The MCP server an AI agent launches (claude mcp add battlify -- …/Contents/MacOS/battlify-mcp).
+cp "$BIN_DIR/battlify-mcp" "$CONTENTS/MacOS/battlify-mcp"
 cp "$REPO_DIR/scripts/com.battlify.helper.daemon.plist" \
    "$CONTENTS/Library/LaunchDaemons/com.battlify.helper.plist"
 
@@ -82,7 +85,7 @@ cp "$REPO_DIR/scripts/com.battlify.helper.daemon.plist" \
 cp "$REPO_DIR/scripts/com.battlify.helper.plist" "$CONTENTS/Resources/"
 cp "$REPO_DIR/scripts/install-helper-bundled.sh" "$CONTENTS/Resources/"
 cp "$REPO_DIR/scripts/uninstall-helper.sh" "$CONTENTS/Resources/"
-chmod 755 "$CONTENTS/MacOS/battlify-helper" \
+chmod 755 "$CONTENTS/MacOS/battlify-helper" "$CONTENTS/MacOS/battlify-mcp" \
           "$CONTENTS/Resources/install-helper-bundled.sh" \
           "$CONTENTS/Resources/uninstall-helper.sh"
 
@@ -90,6 +93,7 @@ chmod 755 "$CONTENTS/MacOS/battlify-helper" \
 # invalidate the signature). -x keeps external symbols, so nothing breaks.
 strip -x "$CONTENTS/MacOS/Battlify"
 strip -x "$CONTENTS/MacOS/battlify-helper"
+strip -x "$CONTENTS/MacOS/battlify-mcp"
 
 # Info.plist — LSUIElement makes it a menu-bar-only (agent) app.
 cat > "$CONTENTS/Info.plist" <<PLIST
@@ -134,11 +138,12 @@ fi
 # umask and not the modes set when they were copied in — 0700 by default, which ships an
 # app only its builder can run and a daemon binary root has to be lucky to execute. Fix
 # the whole bundle here, after stripping and before signing.
-chmod 755 "$CONTENTS/MacOS/Battlify" "$CONTENTS/MacOS/battlify-helper"
+chmod 755 "$CONTENTS/MacOS/Battlify" "$CONTENTS/MacOS/battlify-helper" "$CONTENTS/MacOS/battlify-mcp"
 chmod -R go+rX "$APP_DIR"
 
 # Sign nested executables first, then the app bundle (no deprecated --deep).
 codesign "${SIGN_FLAGS[@]}" "$CONTENTS/MacOS/battlify-helper"
+codesign "${SIGN_FLAGS[@]}" "$CONTENTS/MacOS/battlify-mcp"
 codesign "${SIGN_FLAGS[@]}" "$APP_DIR"
 codesign --verify --strict --verbose=2 "$APP_DIR" || echo "warning: verify failed"
 

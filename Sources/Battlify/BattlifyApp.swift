@@ -103,11 +103,16 @@ struct BattlifyApp: App {
         }
         .windowResizability(.contentMinSize)
 
-        Window("Activate Battlify", id: "license") {
+        // Named for what it manages, not one of the two things it does: a licensed Mac
+        // opening "Activate Battlify" reads as the purchase having been lost.
+        Window("Battlify License", id: "license") {
             LicenseView()
                 .environmentObject(license)
         }
         .windowResizability(.contentSize)
+        // Centred, rather than wherever the last window of that size happened to sit,
+        // which put it half off-screen behind Settings.
+        .defaultPosition(.center)
     }
 }
 
@@ -140,6 +145,9 @@ struct MenuBarLabel: View {
     @State private var chargeStoppedAt: Date?
     /// A one-off connect/disconnect animation, and how far through it we are.
     @State private var transition: IconTransition?
+    /// Whether the mark on the adapter was last the bolt, so unplugging shrinks away the mark
+    /// that was actually showing. The snapshot that reports the unplug has already lost it.
+    @State private var lastMarkWasBolt = false
 
     var body: some View {
         let snap = battery.snapshot
@@ -216,7 +224,9 @@ struct MenuBarLabel: View {
                         holding: holdingNow,
                         animating: animating,
                         celebrateEnded: { celebrating = false },
-                        transition: $transition)
+                        transition: $transition,
+                        alarm: motion && settings.shakeOnLowBattery && !snap.isPluggedIn
+                            ? LowBatteryAlarm(percentage: snap.percentage) : .none)
             if let text = labelText(snap) {
                 // Monospaced digits so the item doesn't shift width as it ticks.
                 Text(text).monospacedDigit()
@@ -226,6 +236,12 @@ struct MenuBarLabel: View {
         // Record when charging stops, *before* the completion check below reads it.
         .onChange(of: snap.isCharging) { old, new in
             if old && !new { chargeStoppedAt = Date() }
+            // Bolt ↔ pause while on the adapter. Plugging in lands here too, a few seconds
+            // after the pause mark popped in, once current actually starts: that change is
+            // the charger negotiating, shown rather than hidden.
+            guard snap.isPluggedIn else { return }
+            lastMarkWasBolt = new
+            if motion { transition = .markIn }
         }
         // Flash only when it lands full/at-limit right after charging, not on wake-already-holding.
         .onChange(of: chargeComplete(snap)) { _, done in
@@ -239,17 +255,22 @@ struct MenuBarLabel: View {
             }
             guard settings.motionAllowed else { return }
             celebrating = true
+            transition = .markIn                 // the check springs in
         }
-        // Held on or off: morph the bolt into a pause mark and back.
+        // Held on or off: the mark springs again, so the switch visibly landed.
         .onChange(of: holdingNow) { was, isNow in
             guard was != isNow, settings.motionAllowed else { return }
-            transition = isNow ? .heldOn : .heldOff
+            transition = .markIn
         }
         // Plug and unplug feedback. Driven off the snapshot rather than a power-source
         // callback of its own: this view already re-renders on every snapshot change, and
         // `onChange` fires once per real transition rather than on every poll.
         .onChange(of: snap.isPluggedIn) { was, isNow in
             guard was != isNow else { return }
+            if settings.motionAllowed {
+                transition = isNow ? .markIn : lastMarkWasBolt ? .markOutBolt : .markOutPause
+            }
+            if isNow { lastMarkWasBolt = snap.isCharging }
             if settings.hapticsEnabled {
                 isNow ? HapticFeedback.chargeConnected() : HapticFeedback.chargeDisconnected()
             }
@@ -387,6 +408,39 @@ extension BatterySnapshot {
     }
 }
 
+extension Notification.Name {
+    /// Ask the menu-bar glyph for one low-battery shake, from Settings' Preview button.
+    static let battlifyPreviewLowBatteryShake = Notification.Name("BattlifyPreviewLowBatteryShake")
+}
+
+/// How urgently the battery is running out, on battery power only.
+enum LowBatteryAlarm: Equatable {
+    case none
+    /// 20% and under: a gentle shake on the way in, then every five minutes.
+    case low
+    /// 10% and under: a harder shake every twenty seconds until it's plugged in.
+    case critical
+
+    init(percentage: Int) {
+        self = percentage <= 10 ? .critical : percentage <= 20 ? .low : .none
+    }
+
+    /// Seconds between shakes, nil for none.
+    var interval: Double? {
+        switch self {
+        case .none:     return nil
+        case .low:      return 300
+        case .critical: return 20
+        }
+    }
+
+    /// Peak sideways travel, in viewBox units.
+    var strength: Double { self == .critical ? 1.1 : 0.7 }
+
+    /// Frames in one shake, 40ms apart: about half a second.
+    static let shakeSteps = 12
+}
+
 /// The menu-bar glyph and its clocks, kept apart from the label that surrounds it.
 ///
 /// Two reasons it is its own view. The animation ticks four times a second, and a frame
@@ -408,8 +462,11 @@ private struct MenuBarIcon: View {
     /// because the tint depends on it.
     let celebrateEnded: () -> Void
     @Binding var transition: IconTransition?
+    /// How hard the battery is running out, which decides how often the glyph shakes.
+    var alarm: LowBatteryAlarm = .none
 
     @State private var animFrame = 0
+    @State private var shake: CGFloat = 0
     @State private var celebrateTicks = 0
     @State private var transitionStep = 0
     @State private var screensAsleep = false
@@ -419,7 +476,7 @@ private struct MenuBarIcon: View {
     var body: some View {
         // Drawn as an NSImage: SwiftUI's .foregroundStyle is overridden for status-item
         // labels, and the renderer draws the charging bolt inside the glyph.
-        Image(nsImage: BatteryIconRenderer.image(
+        let glyph = BatteryIconRenderer.image(
             style: style,
             percentage: percentage,
             charging: charging,
@@ -429,7 +486,9 @@ private struct MenuBarIcon: View {
             pluggedIn: pluggedIn,
             holding: holding,
             transition: transition,
-            transitionStep: transitionStep))
+            transitionStep: transitionStep,
+            shake: shake)
+        Image(nsImage: glyph)
         // One shared tick; task(id:) cancels it when nothing animates. 250ms — twice the
         // rate of the old 500ms, because a six-step sweep at 2fps reads as a slideshow no
         // matter how it's eased.
@@ -460,9 +519,36 @@ private struct MenuBarIcon: View {
             transition = nil
             transitionStep = 0
         }
+        // Low battery: the glyph trembles, once on the way into each band and then on a
+        // timer, more often the lower it gets. Not a loop: a half-second of motion every
+        // so often costs nothing, where a glyph that never stops is both a CPU bill and
+        // the kind of alarm people learn to stop seeing.
+        .task(id: alarm) {
+            shake = 0
+            guard let every = alarm.interval else { return }
+            while !Task.isCancelled {
+                if !screensAsleep { await runShake(strength: alarm.strength) }
+                try? await Task.sleep(nanoseconds: UInt64(every * 1_000_000_000))
+            }
+        }
+        // Settings' Preview: one critical-strength shake, whatever the battery says.
+        .onReceive(NotificationCenter.default.publisher(for: .battlifyPreviewLowBatteryShake)) { _ in
+            Task { await runShake(strength: LowBatteryAlarm.critical.strength) }
+        }
         .onReceive(NSWorkspace.shared.notificationCenter
             .publisher(for: NSWorkspace.screensDidSleepNotification)) { _ in screensAsleep = true }
         .onReceive(NSWorkspace.shared.notificationCenter
             .publisher(for: NSWorkspace.screensDidWakeNotification)) { _ in screensAsleep = false }
+    }
+
+    /// One shake: about half a second of damped side-to-side, then still.
+    private func runShake(strength: Double) async {
+        for step in 0...LowBatteryAlarm.shakeSteps {
+            shake = BatteryIconRenderer.shakeOffset(
+                Double(step) / Double(LowBatteryAlarm.shakeSteps), strength: strength)
+            try? await Task.sleep(nanoseconds: 40_000_000)
+            if Task.isCancelled { break }
+        }
+        shake = 0
     }
 }

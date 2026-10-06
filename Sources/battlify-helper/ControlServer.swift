@@ -119,8 +119,10 @@ final class ControlServer {
     /// waits forever, which is what the app experiences as a hang. This is the only check
     /// that tests the whole path, so it runs on a slow cadence rather than every tick.
     ///
-    /// Safe to call from the tick thread only while it isn't holding the daemon's lock: the
-    /// request is served on the accept thread, which takes that lock itself.
+    /// It asks with `probeLine`, which the accept thread answers itself. Asking with a real
+    /// request measured the daemon's lock instead of the listener: a sleep transition holds
+    /// that lock for seconds, the probe timed out behind it, and a perfectly good socket was
+    /// torn down and rebound, dropping whatever the app had queued on it.
     func answersItsOwnCall(timeout: Int32 = 2) -> Bool {
         let fd = socket(AF_UNIX, SOCK_STREAM, 0)
         guard fd >= 0 else { return false }
@@ -148,7 +150,7 @@ final class ControlServer {
         }
         guard connected == 0 else { return false }
 
-        let request = Data("\"getStatus\"\n".utf8)
+        let request = Self.probeLine + Data([0x0A])
         let sent = request.withUnsafeBytes { raw in write(fd, raw.baseAddress, raw.count) }
         guard sent == request.count else { return false }
 
@@ -193,13 +195,41 @@ final class ControlServer {
                     return
                 }
             }
-            if peerIsAuthorized(client) {
-                handleClient(client, handler: handler)
-            } else {
+            guard peerIsAuthorized(client) else {
                 HelperLog.info("refused a control connection from another user")
+                close(client)
+                continue
             }
-            close(client)
+            // A client that connects and never finishes its line used to hold this loop,
+            // and with it every other client, indefinitely. The app writes its request the
+            // moment it connects, so a short read bound costs nothing.
+            setTimeouts(client, seconds: 2)
+            guard let request = readLine(client) else { close(client); continue }
+            if request == probeLine {
+                _ = "\"pong\"\n".withCString { write(client, $0, strlen($0)) }
+                close(client)
+                continue
+            }
+            // Served off this thread so a handler waiting on the daemon's lock doesn't stop
+            // the listener accepting. One serial queue, in accept order: the app sends whole
+            // configs, and two of them applied out of order would undo the newer edit.
+            handlerQueue.async {
+                respond(client, to: request, handler: handler)
+                close(client)
+            }
         }
+    }
+
+    /// The health probe's request. Answered on the accept thread without the daemon's lock;
+    /// never sent by the app.
+    private static let probeLine = Data("\"ping\"".utf8)
+
+    private static let handlerQueue = DispatchQueue(label: "com.battlify.helper.control")
+
+    private static func setTimeouts(_ fd: Int32, seconds: Int) {
+        var tv = timeval(tv_sec: seconds, tv_usec: 0)
+        setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &tv, socklen_t(MemoryLayout<timeval>.size))
+        setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &tv, socklen_t(MemoryLayout<timeval>.size))
     }
 
     /// Whether the process on the other end may command this daemon.
@@ -222,10 +252,8 @@ final class ControlServer {
         return uid == info.st_uid
     }
 
-    private static func handleClient(_ fd: Int32,
-                                     handler: (ControlRequest) -> ControlResponse) {
-        guard let reqData = readLine(fd) else { return }
-
+    private static func respond(_ fd: Int32, to reqData: Data,
+                                handler: (ControlRequest) -> ControlResponse) {
         let resp: ControlResponse
         if let req = try? JSONDecoder().decode(ControlRequest.self, from: reqData) {
             resp = handler(req)

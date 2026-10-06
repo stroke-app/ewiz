@@ -166,6 +166,10 @@ final class ChargeLimitStore: ObservableObject {
     /// Config writes in flight. While > 0 the periodic refresh must not ingest, or a
     /// stale response could clobber a fresh edit.
     private var pendingWrites = 0
+    /// Requests in a row that got no answer. See `ingest`.
+    private var failedPolls = 0
+    /// Whether the daemon's config has been read at least once. See `apply`.
+    private var hasSynced = false
 
     /// Pull status from the daemon (skipped while a write is outstanding, or while a
     /// control is being dragged — see `editingControls`).
@@ -337,6 +341,10 @@ final class ChargeLimitStore: ObservableObject {
 
     /// Push GUI settings to the daemon, preserving fields the menu doesn't edit (mode).
     func apply() {
+        // Before the first answer every field here is a placeholder, and this sends the whole
+        // config: a hotkey or an automation firing in that window switched the charge limit
+        // off, because `limitEnabled` still held its default. Fetch the real one instead.
+        guard hasSynced else { refresh(); return }
         var cfg = currentConfig
         cfg.chargeLimitEnabled = limitEnabled
         cfg.chargeLimit = limit
@@ -366,8 +374,18 @@ final class ChargeLimitStore: ObservableObject {
         cfg.readyBy = readyBy
         cfg.chargePower = chargePower
         cfg.slowCharge = chargePower < 100   // keep the legacy flag in sync
+        let base = currentConfig
         currentConfig = cfg
-        command(.setConfig(cfg))
+        // Merged against what the daemon has now, not sent as built: everything here except
+        // the field just edited is as of the last poll, up to 30 seconds old, and anything
+        // the daemon or an agent changed since would go back stale. See `BattlifyConfig.merge`.
+        pendingWrites += 1
+        Task.detached {
+            let now = try? ControlClient.send(.getStatus)
+            let merged = now.map { BattlifyConfig.merge(base: base, local: cfg, remote: $0.config) } ?? cfg
+            let result = try? ControlClient.send(.setConfig(merged))
+            await self.finishCommand(result)
+        }
     }
 
     func setLowPowerMode(_ on: Bool) {
@@ -571,12 +589,27 @@ final class ChargeLimitStore: ObservableObject {
 
     private func ingest(_ response: ControlResponse?) {
         guard let r = response else {
+            // One missed answer is a busy daemon, not a missing one: a sleep transition holds
+            // its lock for seconds. Treating it as missing swapped the whole limit section for
+            // the install banner mid-click, and on launch put an admin prompt up to reinstall
+            // a helper that was installed and running.
+            failedPolls += 1
+            guard failedPolls >= 2 else {
+                // Ask again soon rather than at the next 30s poll, so a missing helper still
+                // gets found within seconds.
+                DispatchQueue.main.asyncAfter(deadline: .now() + 3) { [weak self] in
+                    Task { @MainActor in self?.refresh() }
+                }
+                return
+            }
             set(\.daemonAvailable, false)
             // Nothing is listening. If this bundle carries the installer, put the helper in
             // place now rather than waiting to be asked from a settings pane.
             autoInstallHelperIfNeeded(missing: true)
             return
         }
+        failedPolls = 0
+        hasSynced = true
         set(\.daemonAvailable, true)
         set(\.daemonProtocolVersion, r.daemonProtocolVersion)
         set(\.daemonBuildVersion, r.daemonBuildVersion)

@@ -258,9 +258,19 @@ struct MenuContentView: View {
     /// honoured" case, because the gauge's own marker already says that.
     private func limitNote(_ snap: BatterySnapshot) -> String? {
         if chargeLimit.isPaused { return "Charging paused" }
+        if chargeLimit.calibrating { return "Charging to 100% once" }
         guard chargeLimit.limitEnabled else { return nil }
-        if chargeLimit.isHoldingCharge { return "Holding at \(chargeLimit.holdingAt)%" }
-        if snap.isCharging { return "Charging to \(chargeLimit.effectiveLimit)%" }
+        let stop = chargeLimit.holdingAt
+        // Above the stop, both levers run the Mac off the battery down to it. "Holding at
+        // 80%" over a gauge reading 85 was the panel contradicting itself.
+        if chargeLimit.discharging, chargeLimit.pauseReason != "hold", snap.percentage > stop {
+            return "Draining to \(stop)%"
+        }
+        if chargeLimit.isHoldingCharge { return "Holding at \(stop)%" }
+        if snap.isCharging {
+            let limit = chargeLimit.effectiveLimit
+            return snap.percentage >= limit ? "Above the \(limit)% limit" : "Charging to \(limit)%"
+        }
         return nil
     }
 
@@ -545,18 +555,22 @@ struct MenuContentView: View {
                                   systemImage: "info")
                     }
 
-                    switchRow("Recharge range", Binding(
-                        get: { chargeLimit.rangeEnabled },
-                        set: { chargeLimit.setRangeEnabled($0) }
-                    ))
+                    // Under macOS's own limit, macOS decides when charging resumes, so a
+                    // recharge floor here would be a slider that moves and changes nothing.
+                    if chargeLimit.nativeLimitSteps.isEmpty {
+                        switchRow("Recharge range", Binding(
+                            get: { chargeLimit.rangeEnabled },
+                            set: { chargeLimit.setRangeEnabled($0) }
+                        ))
 
-                    if chargeLimit.rangeEnabled {
-                        sliderRow("Recharge at", value: chargeLimit.recharge,
-                                  binding: Binding(
-                                    get: { Double(chargeLimit.recharge) },
-                                    set: { chargeLimit.resumeMargin = chargeLimit.limit - Int($0) }),
-                                  range: Double(max(20, chargeLimit.limit - 40))...Double(chargeLimit.limit - 5))
-                            .help("Battery drains to this level before charging back up to the limit, instead of sitting pinned at the limit.")
+                        if chargeLimit.rangeEnabled {
+                            sliderRow("Recharge at", value: chargeLimit.recharge,
+                                      binding: Binding(
+                                        get: { Double(chargeLimit.recharge) },
+                                        set: { chargeLimit.resumeMargin = chargeLimit.limit - Int($0) }),
+                                      range: Double(max(20, chargeLimit.limit - 40))...Double(chargeLimit.limit - 5))
+                                .help("Battery drains to this level before charging back up to the limit, instead of sitting pinned at the limit.")
+                        }
                     }
                 }
 
@@ -571,12 +585,11 @@ struct MenuContentView: View {
                 // key always reports charging as enabled, so on that hardware this whole
                 // block was dead and the panel explained nothing it was doing.
                 if chargeLimit.discharging {
-                    // The adapter is cut either way; the reason says whether that's a hold
-                    // sitting on the level or a run down towards the limit.
-                    hintLabel(chargeLimit.pauseReason == "hold"
-                              ? "Running off the battery to hold the level"
-                              : "Discharging to reach the limit…",
-                              systemImage: "batteryLow")
+                    // A run down to the limit is the header's line ("Draining to 80%").
+                    // Repeated here it sat under "Don't charge", which it has nothing to do with.
+                    if chargeLimit.pauseReason == "hold" {
+                        hintLabel("Running off the battery to hold the level", systemImage: "batteryLow")
+                    }
                 } else if let reason = chargeLimit.pauseReason {
                     switch reason {
                     case "heat":     hintLabel("Charging paused, battery is warm", systemImage: "thermometer")
@@ -684,10 +697,25 @@ struct MenuContentView: View {
                 lidClosedButton
                 caffeineButton
             }
-            if caffeine.active {
-                DSNote(icon: "coffee") { Text(caffeineStatusText) }
+            // Always one line, whatever is on. It used to appear with Awake and vanish
+            // without it, so every press of a tile changed the panel's height and moved
+            // everything below the pointer. Now a press changes the words, not the layout.
+            DSNote(icon: actionStatus.icon) {
+                Text(actionStatus.text).lineLimit(1).truncationMode(.tail)
             }
         }
+    }
+
+    /// What the tiles are doing, most consequential first.
+    private var actionStatus: (icon: String, text: String) {
+        if ClamshellMode.isOn(charge: chargeLimit) {
+            return ("laptop", chargeLimit.keepAwakeOnBattery
+                    ? "Lid mode · runs with the lid shut, on battery too"
+                    : "Lid mode · runs with the lid shut on power")
+        }
+        if caffeine.active { return ("coffee", caffeineStatusText) }
+        if idleSaver.resting { return ("moon", "Resting · screen off, settings held") }
+        return ("moon", "Sleeps as usual")
     }
 
     /// Working with the lid shut, as one press.

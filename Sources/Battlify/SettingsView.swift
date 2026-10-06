@@ -18,6 +18,8 @@ struct SettingsView: View {
     @EnvironmentObject private var network: NetworkProfileStore
     @EnvironmentObject private var triggers: TriggerStore
     @EnvironmentObject private var hotkeys: HotkeyStore
+    /// "Copied" beside Copy Diagnostics for a moment after it's pressed.
+    @State private var copiedDiagnostics = false
     @Environment(\.openWindow) private var openWindow
     @State private var installError: String?
     @State private var selection: Tab = .charging
@@ -191,8 +193,26 @@ struct SettingsView: View {
                 VStack(spacing: 0) {
                     licenseRow
                     divider
-                    linkRow("Send Me an Email", systemImage: "mail",
-                            url: "mailto:nischaldahal01395@gmail.com")
+                    // Support carries its own diagnostics. A bare mailto got "it stopped
+                    // working" and a week of asking which macOS, which Mac, which helper.
+                    actionRow("Contact Support", systemImage: "mail") {
+                        openURL(SupportInfo.emailURL(subject: "Battlify support",
+                                                     summary: supportSummary))
+                    }
+                    divider
+                    actionRow("Report a Bug", systemImage: "alert") {
+                        openURL(SupportInfo.issueURL(summary: supportSummary))
+                    }
+                    divider
+                    actionRow("Copy Diagnostics", systemImage: "copy",
+                              trailing: copiedDiagnostics ? "Copied" : nil) {
+                        let text = SupportInfo.diagnostics(chargeLimit: chargeLimit, license: license,
+                                                           battery: battery.snapshot)
+                        NSPasteboard.general.clearContents()
+                        NSPasteboard.general.setString(text, forType: .string)
+                        copiedDiagnostics = true
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2) { copiedDiagnostics = false }
+                    }
                     divider
                     linkRow("Donate", systemImage: "heart",
                             url: "https://nischal-dahal.com.np/donate")
@@ -244,10 +264,23 @@ struct SettingsView: View {
         .buttonStyle(.plain)
     }
 
+    private var supportSummary: String {
+        SupportInfo.summary(chargeLimit: chargeLimit, license: license, battery: battery.snapshot)
+    }
+
+    private func openURL(_ url: URL?) {
+        if let url { NSWorkspace.shared.open(url) }
+    }
+
     private func linkRow(_ title: String, systemImage: String, url: String) -> some View {
-        Button {
-            if let u = URL(string: url) { NSWorkspace.shared.open(u) }
-        } label: {
+        actionRow(title, systemImage: systemImage) { openURL(URL(string: url)) }
+    }
+
+    /// A row in the About list. Leaves the app by default (the ↗); `trailing` replaces the
+    /// arrow with a word of feedback for rows that act in place.
+    private func actionRow(_ title: String, systemImage: String, trailing: String? = nil,
+                           action: @escaping () -> Void) -> some View {
+        Button(action: action) {
             HStack(spacing: 10) {
                 HugeIcon(systemImage, size: 17)
                     .frame(width: 22)
@@ -255,9 +288,13 @@ struct SettingsView: View {
                 Text(title)
                     .foregroundStyle(.tint)
                 Spacer()
-                HugeIcon("arrowUpRight", size: 13)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
+                if let trailing {
+                    Text(trailing).font(.caption).foregroundStyle(.secondary)
+                } else {
+                    HugeIcon("arrowUpRight", size: 13)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
             }
             .font(.callout)
             .padding(.horizontal, 24)
@@ -1096,6 +1133,23 @@ struct SettingsView: View {
                 toggleRow("Animate the icon while charging",
                           "Costs about a tenth of a core while plugged in.",
                           isOn: $settings.animateMenuBarIcon)
+                divider
+                HStack(spacing: 10) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Shake when the battery runs low").font(.callout)
+                        Text("A short tremble at 20%, then every 20 seconds under 10%.")
+                            .font(.caption).foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    Spacer()
+                    Button("Preview") {
+                        NotificationCenter.default.post(name: .battlifyPreviewLowBatteryShake, object: nil)
+                    }
+                    .controlSize(.small)
+                    Toggle("", isOn: $settings.shakeOnLowBattery)
+                        .labelsHidden().toggleStyle(.switch).controlSize(.small)
+                }
+                .padding(.horizontal, rowInset).padding(.vertical, DS.Space.s + 2)
             }
 
             card("Notifications") {
