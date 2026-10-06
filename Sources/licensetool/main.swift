@@ -1,6 +1,6 @@
 import Foundation
 import CryptoKit
-import BattlifyKit
+import EWizKit
 
 // Seller-side tool: generate the signing keypair and mint license tokens.
 // NOT shipped in the app bundle. The private key must stay secret.
@@ -82,7 +82,7 @@ case "verify":
 
 default:
     print("""
-    licensetool — Battlify license keys
+    licensetool — eWiz license keys
 
       genkey                              Generate an Ed25519 keypair
       sign --priv <b64> --email <e>       Mint a license token bound to one Mac

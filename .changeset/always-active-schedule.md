@@ -1,5 +1,5 @@
 ---
-"battlify": minor
+"ewiz": minor
 ---
 
 **Always Active** can now switch itself on and off instead of only being held by hand.
@@ -13,7 +13,7 @@ starts on. With no windows set the switch behaves exactly as before.
 
 **Turn off automatically** (Settings → Charging, under Always Active) sets a deadline —
 30 minutes to 8 hours, or "don't turn off". The deadline lives in the root daemon's
-config, so it still fires while the Mac is asleep or Battlify isn't running, and it
+config, so it still fires while the Mac is asleep or eWiz isn't running, and it
 clears the switch rather than leaving an on toggle that no longer holds anything.
 
 The Always Active section shows which hours are set and whether it is **HOLDING** or

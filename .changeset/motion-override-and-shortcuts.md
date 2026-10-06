@@ -1,5 +1,5 @@
 ---
-"battlify": minor
+"ewiz": minor
 ---
 
 **Animations were silently doing nothing if Reduce Motion was on.** Every animation in

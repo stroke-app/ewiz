@@ -1,5 +1,5 @@
 ---
-"battlify": minor
+"ewiz": minor
 ---
 
 **The menu panel, rebuilt to look like it belongs in the menu bar.**

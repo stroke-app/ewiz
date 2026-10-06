@@ -1,5 +1,5 @@
 ---
-"battlify": patch
+"ewiz": patch
 ---
 
 **Shortcuts added by an update never reached anyone who had already launched the app.**

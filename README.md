@@ -1,31 +1,31 @@
 <div align="center">
 
-# Battlify
+# eWiz
 
 **Make macOS stop wrecking your battery.**
 
 Charge limiting, heat-aware charging, sleep-safe enforcement, and one-tap save
 modes — all from your menu bar, built for Apple Silicon.
 
-<a href="https://battlify.gumroad.com/l/battlify"><b>Download</b></a> ·
-<a href="https://github.com/broisnischal/battlify/releases"><b>Releases</b></a> ·
-<a href="https://github.com/broisnischal/battlify/issues"><b>Feedback</b></a>
+<a href="https://ewiz.gumroad.com/l/ewiz"><b>Download</b></a> ·
+<a href="https://github.com/broisnischal/ewiz/releases"><b>Releases</b></a> ·
+<a href="https://github.com/broisnischal/ewiz/issues"><b>Feedback</b></a>
 
 ![Platform](https://img.shields.io/badge/macOS-14%2B-blue)
 ![Arch](https://img.shields.io/badge/Apple%20Silicon-arm64-black)
 ![Price](https://img.shields.io/badge/price-%242.99-green)
-![License](https://img.shields.io/badge/license-Battlify%20License-lightgrey)
+![License](https://img.shields.io/badge/license-eWiz%20License-lightgrey)
 
 </div>
 
-## Why Battlify exists
+## Why eWiz exists
 
 Lithium batteries wear out fastest when they sit at a high charge and when they
 run hot. macOS does both by default: it keeps you topped up at 100% and lets the
 machine cook while it's docked and closed. Apple's own "Optimized Charging" tries
 to help, but it's a black box — it decides when to hold at 80%, and you can't.
 
-Battlify hands you the controls directly. Pick a charge ceiling and it holds
+eWiz hands you the controls directly. Pick a charge ceiling and it holds
 there. Tell it to stop charging when the battery gets warm and it will. It's a
 small menu-bar app that does one thing well, and it stays out of your way the rest
 of the time.
@@ -34,7 +34,7 @@ of the time.
 
 **Charging & longevity**
 
-- **Charge limit** — cap charging anywhere from 50–100%. Battlify holds the level
+- **Charge limit** — cap charging anywhere from 50–100%. eWiz holds the level
   with a hysteresis band so it isn't flicking the charger on and off at the
   threshold. It speaks both Apple Silicon SMC schemes (legacy `CH0B`/`CH0C` and
   the newer `CHTE` on macOS 26 "Tahoe").
@@ -42,7 +42,7 @@ of the time.
   temperature you set, then resume once it cools. The menu tells you *why* charging
   is paused, so it never looks broken.
 - **Discharge to the limit** — on Macs that support adapter control, if you plug in
-  above your limit Battlify can run off the battery until it drifts back down,
+  above your limit eWiz can run off the battery until it drifts back down,
   instead of just waiting.
 - **Charge to 100% once** — one tap temporarily lifts the limit for a full charge
   (handy before a trip), then reverts itself the moment the battery is full. Good
@@ -51,7 +51,7 @@ of the time.
 **Sleep-safe enforcement**
 
 The catch with any charge limiter: the enforcer can't run while the Mac is asleep,
-so a naive limiter lets macOS quietly charge to 100% overnight. Battlify closes
+so a naive limiter lets macOS quietly charge to 100% overnight. eWiz closes
 that gap two ways, and you choose which:
 
 - **Stop charging before sleep** — cuts charging as the machine goes to sleep, so
@@ -77,7 +77,7 @@ number you closed on and a number you didn't expect.
   wake source behind it — Power Nap, wake-for-network, TCP keep-alive, terminal
   sessions — plus Wi-Fi and Bluetooth as the lid actually closes.
 - **A checklist, not a claim.** Nine named causes of closed-lid drain, each shown as
-  sealed or still costing you something. Two of them Battlify won't decide for you:
+  sealed or still costing you something. Two of them eWiz won't decide for you:
   Find My can't reach a sealed Mac, and a keep-awake you deliberately turned on stays
   turned on until you say otherwise.
 - **Measured, not estimated.** The charge is read when the lid shuts and again when it
@@ -138,32 +138,32 @@ change is never a mystery.
 - **Keep Awake (Caffeine)** — one tap stops the display from turning off and the Mac
   from idle-sleeping, on battery or plugged in, until you turn it back off (or a timer
   you set runs out). Closing the lid still sleeps, and it releases the moment you quit
-  Battlify — so it can never strand your Mac awake.
+  eWiz — so it can never strand your Mac awake.
 - **Global keyboard shortcuts** for the things you reach for most — Caffeine, Low Power
   Mode, the charge limit (on/off, or up and down in 5% steps), pause/resume charging,
   cycle save mode, dim the display, and more. Every one is remappable in
   *Settings → Shortcuts*, defaults sit on ⌃⌥⌘, and anything disruptive (sleep, force
-  discharge) ships unbound. No Accessibility permission needed: Battlify claims only
+  discharge) ships unbound. No Accessibility permission needed: eWiz claims only
   the combinations you assign and never sees anything else you type.
 - **Launch at login** and **in-app auto-update**, and it'll tell you if the helper
   ever falls out of date so features don't silently stop working.
 
 ## How it works
 
-Writing SMC keys needs root, but you don't want a GUI running as root. So Battlify
+Writing SMC keys needs root, but you don't want a GUI running as root. So eWiz
 splits in two:
 
 - A **menu-bar app** that runs as you and never touches the SMC directly.
-- A tiny **root helper** (`battlify-helper`), installed once as a LaunchDaemon. It
+- A tiny **root helper** (`ewiz-helper`), installed once as a LaunchDaemon. It
   owns the enforcement loop, auto-starts at every boot, and talks to the app over a
   local socket.
 
 If the helper is ever stopped or killed, it re-enables charging on the way out — so
-Battlify can never leave your Mac unable to charge.
+eWiz can never leave your Mac unable to charge.
 
 ## Performance
 
-Battlify is a native Swift app, and it's built to be a quiet background citizen:
+eWiz is a native Swift app, and it's built to be a quiet background citizen:
 
 - **Event-driven, not busy.** Charge and power-source changes arrive as IOKit
   notifications; the fallback timers are slow and declare scheduling *tolerance*, so
@@ -178,7 +178,7 @@ Battlify is a native Swift app, and it's built to be a quiet background citizen:
 A note on memory, since people ask: a native Cocoa/SwiftUI app's "Memory" figure in
 Activity Monitor is dominated by *shared* system framework pages that every app
 counts — it isn't private cost. The honest metric for a battery tool is **energy
-impact and wake-ups**, and Battlify is tuned to keep both low. It won't fit in a few
+impact and wake-ups**, and eWiz is tuned to keep both low. It won't fit in a few
 megabytes (no framework-linked app does), but it also won't sit there draining you.
 
 ## Install
@@ -186,26 +186,26 @@ megabytes (no framework-linked app does), but it also won't sit there draining y
 ### Homebrew (recommended)
 
 ```bash
-brew tap broisnischal/battlify
-brew install --cask battlify
+brew tap broisnischal/ewiz
+brew install --cask ewiz
 ```
 
 Homebrew asks you to **trust** the tap the first time (its gate for any
-third-party tap) — accept, or run `brew trust broisnischal/battlify`. The cask
+third-party tap) — accept, or run `brew trust broisnischal/ewiz`. The cask
 clears the download quarantine on install, so the app launches straight away even
 though it isn't notarized yet.
 
-Update later with `brew upgrade --cask battlify`.
+Update later with `brew upgrade --cask ewiz`.
 
 ### Manual (DMG)
 
-1. Download the latest `Battlify-x.y.z.dmg` from
-   [Releases](https://github.com/broisnischal/battlify/releases) and drag
-   **Battlify** into Applications.
+1. Download the latest `eWiz-x.y.z.dmg` from
+   [Releases](https://github.com/broisnischal/ewiz/releases) and drag
+   **eWiz** into Applications.
 2. Because the build isn't notarized yet, macOS may say it's "damaged" — it isn't.
    Clear the quarantine flag once:
    ```bash
-   sudo xattr -r -d com.apple.quarantine /Applications/Battlify.app
+   sudo xattr -r -d com.apple.quarantine /Applications/eWiz.app
    ```
    (Homebrew does this for you; only needed for the manual DMG.)
 
@@ -221,7 +221,7 @@ Then, either way:
 
 ### Recommended: turn off macOS's own charge management
 
-For Battlify's limit to behave predictably, disable Apple's competing feature:
+For eWiz's limit to behave predictably, disable Apple's competing feature:
 
 - **System Settings → Battery → Battery Health → ⓘ → turn off "Optimized Battery
   Charging."**
@@ -230,12 +230,12 @@ For Battlify's limit to behave predictably, disable Apple's competing feature:
 ## Pricing
 
 **Free for 30 days.** Your free days are only spent on days you *actually use*
-Battlify, so you get the full month of real use without a countdown breathing down
+eWiz, so you get the full month of real use without a countdown breathing down
 your neck.
 
 **$2.99 to own.** One-time payment (plus tax) — no subscription, no add-ons. Pay
 with **Apple Pay** in a couple of taps, in-app or
-[here](https://battlify.gumroad.com/l/battlify).
+[here](https://ewiz.gumroad.com/l/ewiz).
 
 ## Build from source
 
@@ -244,10 +244,10 @@ Apple Silicon Mac.
 
 ```bash
 swift build
-swift run Battlify                 # run the menu-bar app
+swift run eWiz                 # run the menu-bar app
 sudo ./scripts/install-helper.sh   # install the root helper daemon
 
-./scripts/package-app.sh 0.8.1     # build Battlify.app
+./scripts/package-app.sh 0.8.1     # build eWiz.app
 ./scripts/make-dmg.sh 0.8.1        # build the DMG
 
 ./scripts/test.sh                  # run unit tests + benchmarks (swift-testing)
@@ -281,7 +281,7 @@ effect.
 
 ## License
 
-Battlify is **source-available** under the [PolyForm Noncommercial License
+eWiz is **source-available** under the [PolyForm Noncommercial License
 1.0.0](LICENSE). Use it, modify it, and contribute back freely for any
 noncommercial purpose — but you may not sell it or use it commercially (including
 paid products, hosted services, or enterprise support). All commercial rights are

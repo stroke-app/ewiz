@@ -1,5 +1,5 @@
 ---
-"battlify": minor
+"ewiz": minor
 ---
 
 **Pick the plug-in animation from the menu**, not three windows deep in Settings. Quick
@@ -7,7 +7,7 @@ Actions gains an **Animation** button: switch it on or off, choose the style, an
 on the spot to see what it looks like without unplugging anything.
 
 **Bring your own animation.** A new **Custom** style plays a numbered image sequence from
-`~/Library/Application Support/Battlify/ChargeAnimation` — export frames from Rive, Lottie
+`~/Library/Application Support/eWiz/ChargeAnimation` — export frames from Rive, Lottie
 or After Effects and drop them in; Settings has a button that creates and reveals the
 folder and tells you how many frames it found. Frames are read in filename order, capped
 at 120, cached until the folder changes, and scaled to fit while preserving aspect, so a

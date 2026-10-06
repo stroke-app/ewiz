@@ -1,14 +1,14 @@
 #!/bin/bash
-# Builds a distributable DMG from dist/Battlify.app.
+# Builds a distributable DMG from dist/eWiz.app.
 # Usage: ./scripts/make-dmg.sh [version]
-# Run scripts/package-app.sh first (it produces dist/Battlify.app).
+# Run scripts/package-app.sh first (it produces dist/eWiz.app).
 set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 VERSION="${1:-0.1.0}"
 DIST="$REPO_DIR/dist"
-APP="$DIST/Battlify.app"
-DMG="$DIST/Battlify-$VERSION.dmg"
+APP="$DIST/eWiz.app"
+DMG="$DIST/eWiz-$VERSION.dmg"
 
 if [[ ! -d "$APP" ]]; then
     echo "error: $APP not found — run scripts/package-app.sh first." >&2
@@ -17,12 +17,21 @@ fi
 
 echo "==> Staging DMG contents"
 STAGE="$(mktemp -d)"
-cp -R "$APP" "$STAGE/Battlify.app"
+cp -R "$APP" "$STAGE/eWiz.app"
 ln -s /Applications "$STAGE/Applications"   # drag-to-install target
+
+# The bridge for installs from before the rename. A Battlify copy's updater looks for
+# Battlify.app in the image by name and swaps it over itself, so without this every
+# existing user's update fails with "the update disk image didn't contain Battlify.app".
+# Hidden, so a person opening the image sees one app. On first launch the build renames
+# its own bundle to eWiz.app (see LegacyMigration). Drop it once those installs have
+# had time to come across.
+cp -R "$APP" "$STAGE/Battlify.app"
+chflags hidden "$STAGE/Battlify.app"
 
 echo "==> Building $DMG"
 rm -f "$DMG"
-hdiutil create -volname "Battlify" \
+hdiutil create -volname "eWiz" \
     -srcfolder "$STAGE" -ov -format UDZO "$DMG" >/dev/null
 rm -rf "$STAGE"
 

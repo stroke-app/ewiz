@@ -1,5 +1,5 @@
 ---
-"battlify": minor
+"ewiz": minor
 ---
 
 **Caffeine no longer holds the screen awake on battery.**

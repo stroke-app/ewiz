@@ -1,5 +1,5 @@
 ---
-"battlify": minor
+"ewiz": minor
 ---
 
 **The charge limit stays on.** A request that stalled the helper's control socket used

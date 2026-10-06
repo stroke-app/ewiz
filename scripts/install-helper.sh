@@ -1,13 +1,13 @@
 #!/bin/bash
-# Installs the Battlify privileged helper as a LaunchDaemon (runs as root).
+# Installs the eWiz privileged helper as a LaunchDaemon (runs as root).
 # Run with sudo:  sudo ./scripts/install-helper.sh
 set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-BIN_DST="/usr/local/bin/battlify-helper"
-PLIST_SRC="$REPO_DIR/scripts/com.battlify.helper.plist"
-PLIST_DST="/Library/LaunchDaemons/com.battlify.helper.plist"
-LABEL="com.battlify.helper"
+BIN_DST="/usr/local/bin/ewiz-helper"
+PLIST_SRC="$REPO_DIR/scripts/com.ewiz.helper.plist"
+PLIST_DST="/Library/LaunchDaemons/com.ewiz.helper.plist"
+LABEL="com.ewiz.helper"
 
 if [[ "$EUID" -ne 0 ]]; then
     echo "error: must run as root (use sudo)." >&2
@@ -50,7 +50,7 @@ reload_daemon() {
     return 1
 }
 
-# Battlify used to be called BattPie, and shipped its helper under a different label,
+# eWiz was called BattPie, then Battlify, and shipped its helper under other labels,
 # binary and socket. Installing on top of that left BOTH daemons loaded, each with
 # KeepAlive, each driving the same SMC charge keys on its own timer — so they fought,
 # and whichever wrote last won the tick. When the old one won while holding the charge
@@ -88,16 +88,20 @@ echo "==> Building release binary…"
 BUILD_FLAGS="-c release -Xswiftc -Osize -Xlinker -dead_strip"
 # build as the invoking user so SwiftPM caches land in their home, not root's
 if [[ -n "${SUDO_USER:-}" ]]; then
-    sudo -u "$SUDO_USER" bash -lc "cd '$REPO_DIR' && swift build $BUILD_FLAGS --product battlify-helper"
+    sudo -u "$SUDO_USER" bash -lc "cd '$REPO_DIR' && swift build $BUILD_FLAGS --product ewiz-helper"
 else
-    (cd "$REPO_DIR" && swift build $BUILD_FLAGS --product battlify-helper)
+    (cd "$REPO_DIR" && swift build $BUILD_FLAGS --product ewiz-helper)
 fi
-BIN_SRC="$REPO_DIR/.build/release/battlify-helper"
+BIN_SRC="$REPO_DIR/.build/release/ewiz-helper"
 
 evict_legacy_daemon "com.battpie.helper" \
     "/usr/local/bin/battpie-helper" \
     "/Library/LaunchDaemons/com.battpie.helper.plist" \
     "/var/run/battpie.sock"
+evict_legacy_daemon "com.battlify.helper" \
+    "/usr/local/bin/battlify-helper" \
+    "/Library/LaunchDaemons/com.battlify.helper.plist" \
+    "/var/run/battlify.sock"
 
 echo "==> Installing binary to $BIN_DST"
 install -d /usr/local/bin
@@ -105,7 +109,7 @@ install -m 755 "$BIN_SRC" "$BIN_DST"
 strip -x "$BIN_DST" || true   # shrink on-disk + resident size
 # strip rewrites the file rather than editing it, so the result carries root's umask
 # and not the mode above — 0700 under the default umask, which leaves the daemon fine
-# (launchd runs it as root) but makes `battlify-helper status` permission-denied for
+# (launchd runs it as root) but makes `ewiz-helper status` permission-denied for
 # the person who installed it. Restore the mode we asked for.
 chmod 755 "$BIN_DST"
 
@@ -114,7 +118,7 @@ install -m 644 "$PLIST_SRC" "$PLIST_DST"
 chown root:wheel "$PLIST_DST"
 
 echo "==> Creating config directory"
-install -d -m 755 "/Library/Application Support/Battlify"
+install -d -m 755 "/Library/Application Support/eWiz"
 
 echo "==> Loading daemon"
 if ! reload_daemon "$PLIST_DST" "$LABEL"; then
@@ -125,5 +129,5 @@ echo "==> Done. Status:"
 sleep 1
 "$BIN_DST" status || true
 echo
-echo "Logs: /var/log/battlify-helper.log"
+echo "Logs: /var/log/ewiz-helper.log"
 echo "To uninstall: sudo ./scripts/uninstall-helper.sh"

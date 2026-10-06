@@ -1,5 +1,5 @@
 ---
-"battlify": patch
+"ewiz": patch
 ---
 
 Shortcut banners now show the icon of the action that fired — a bolt for force

@@ -1,5 +1,5 @@
 ---
-"battlify": minor
+"ewiz": minor
 ---
 
 **Sealed Sleep** — close the lid and the charge stops moving.
@@ -17,7 +17,7 @@ and Bluetooth as the lid actually closes.
 What's new beyond the settings themselves:
 
 - **A checklist instead of a promise.** Nine named causes of closed-lid drain, each
-  shown as sealed or still costing power. Two aren't Battlify's call and say so: Find My
+  shown as sealed or still costing power. Two aren't eWiz's call and say so: Find My
   can't reach a sealed Mac, and a keep-awake you turned on deliberately stays on until
   you release it.
 - **Verified writes.** `pmset` exits 0 for keys a Mac silently ignores, so everything is

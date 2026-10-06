@@ -1,5 +1,5 @@
 ---
-"battlify": patch
+"ewiz": patch
 ---
 
 **Fixed: the charge limit could be crossed while the Mac slept, charging to full.**
@@ -11,7 +11,7 @@ charging below the limit and macOS carries on charging, unsupervised, to 100%.
 Cutting charging on the way into sleep was the protection, but it had two holes. It was
 gated behind the "Stop charging before sleep" option, which is off by default, so a
 limit set by itself wasn't protected at all. And the request came from the app, over the
-control socket, which means it only happened while the app was running — quit Battlify,
+control socket, which means it only happened while the app was running — quit eWiz,
 log out, or have it crash, and the protection vanished with no sign that it had.
 
 The daemon now registers for sleep and wake notifications itself, on its own thread and

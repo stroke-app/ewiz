@@ -1,5 +1,5 @@
 ---
-"battlify": minor
+"ewiz": minor
 ---
 
 Menu-bar text options, a Power Adapter card, and CSV export for history.

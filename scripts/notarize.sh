@@ -1,6 +1,6 @@
 #!/bin/bash
 # Notarizes and staples a DMG using an App Store Connect API key.
-# Usage: ./scripts/notarize.sh dist/Battlify-0.1.0.dmg
+# Usage: ./scripts/notarize.sh dist/eWiz-0.1.0.dmg
 #
 # Requires these env vars (an App Store Connect API key with "Developer" role):
 #   NOTARY_KEY_ID      - the key ID (e.g. ABC123XYZ)

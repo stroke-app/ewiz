@@ -1,6 +1,6 @@
-# Distributing & selling Battlify
+# Distributing & selling eWiz
 
-This covers shipping Battlify as a **closed-source, paid** macOS app outside the
+This covers shipping eWiz as a **closed-source, paid** macOS app outside the
 Mac App Store. (It can't go on the App Store — charge limiting needs SMC access
 + a root helper, which the sandbox forbids.)
 
@@ -47,7 +47,7 @@ git push origin v0.1.0
 ```
 
 The `Release` workflow builds → signs → notarizes → staples → creates a **draft**
-GitHub Release with `Battlify-0.1.0.dmg`. Review it, then publish.
+GitHub Release with `eWiz-0.1.0.dmg`. Review it, then publish.
 
 **Locally** (no CI), same result:
 
@@ -56,16 +56,16 @@ export CODESIGN_IDENTITY="Developer ID Application: Your Name (TEAMID)"
 export NOTARY_KEY_ID=...  NOTARY_ISSUER_ID=...  NOTARY_KEY_PATH=~/AuthKey_XXXX.p8
 ./scripts/package-app.sh 0.1.0
 ./scripts/make-dmg.sh 0.1.0
-./scripts/notarize.sh dist/Battlify-0.1.0.dmg
+./scripts/notarize.sh dist/eWiz-0.1.0.dmg
 ```
 
 ## 4. Selling it (payments + licensing)
 
 You don't sell through GitHub. Host the notarized DMG behind a storefront and
-gate the app with a **license key**. Battlify uses **Gumroad** (one-time $2.99,
+gate the app with a **license key**. eWiz uses **Gumroad** (one-time $2.99,
 Apple Pay at checkout) with online license verification — already built:
 
-- `Sources/BattlifyKit/Gumroad.swift` — verifies keys via Gumroad's license API
+- `Sources/EWizKit/Gumroad.swift` — verifies keys via Gumroad's license API
   (handles refunds/chargebacks).
 - `LicenseManager` / `LicenseView` — **use-based 30-day trial** (free days are only
   spent on days the app is actually used), activation window, control gating.
@@ -74,8 +74,8 @@ Apple Pay at checkout) with online license verification — already built:
 1. Create a Gumroad product, set price **$2.99**, and enable **"Generate license
    keys"** (Settings → check *"Generate a unique license key per sale"*).
 2. Set your product permalink in two places:
-   - `Gumroad.productPermalink` in `Sources/BattlifyKit/Gumroad.swift`
-   - `buyURL` in `Sources/Battlify/LicenseView.swift`
+   - `Gumroad.productPermalink` in `Sources/EWizKit/Gumroad.swift`
+   - `buyURL` in `Sources/eWiz/LicenseView.swift`
 3. Rebuild + release. Buyers paste the key Gumroad emails them into the app's
    Activate window; the app verifies it online and unlocks.
 
@@ -85,23 +85,23 @@ Apple Pay needs no code — it's offered automatically in Gumroad's checkout.
 
 A public Homebrew cask means anyone can `brew install` it for free, which
 conflicts with charging. For a paid app, **drop the public cask** (or keep one
-that only fetches a free/trial build). `Casks/battlify.rb` is kept in-repo for
+that only fetches a free/trial build). `Casks/ewiz.rb` is kept in-repo for
 reference / a future free tier.
 
 ## 6. Auto-update
 
-Battlify checks a **public JSON feed** (`appcast.json`) on launch + daily and shows
+eWiz checks a **public JSON feed** (`appcast.json`) on launch + daily and shows
 an in-app "Update available" banner with a one-click download.
 
-- Feed format: `{ "version": "0.2.0", "url": "https://…/Battlify-0.2.0.dmg", "notes": "…" }`
+- Feed format: `{ "version": "0.2.0", "url": "https://…/eWiz-0.2.0.dmg", "notes": "…" }`
 - The app reads `UpdaterManager.feedURL` (currently
-  `raw.githubusercontent.com/broisnischal/battlify-releases/main/appcast.json`).
+  `raw.githubusercontent.com/broisnischal/ewiz-releases/main/appcast.json`).
 - The release workflow generates `dist/appcast.json` (via `scripts/make-appcast.sh`)
   and attaches it to the GitHub Release.
 
 **Hosting (required, because the source repo is private):** create a **public**
 place for the feed + DMGs so users can reach them without auth. Easiest options:
-- A public `battlify-releases` repo: commit `appcast.json` there and upload DMGs
+- A public `ewiz-releases` repo: commit `appcast.json` there and upload DMGs
   to its Releases. Point `feedURL` at its `raw.githubusercontent.com/...` path.
 - GitHub Pages, or your storefront/CDN.
 
@@ -116,7 +116,7 @@ stepping stone.
 
 ## 7. Icons & branding (later)
 
-Add `Battlify.icns` to the bundle: create an `AppIcon.iconset` (16–1024 px),
+Add `eWiz.icns` to the bundle: create an `AppIcon.iconset` (16–1024 px),
 `iconutil -c icns AppIcon.iconset`, drop the `.icns` in `Contents/Resources`, and
 set `CFBundleIconFile` in `package-app.sh`'s Info.plist. The menu-bar glyph is
 already an SF Symbol; you can swap it for a custom template image later.

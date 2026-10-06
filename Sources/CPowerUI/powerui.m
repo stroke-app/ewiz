@@ -39,7 +39,7 @@ static id client(void) {
     if (cls == Nil) return nil;
     SEL init = sel_registerName("initWithClientName:");
     if (![cls instancesRespondToSelector:init]) return nil;
-    id instance = ((id (*)(id, SEL, id))objc_msgSend)([cls alloc], init, @"battlify");
+    id instance = ((id (*)(id, SEL, id))objc_msgSend)([cls alloc], init, @"ewiz");
     const char *needed[] = {
         "isMCLSupported", "getMCLLimitWithError:", "setMCLLimit:error:",
         "isMCLCurrentlyEnabled:", "availableChargeLimitsWithError:", "disableMCL:",
@@ -51,7 +51,7 @@ static id client(void) {
     return gClient;
 }
 
-int battlify_powerui_supported(void) {
+int ewiz_powerui_supported(void) {
     @autoreleasepool {
         id c = client();
         if (c == nil) return 0;
@@ -59,7 +59,7 @@ int battlify_powerui_supported(void) {
     }
 }
 
-int battlify_powerui_available_limits(int *limits, int max, int *count) {
+int ewiz_powerui_available_limits(int *limits, int max, int *count) {
     @autoreleasepool {
         id c = client();
         if (c == nil) return -1;
@@ -76,7 +76,7 @@ int battlify_powerui_available_limits(int *limits, int max, int *count) {
     }
 }
 
-int battlify_powerui_get_limit(int *limit, int *enabled) {
+int ewiz_powerui_get_limit(int *limit, int *enabled) {
     @autoreleasepool {
         id c = client();
         if (c == nil) return -1;
@@ -91,7 +91,7 @@ int battlify_powerui_get_limit(int *limit, int *enabled) {
     }
 }
 
-int battlify_powerui_set_limit(int limit) {
+int ewiz_powerui_set_limit(int limit) {
     @autoreleasepool {
         id c = client();
         if (c == nil || limit < 0 || limit > 100) return -1;
@@ -102,7 +102,7 @@ int battlify_powerui_set_limit(int limit) {
     }
 }
 
-int battlify_powerui_disable(void) {
+int ewiz_powerui_disable(void) {
     @autoreleasepool {
         id c = client();
         if (c == nil) return -1;

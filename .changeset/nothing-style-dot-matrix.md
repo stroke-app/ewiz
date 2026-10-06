@@ -1,5 +1,5 @@
 ---
-"battlify": patch
+"ewiz": patch
 ---
 
 The dot-grid charging animation read as a boomerang: three fronts launched diagonally out

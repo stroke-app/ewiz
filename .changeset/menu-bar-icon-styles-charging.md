@@ -1,5 +1,5 @@
 ---
-"battlify": minor
+"ewiz": minor
 ---
 
 Four more menu-bar battery styles, and a charging icon that actually shows charging.

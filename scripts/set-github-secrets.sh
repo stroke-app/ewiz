@@ -6,7 +6,7 @@ set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ENV_FILE="$REPO_DIR/.env"
-REPO="${GH_REPO:-broisnischal/battlify}"
+REPO="${GH_REPO:-broisnischal/ewiz}"
 
 if [[ ! -f "$ENV_FILE" ]]; then
     echo "error: $ENV_FILE not found. Copy .env.example to .env and fill it." >&2

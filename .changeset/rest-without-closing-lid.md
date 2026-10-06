@@ -1,5 +1,5 @@
 ---
-"battlify": minor
+"ewiz": minor
 ---
 
 **Rest the Mac without closing the lid.** Closing the lid is the usual way to make a Mac
@@ -8,12 +8,12 @@ the same thing with the lid open, and puts back exactly what it changed when you
 
 - **Rest Now** in the menu's Quick Actions and in Settings → Sleep & Power.
 - **Automatically when you're away**, after 5–120 minutes with no keyboard, mouse or
-  trackpad activity anywhere in the session (not just in Battlify). It never rests while
+  trackpad activity anywhere in the session (not just in eWiz). It never rests while
   an external display is connected — that usually means someone is looking at something.
 - Optionally **Low Power Mode while resting**, snapshotted first and restored on wake, so
   it puts back what you had rather than imposing a default.
 - Optionally **Wi-Fi and Bluetooth off**, off by default: losing the network mid-download
-  or mid-call costs more than the power it saves. Only radios Battlify switched off are
+  or mid-call costs more than the power it saves. Only radios eWiz switched off are
   switched back on.
 - Optionally **sleep outright** after a further delay, for leaving it overnight lid-up.
 

@@ -8,17 +8,17 @@
 // Every call returns 0 on success and -1 on failure.
 
 /// 1 when this Mac offers the manual charge limit, 0 otherwise (including no PowerUI).
-int battlify_powerui_supported(void);
+int ewiz_powerui_supported(void);
 
 /// The limits PowerUIAgent accepts (80, 85, … 100 at the time of writing), in the order
 /// it reports them. Writes at most `max` of them and the count to `*count`.
-int battlify_powerui_available_limits(int *limits, int max, int *count);
+int ewiz_powerui_available_limits(int *limits, int max, int *count);
 
 /// The configured limit and whether it is being enforced. A disabled limit reads 100.
-int battlify_powerui_get_limit(int *limit, int *enabled);
+int ewiz_powerui_get_limit(int *limit, int *enabled);
 
 /// Enable the limit at `limit`, which must be one of the available limits.
-int battlify_powerui_set_limit(int limit);
+int ewiz_powerui_set_limit(int limit);
 
 /// Turn the limit off. PowerUIAgent remembers the last value for System Settings.
-int battlify_powerui_disable(void);
+int ewiz_powerui_disable(void);

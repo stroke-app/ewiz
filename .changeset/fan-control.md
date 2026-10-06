@@ -1,5 +1,5 @@
 ---
-"battlify": minor
+"ewiz": minor
 ---
 
 **Fans: monitoring, temperatures, and control where the hardware allows it.**
@@ -12,7 +12,7 @@ keys differ per model and a fixed list is wrong on every Mac it wasn't written f
 
 Fan *control* is offered only where the SMC accepts it. Some Macs read every fan key and
 refuse every write — an M3 Pro on macOS 26 refuses all of them — which is not knowable in
-advance, so Battlify tries once, remembers the answer, and says plainly that the machine
+advance, so eWiz tries once, remembers the answer, and says plainly that the machine
 won't allow it rather than pretending. Where writes are accepted, Custom holds each fan at a
 percentage of its own min…max range (a percentage rather than an rpm figure, because two fans
 in one machine needn't share a range), 0% is each fan's minimum rather than off, control

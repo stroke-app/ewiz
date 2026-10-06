@@ -1,5 +1,5 @@
 ---
-"battlify": minor
+"ewiz": minor
 ---
 
 **Don't charge while plugged in.** A switch that runs the Mac off the adapter and leaves

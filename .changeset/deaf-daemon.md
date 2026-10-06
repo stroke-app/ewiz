@@ -1,5 +1,5 @@
 ---
-"battlify": patch
+"ewiz": patch
 ---
 
 **Fixed: the app could hang on a helper that looked perfectly healthy.** launchd reported the
