@@ -20,6 +20,11 @@ final class MCPServer {
         serverInfo = ["name": "ewiz", "title": "eWiz", "version": version]
     }
 
+    static let accessOff = """
+        The user has turned off agent access in eWiz (Settings › Automation › AI Agents), so \
+        this Mac can't be kept awake from here. Ask them to switch it on if the task needs it.
+        """
+
     static let instructions = """
         Keeps this Mac awake while you work. Before a long build, test run, render, download or \
         anything else that must not be cut short by sleep, call ewiz_keep_awake with a lease \
@@ -170,10 +175,14 @@ final class MCPServer {
         let outcome: ToolResult
         switch name {
         case "ewiz_status":
-            outcome = awake.status()
+            var status = awake.status()
+            if !AgentAccess.isEnabled { status.text += "\n\n" + Self.accessOff }
+            outcome = status
         case "ewiz_keep_awake":
-            outcome = keepAwake(args)
+            // Read per call, so switching it off in eWiz applies at the agent's next ask.
+            outcome = AgentAccess.isEnabled ? keepAwake(args) : ToolResult(text: Self.accessOff, isError: true)
         default:
+            // Always allowed: letting go of a hold is never something to refuse.
             outcome = awake.release()
         }
         var result: [String: Any] = ["content": [["type": "text", "text": outcome.text]],
@@ -191,6 +200,13 @@ final class MCPServer {
               (1...AgentAwake.maxMinutes).contains(number.intValue) else {
             return ToolResult(text: "minutes must be a whole number from 1 to \(AgentAwake.maxMinutes).",
                               isError: true)
+        }
+        if args["allow_lid_closed"] as? Bool == true, !AgentAccess.allowsLidClosed {
+            return ToolResult(text: """
+                The user hasn't allowed agents to keep this Mac awake with the lid closed \
+                (eWiz › Settings › Automation › AI Agents). Ask again without allow_lid_closed \
+                to keep it awake while the lid is open.
+                """, isError: true)
         }
         let reason = (args["reason"] as? String)
             .map { String($0.trimmingCharacters(in: .whitespacesAndNewlines).prefix(80)) }
