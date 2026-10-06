@@ -149,7 +149,8 @@ jobs:
           DMG_SHA=$(shasum -a 256 "dist/eWiz-${VERSION}.dmg" | awk '{print $1}')
           ./scripts/make-cask.sh "${VERSION}" "${DMG_URL}" "${DMG_SHA}"
           CONTENT=$(base64 < dist/ewiz.rb | tr -d '\n')
-          EXISTING=$(gh api "repos/${TAP_REPO}/contents/Casks/ewiz.rb" --jq .sha 2>/dev/null || echo "")
+          # gh prints the 404 body on stdout, so test its exit status, not the output.
+          EXISTING=$(gh api "repos/${TAP_REPO}/contents/Casks/ewiz.rb" --jq .sha 2>/dev/null) || EXISTING=""
           if [ -n "$EXISTING" ]; then
             gh api -X PUT "repos/${TAP_REPO}/contents/Casks/ewiz.rb" \
               -f message="cask: ewiz ${VERSION}" -f content="$CONTENT" -f sha="$EXISTING"
@@ -162,13 +163,13 @@ jobs:
           # The cask was called battlify before the rename. Homebrew follows a rename
           # only once the old cask is gone and cask_renames.json points across, and then
           # `brew upgrade` moves existing installs over by itself.
-          OLD=$(gh api "repos/${TAP_REPO}/contents/Casks/battlify.rb" --jq .sha 2>/dev/null || echo "")
+          OLD=$(gh api "repos/${TAP_REPO}/contents/Casks/battlify.rb" --jq .sha 2>/dev/null) || OLD=""
           if [ -n "$OLD" ]; then
             gh api -X DELETE "repos/${TAP_REPO}/contents/Casks/battlify.rb" \
               -f message="cask: battlify is now ewiz" -f sha="$OLD"
           fi
           RENAMES=$(printf '{\n  "battlify": "ewiz"\n}\n' | base64 | tr -d '\n')
-          RSHA=$(gh api "repos/${TAP_REPO}/contents/cask_renames.json" --jq .sha 2>/dev/null || echo "")
+          RSHA=$(gh api "repos/${TAP_REPO}/contents/cask_renames.json" --jq .sha 2>/dev/null) || RSHA=""
           if [ -z "$RSHA" ]; then
             gh api -X PUT "repos/${TAP_REPO}/contents/cask_renames.json" \
               -f message="cask: rename battlify to ewiz" -f content="$RENAMES"
