@@ -1,5 +1,5 @@
 ---
-"ewiz": minor
+"ewiz": patch
 ---
 
 **AI Agents, in Settings.** eWiz ships an MCP server that lets AI agents (Claude, Cursor
