@@ -1,6 +1,6 @@
 import Foundation
 import CryptoKit
-import BattlifyKit
+import EWizKit
 
 // Seller-side tool: generate the signing keypair and mint license tokens.
 // NOT shipped in the app bundle. The private key must stay secret.
@@ -71,18 +71,18 @@ case "verify":
     do {
         let info = try License.verify(token, deviceID: value("--device"),
                                       publicKeyBase64: value("--pub") ?? License.publicKeyBase64)
-        print("VALID — \(info.name.isEmpty ? info.email : "\(info.name) <\(info.email)>")")
+        print("VALID: \(info.name.isEmpty ? info.email : "\(info.name) <\(info.email)>")")
         print("  issued:  \(info.issuedAt)")
         print("  expires: \(info.expiresAt.map { "\($0)" } ?? "never")")
         print("  device:  \(info.deviceID ?? "?")")
     } catch {
-        print("INVALID — \(error)")
+        print("INVALID: \(error)")
         exit(1)
     }
 
 default:
     print("""
-    licensetool — Battlify license keys
+    licensetool — eWiz license keys
 
       genkey                              Generate an Ed25519 keypair
       sign --priv <b64> --email <e>       Mint a license token bound to one Mac

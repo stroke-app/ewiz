@@ -1,23 +1,24 @@
 #!/bin/bash
-# Builds Battlify.app (a proper menu-bar app bundle) and a distributable zip.
+# Builds eWiz.app (a proper menu-bar app bundle) and a distributable zip.
 # Usage: ./scripts/package-app.sh [version]
 set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 VERSION="${1:-0.1.0}"
-APP="Battlify.app"
+APP="eWiz.app"
 DIST="$REPO_DIR/dist"
 APP_DIR="$DIST/$APP"
 CONTENTS="$APP_DIR/Contents"
-BUNDLE_ID="com.battlify.app"
+BUNDLE_ID="com.ewiz.app"
 
 echo "==> Building release binaries (v$VERSION)…"
 cd "$REPO_DIR"
 # Optimize for size (-Osize) and let the linker drop unreachable code
 # (-dead_strip). Smaller text pages → smaller footprint, no behavior change.
 BUILD_FLAGS=(-c release -Xswiftc -Osize -Xlinker -dead_strip)
-swift build "${BUILD_FLAGS[@]}" --product Battlify
-swift build "${BUILD_FLAGS[@]}" --product battlify-helper
+swift build "${BUILD_FLAGS[@]}" --product eWiz
+swift build "${BUILD_FLAGS[@]}" --product ewiz-helper
+swift build "${BUILD_FLAGS[@]}" --product ewiz-mcp
 BIN_DIR="$REPO_DIR/.build/release"
 
 echo "==> Assembling $APP"
@@ -25,14 +26,14 @@ rm -rf "$APP_DIR"
 mkdir -p "$CONTENTS/MacOS" "$CONTENTS/Resources"
 
 # Main GUI binary.
-cp "$BIN_DIR/Battlify" "$CONTENTS/MacOS/Battlify"
-chmod 755 "$CONTENTS/MacOS/Battlify"
+cp "$BIN_DIR/eWiz" "$CONTENTS/MacOS/eWiz"
+chmod 755 "$CONTENTS/MacOS/eWiz"
 
 # App icon. Ship the prebuilt .icns; regenerate it from the SVG master if it's
 # missing and rsvg-convert is available (see scripts/make-icon.sh).
 ICNS="$REPO_DIR/branding/AppIcon.icns"
 if [[ ! -f "$ICNS" ]] && command -v rsvg-convert >/dev/null 2>&1; then
-    echo "==> AppIcon.icns missing — regenerating from branding/battlify-icon.svg"
+    echo "==> AppIcon.icns missing — regenerating from branding/ewiz-icon.svg"
     "$REPO_DIR/scripts/make-icon.sh"
 fi
 if [[ -f "$ICNS" ]]; then
@@ -68,19 +69,31 @@ else
     echo "==> actool unavailable — shipping loose .icns only (notification icon needs a CI build)"
 fi
 
-# Bundle the helper + daemon plist + installer so the app can self-install it.
-cp "$BIN_DIR/battlify-helper" "$CONTENTS/Resources/battlify-helper"
-cp "$REPO_DIR/scripts/com.battlify.helper.plist" "$CONTENTS/Resources/"
+# The helper lives in MacOS/, not Resources/, because SMAppService runs it straight out of
+# the bundle via the BundleProgram path below — and a bundle-relative daemon is the whole
+# reason app updates no longer need to reinstall anything. Contents/MacOS is also where a
+# nested executable belongs for signing.
+mkdir -p "$CONTENTS/Library/LaunchDaemons"
+cp "$BIN_DIR/ewiz-helper" "$CONTENTS/MacOS/ewiz-helper"
+# The MCP server an AI agent launches (claude mcp add ewiz -- …/Contents/MacOS/ewiz-mcp).
+cp "$BIN_DIR/ewiz-mcp" "$CONTENTS/MacOS/ewiz-mcp"
+cp "$REPO_DIR/scripts/com.ewiz.helper.daemon.plist" \
+   "$CONTENTS/Library/LaunchDaemons/com.ewiz.helper.plist"
+
+# The legacy plist and the scripts stay bundled: they're the fallback for unsigned builds
+# and for Macs that already run the /usr/local/bin daemon.
+cp "$REPO_DIR/scripts/com.ewiz.helper.plist" "$CONTENTS/Resources/"
 cp "$REPO_DIR/scripts/install-helper-bundled.sh" "$CONTENTS/Resources/"
 cp "$REPO_DIR/scripts/uninstall-helper.sh" "$CONTENTS/Resources/"
-chmod 755 "$CONTENTS/Resources/battlify-helper" \
+chmod 755 "$CONTENTS/MacOS/ewiz-helper" "$CONTENTS/MacOS/ewiz-mcp" \
           "$CONTENTS/Resources/install-helper-bundled.sh" \
           "$CONTENTS/Resources/uninstall-helper.sh"
 
 # Strip local/debug symbols before signing (must precede codesign or it would
 # invalidate the signature). -x keeps external symbols, so nothing breaks.
-strip -x "$CONTENTS/MacOS/Battlify"
-strip -x "$CONTENTS/Resources/battlify-helper"
+strip -x "$CONTENTS/MacOS/eWiz"
+strip -x "$CONTENTS/MacOS/ewiz-helper"
+strip -x "$CONTENTS/MacOS/ewiz-mcp"
 
 # Info.plist — LSUIElement makes it a menu-bar-only (agent) app.
 cat > "$CONTENTS/Info.plist" <<PLIST
@@ -89,23 +102,23 @@ cat > "$CONTENTS/Info.plist" <<PLIST
   "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <key>CFBundleName</key>             <string>Battlify</string>
-    <key>CFBundleDisplayName</key>      <string>Battlify</string>
+    <key>CFBundleName</key>             <string>eWiz</string>
+    <key>CFBundleDisplayName</key>      <string>eWiz</string>
     <key>CFBundleIdentifier</key>       <string>$BUNDLE_ID</string>
-    <key>CFBundleExecutable</key>       <string>Battlify</string>
+    <key>CFBundleExecutable</key>       <string>eWiz</string>
     <key>CFBundleIconFile</key>         <string>AppIcon</string>$ICON_NAME_PLIST
     <key>CFBundlePackageType</key>      <string>APPL</string>
     <key>CFBundleShortVersionString</key><string>$VERSION</string>
     <key>CFBundleVersion</key>          <string>$VERSION</string>
     <key>LSMinimumSystemVersion</key>   <string>14.0</string>
     <key>LSUIElement</key>              <true/>
-    <key>NSHumanReadableCopyright</key> <string>Battlify</string>
-    <!-- Required: Battlify toggles Bluetooth power on lid close. Without this
+    <key>NSHumanReadableCopyright</key> <string>eWiz</string>
+    <!-- Required: eWiz toggles Bluetooth power on lid close. Without this
          usage string macOS kills the app (TCC) when it touches Bluetooth. -->
     <key>NSBluetoothAlwaysUsageDescription</key>
-    <string>Battlify turns Bluetooth off when you close the lid and back on when you reopen it, to save battery.</string>
+    <string>eWiz turns Bluetooth off when you close the lid and back on when you reopen it, to save battery.</string>
     <key>NSBluetoothPeripheralUsageDescription</key>
-    <string>Battlify turns Bluetooth off when you close the lid and back on when you reopen it, to save battery.</string>
+    <string>eWiz turns Bluetooth off when you close the lid and back on when you reopen it, to save battery.</string>
 </dict>
 </plist>
 PLIST
@@ -121,16 +134,24 @@ else
     SIGN_FLAGS=(--force --options runtime --timestamp --sign "$IDENTITY")
 fi
 
+# `strip` rewrites each binary rather than editing it, so the result carries the shell's
+# umask and not the modes set when they were copied in — 0700 by default, which ships an
+# app only its builder can run and a daemon binary root has to be lucky to execute. Fix
+# the whole bundle here, after stripping and before signing.
+chmod 755 "$CONTENTS/MacOS/eWiz" "$CONTENTS/MacOS/ewiz-helper" "$CONTENTS/MacOS/ewiz-mcp"
+chmod -R go+rX "$APP_DIR"
+
 # Sign nested executables first, then the app bundle (no deprecated --deep).
-codesign "${SIGN_FLAGS[@]}" "$CONTENTS/Resources/battlify-helper"
+codesign "${SIGN_FLAGS[@]}" "$CONTENTS/MacOS/ewiz-helper"
+codesign "${SIGN_FLAGS[@]}" "$CONTENTS/MacOS/ewiz-mcp"
 codesign "${SIGN_FLAGS[@]}" "$APP_DIR"
 codesign --verify --strict --verbose=2 "$APP_DIR" || echo "warning: verify failed"
 
 echo "==> Creating zip"
 cd "$DIST"
-rm -f "Battlify-$VERSION.zip"
-ditto -c -k --keepParent "$APP" "Battlify-$VERSION.zip"
-shasum -a 256 "Battlify-$VERSION.zip"
+rm -f "eWiz-$VERSION.zip"
+ditto -c -k --keepParent "$APP" "eWiz-$VERSION.zip"
+shasum -a 256 "eWiz-$VERSION.zip"
 
 echo "==> Done: $APP_DIR"
 echo "    Run: open '$APP_DIR'"

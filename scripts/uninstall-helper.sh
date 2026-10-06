@@ -1,10 +1,10 @@
 #!/bin/bash
-# Removes the Battlify privileged helper LaunchDaemon.
+# Removes the eWiz privileged helper LaunchDaemon.
 # Run with sudo:  sudo ./scripts/uninstall-helper.sh
 set -euo pipefail
 
-PLIST_DST="/Library/LaunchDaemons/com.battlify.helper.plist"
-BIN_DST="/usr/local/bin/battlify-helper"
+PLIST_DST="/Library/LaunchDaemons/com.ewiz.helper.plist"
+BIN_DST="/usr/local/bin/ewiz-helper"
 
 if [[ "$EUID" -ne 0 ]]; then
     echo "error: must run as root (use sudo)." >&2
@@ -24,6 +24,22 @@ echo "==> Re-enabling charging (safety) after unloading daemon"
 echo "==> Removing files"
 rm -f "$PLIST_DST"
 rm -f "$BIN_DST"
-rm -f /var/run/battlify.sock
+rm -f /var/run/ewiz.sock
 
-echo "==> Done. (Config left in /Library/Application Support/Battlify)"
+# The pre-rename BattPie daemon, if this Mac ever ran it. Uninstalling only the
+# current helper would leave that one loaded and still driving the charge keys,
+# so "uninstalled" would still mean a Mac that won't charge.
+# And the Battlify one, its name before eWiz.
+for legacy in battpie battlify; do
+    LEGACY_PLIST="/Library/LaunchDaemons/com.$legacy.helper.plist"
+    LEGACY_BIN="/usr/local/bin/$legacy-helper"
+    if [[ -e "$LEGACY_PLIST" || -e "$LEGACY_BIN" ]]; then
+        echo "==> Removing the superseded $legacy helper"
+        launchctl bootout system "$LEGACY_PLIST" 2>/dev/null || true
+        pkill -f "^$LEGACY_BIN" 2>/dev/null || true
+        "$LEGACY_BIN" enable 2>/dev/null || true
+        rm -f "$LEGACY_PLIST" "$LEGACY_BIN" "/var/run/$legacy.sock"
+    fi
+done
+
+echo "==> Done. (Config left in /Library/Application Support/eWiz)"

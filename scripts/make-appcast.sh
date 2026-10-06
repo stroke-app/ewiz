@@ -5,7 +5,7 @@ set -euo pipefail
 
 VERSION="${1:?usage: make-appcast.sh <version> <dmg-url> [notes]}"
 DMG_URL="${2:?usage: make-appcast.sh <version> <dmg-url> [notes]}"
-NOTES="${3:-Battlify $VERSION}"
+NOTES="${3:-eWiz $VERSION}"
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 mkdir -p "$REPO_DIR/dist"

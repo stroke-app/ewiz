@@ -1,6 +1,6 @@
 name: Release
 
-# Builds Battlify on every tag push (v0.1.0…) or manual run.
+# Builds eWiz on every tag push (v0.1.0…) or manual run.
 # - With Apple secrets set: Developer-ID signed + notarized DMG.
 # - Without them: an unsigned build (fine for testing the pipeline; end users
 #   would see a Gatekeeper warning).
@@ -71,32 +71,32 @@ jobs:
         run: |
           echo "$NOTARY_KEY_P8_BASE64" | base64 --decode > AuthKey.p8
           export NOTARY_KEY_PATH="$PWD/AuthKey.p8"
-          ./scripts/notarize.sh "dist/Battlify-${{ steps.ver.outputs.version }}.dmg"
+          ./scripts/notarize.sh "dist/eWiz-${{ steps.ver.outputs.version }}.dmg"
           rm -f AuthKey.p8
 
       # Always make the build downloadable from the run summary.
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Battlify-${{ steps.ver.outputs.version }}
-          path: dist/Battlify-${{ steps.ver.outputs.version }}.dmg
+          name: eWiz-${{ steps.ver.outputs.version }}
+          path: dist/eWiz-${{ steps.ver.outputs.version }}.dmg
 
       # Generate the update feed pointing at this release's DMG asset.
       - name: Generate appcast
         if: startsWith(github.ref, 'refs/tags/')
         run: |
-          DMG_URL="https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/Battlify-${{ steps.ver.outputs.version }}.dmg"
-          ./scripts/make-appcast.sh "${{ steps.ver.outputs.version }}" "$DMG_URL" "Battlify ${{ steps.ver.outputs.version }}"
+          DMG_URL="https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/eWiz-${{ steps.ver.outputs.version }}.dmg"
+          ./scripts/make-appcast.sh "${{ steps.ver.outputs.version }}" "$DMG_URL" "eWiz ${{ steps.ver.outputs.version }}"
 
       # On a tag push, attach DMG + appcast.json to a published GitHub Release.
       - name: Publish GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          name: "Battlify ${{ steps.ver.outputs.version }}"
+          name: "eWiz ${{ steps.ver.outputs.version }}"
           tag_name: ${{ github.ref_name }}
           files: |
-            dist/Battlify-${{ steps.ver.outputs.version }}.dmg
+            dist/eWiz-${{ steps.ver.outputs.version }}.dmg
             dist/appcast.json
           draft: false
           make_latest: true
@@ -106,7 +106,7 @@ jobs:
       # rather than in a separate `release: published` workflow because releases
       # published by the default GITHUB_TOKEN do NOT emit an event that can
       # trigger another workflow — so that feed workflow never fired on its own.
-      # RELEASES_TOKEN is a PAT with contents:write on the battlify-releases repo.
+      # RELEASES_TOKEN is a PAT with contents:write on the ewiz-releases repo.
       - name: Update appcast feed
         if: startsWith(github.ref, 'refs/tags/')
         env:
@@ -119,9 +119,9 @@ jobs:
             echo "RELEASES_TOKEN not set — skipping feed update."
             exit 0
           fi
-          FEED_REPO="broisnischal/battlify-releases"
-          DMG_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/Battlify-${VERSION}.dmg"
-          NEW=$(printf '{"version":"%s","url":"%s","notes":"%s"}' "$VERSION" "$DMG_URL" "Battlify ${VERSION}")
+          FEED_REPO="stroke-app/ewiz-releases"
+          DMG_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/eWiz-${VERSION}.dmg"
+          NEW=$(printf '{"version":"%s","url":"%s","notes":"%s"}' "$VERSION" "$DMG_URL" "eWiz ${VERSION}")
           echo "New feed: $NEW"
           SHA=$(gh api "repos/${FEED_REPO}/contents/appcast.json" --jq .sha)
           gh api -X PUT "repos/${FEED_REPO}/contents/appcast.json" \
@@ -130,7 +130,7 @@ jobs:
             -f sha="$SHA"
           echo "Feed updated to ${VERSION}."
 
-      # Publish the Homebrew cask to the battlify-releases tap, with the freshly
+      # Publish the Homebrew cask to the ewiz-releases tap, with the freshly
       # built DMG's sha256, so `brew install --cask` always matches the release.
       - name: Update Homebrew cask
         if: startsWith(github.ref, 'refs/tags/')
@@ -144,17 +144,32 @@ jobs:
             echo "RELEASES_TOKEN not set — skipping cask update."
             exit 0
           fi
-          TAP_REPO="broisnischal/homebrew-battlify"
-          DMG_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/Battlify-${VERSION}.dmg"
-          DMG_SHA=$(shasum -a 256 "dist/Battlify-${VERSION}.dmg" | awk '{print $1}')
+          TAP_REPO="stroke-app/homebrew-ewiz"
+          DMG_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/eWiz-${VERSION}.dmg"
+          DMG_SHA=$(shasum -a 256 "dist/eWiz-${VERSION}.dmg" | awk '{print $1}')
           ./scripts/make-cask.sh "${VERSION}" "${DMG_URL}" "${DMG_SHA}"
-          CONTENT=$(base64 < dist/battlify.rb | tr -d '\n')
-          EXISTING=$(gh api "repos/${TAP_REPO}/contents/Casks/battlify.rb" --jq .sha 2>/dev/null || echo "")
+          CONTENT=$(base64 < dist/ewiz.rb | tr -d '\n')
+          EXISTING=$(gh api "repos/${TAP_REPO}/contents/Casks/ewiz.rb" --jq .sha 2>/dev/null || echo "")
           if [ -n "$EXISTING" ]; then
-            gh api -X PUT "repos/${TAP_REPO}/contents/Casks/battlify.rb" \
-              -f message="cask: battlify ${VERSION}" -f content="$CONTENT" -f sha="$EXISTING"
+            gh api -X PUT "repos/${TAP_REPO}/contents/Casks/ewiz.rb" \
+              -f message="cask: ewiz ${VERSION}" -f content="$CONTENT" -f sha="$EXISTING"
           else
-            gh api -X PUT "repos/${TAP_REPO}/contents/Casks/battlify.rb" \
-              -f message="cask: battlify ${VERSION}" -f content="$CONTENT"
+            gh api -X PUT "repos/${TAP_REPO}/contents/Casks/ewiz.rb" \
+              -f message="cask: ewiz ${VERSION}" -f content="$CONTENT"
           fi
           echo "Cask updated to ${VERSION} (sha ${DMG_SHA})."
+
+          # The cask was called battlify before the rename. Homebrew follows a rename
+          # only once the old cask is gone and cask_renames.json points across, and then
+          # `brew upgrade` moves existing installs over by itself.
+          OLD=$(gh api "repos/${TAP_REPO}/contents/Casks/battlify.rb" --jq .sha 2>/dev/null || echo "")
+          if [ -n "$OLD" ]; then
+            gh api -X DELETE "repos/${TAP_REPO}/contents/Casks/battlify.rb" \
+              -f message="cask: battlify is now ewiz" -f sha="$OLD"
+          fi
+          RENAMES=$(printf '{\n  "battlify": "ewiz"\n}\n' | base64 | tr -d '\n')
+          RSHA=$(gh api "repos/${TAP_REPO}/contents/cask_renames.json" --jq .sha 2>/dev/null || echo "")
+          if [ -z "$RSHA" ]; then
+            gh api -X PUT "repos/${TAP_REPO}/contents/cask_renames.json" \
+              -f message="cask: rename battlify to ewiz" -f content="$RENAMES"
+          fi

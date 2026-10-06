@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  The SMAppService form of the helper daemon, shipped inside the app at
+  Contents/Library/LaunchDaemons/ and registered by the app itself.
+
+  The important difference from the /Library/LaunchDaemons version is BundleProgram: the
+  daemon that runs is the copy *inside the app bundle*, so replacing the app replaces the
+  helper. That is the whole reason this file exists — it turns "every helper update costs
+  an administrator prompt" into "approve once, then never again".
+
+  Same Label as the legacy job on purpose: only one of the two may be loaded at a time,
+  and sharing the label makes that a replacement rather than a pair that fight.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.ewiz.helper</string>
+
+    <key>BundleProgram</key>
+    <string>Contents/MacOS/ewiz-helper</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>Contents/MacOS/ewiz-helper</string>
+        <string>daemon</string>
+    </array>
+
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>StandardErrorPath</key>
+    <string>/var/log/ewiz-helper.log</string>
+    <key>StandardOutPath</key>
+    <string>/var/log/ewiz-helper.log</string>
+
+    <key>ProcessType</key>
+    <string>Background</string>
+</dict>
+</plist>

@@ -9,6 +9,7 @@
 #define SMC_CMD_READ_BYTES    5
 #define SMC_CMD_WRITE_BYTES   6
 #define SMC_CMD_READ_KEYINFO  9
+#define SMC_CMD_READ_INDEX    8
 
 typedef struct {
     char major;
@@ -100,6 +101,29 @@ static int read_key_info(uint32_t key, SMCKeyData_keyInfo_t *info) {
     kern_return_t r = smc_call(&in, &out);
     if (r != kIOReturnSuccess || out.result != 0) return 1;
     *info = out.keyInfo;
+    return 0;
+}
+
+// The SMC exposes its key table by index: "#KEY" holds the count, and command 8 maps an
+// index to a key name. That's the only way to discover the sensors a machine actually has —
+// they differ by model, and a hardcoded list is wrong on every Mac it wasn't written for.
+uint32_t csmc_key_count(void) {
+    CSMCVal v;
+    if (csmc_read("#KEY", &v) != 0 || v.dataSize < 4) return 0;
+    return ((uint32_t)v.bytes[0] << 24) | ((uint32_t)v.bytes[1] << 16) |
+           ((uint32_t)v.bytes[2] << 8) | (uint32_t)v.bytes[3];
+}
+
+int csmc_key_at_index(uint32_t index, char *out_key) {
+    SMCKeyData_t in, out;
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+    in.data8 = SMC_CMD_READ_INDEX;
+    in.data32 = index;
+
+    kern_return_t r = smc_call(&in, &out);
+    if (r != kIOReturnSuccess || out.result != 0) return 1;
+    u32_to_str(out_key, out.key);
     return 0;
 }
 

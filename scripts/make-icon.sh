@@ -1,5 +1,5 @@
 #!/bin/bash
-# Regenerate the app icon assets from the vector master (branding/battlify-icon.svg):
+# Regenerate the app icon assets from the vector master (branding/ewiz-icon.svg):
 #   - branding/AppIcon.icns                         (loose icon, Finder/Dock fallback)
 #   - branding/Assets.xcassets/AppIcon.appiconset/  (source for actool → Assets.car)
 # The asset catalog is what macOS Notification Center uses to resolve the app icon,
@@ -9,7 +9,7 @@
 # Requires: rsvg-convert (brew install librsvg) + macOS iconutil.
 set -euo pipefail
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-SVG="$REPO_DIR/branding/battlify-icon.svg"
+SVG="$REPO_DIR/branding/ewiz-icon.svg"
 ICNS="$REPO_DIR/branding/AppIcon.icns"
 XCASSETS="$REPO_DIR/branding/Assets.xcassets"
 APPICONSET="$XCASSETS/AppIcon.appiconset"

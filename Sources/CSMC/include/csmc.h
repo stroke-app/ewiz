@@ -28,4 +28,11 @@ int csmc_write(const char *key, const uint8_t *bytes, uint32_t size);
 /// Whether the given key exists on this machine.
 bool csmc_key_exists(const char *key);
 
+/// Number of keys the SMC publishes (the "#KEY" value). 0 if it can't be read.
+uint32_t csmc_key_count(void);
+
+/// Name of the key at `index` in the SMC's table. `out_key` must hold 5 bytes.
+/// Returns 0 on success. Enumerating is the only way to find a model's real sensors.
+int csmc_key_at_index(uint32_t index, char *out_key);
+
 #endif /* CSMC_H */

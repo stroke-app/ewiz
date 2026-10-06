@@ -1,8 +1,8 @@
 name: Changesets
 
-# Opens/updates a "Version Packages" PR whenever changesets land on main.
-# Merging that PR bumps package.json + CHANGELOG.md; then tag the version to
-# trigger the Release workflow. (No npm publishing — this app isn't on npm.)
+# Opens/updates a "Version Packages" PR whenever changesets land on main, then
+# tags the result so the Release workflow actually runs. (No npm publishing —
+# this app isn't on npm, so the "publish" step here is just the git tag.)
 on:
   push:
     branches: [main]
@@ -10,6 +10,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  actions: write   # to start release.yml below
 
 jobs:
   version:
@@ -28,3 +29,39 @@ jobs:
           title: "chore: version packages"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Merging the Version PR used to be the end of the line: package.json was
+      # bumped but nothing ever created the tag, and Release only fires on "v*".
+      # So the version landed on main and no release was ever built. Close the loop.
+      #
+      # A tag pushed with GITHUB_TOKEN deliberately cannot trigger another workflow,
+      # so pushing it is not enough — the release is started explicitly with
+      # workflow_dispatch, which is the documented exception to that rule.
+      - name: Tag the version and start the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          # Changesets still queued means this push was a feature landing, not a
+          # version bump — the action above just opened/updated the Version PR.
+          if compgen -G ".changeset/*.md" > /dev/null && \
+             ls .changeset/*.md | grep -qv "README.md"; then
+            echo "Changesets still pending — nothing to release yet."
+            exit 0
+          fi
+
+          version=$(node -p "require('./package.json').version")
+          if git ls-remote --exit-code --tags origin "refs/tags/v$version" >/dev/null 2>&1; then
+            echo "v$version is already tagged — nothing to do."
+            exit 0
+          fi
+
+          echo "Tagging v$version and starting the release."
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "v$version" -m "v$version"
+          git push origin "v$version"
+          # At the tag, not main: every publish step in release.yml runs only on a tag ref,
+          # so dispatching on the default branch built the app and published nothing.
+          gh workflow run release.yml --ref "v$version" -f version="$version"
