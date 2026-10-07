@@ -110,11 +110,13 @@ enum BatteryIconRenderer {
     /// fixed palette colour. `frame` is a monotonically increasing animation tick;
     /// the cache key stores the *resolved* animation state (fill count, pulse
     /// phase, or blink) so it stays bounded no matter how high the tick counts.
+    /// `mark` is what the glyph says about the charge — bolt, pause, check or nothing — and
+    /// it comes from `ChargeDisplay` rather than being worked out here from the flags, so
+    /// the glyph can't tell a different story from the panel it sits above.
     @MainActor static func image(style: BatteryIconStyle, percentage: Int,
                                  charging: Bool, tint: MenuBarTint,
                                  height: CGFloat = 14, frame: Int = 0,
-                                 celebrating: Bool = false,
-                                 pluggedIn: Bool = false,
+                                 mark: ChargeMark = .none,
                                  holding: Bool = false,
                                  transition: IconTransition? = nil,
                                  transitionStep: Int = 0,
@@ -123,7 +125,7 @@ enum BatteryIconRenderer {
         // Tenths of a unit: plenty for a tremble, and it keeps the cache to a few frames.
         let shake = (shake * 10).rounded() / 10
         let anim: Int
-        if celebrating {
+        if mark == .check {
             anim = 0                                                        // the check holds still
         } else if charging && style == .pixel {
             anim = pixelFillCount(pct: pct, charging: charging, frame: frame) // sweep step
@@ -134,14 +136,13 @@ enum BatteryIconRenderer {
         } else {
             anim = 0
         }
-        let key = "\(style.rawValue)|\(pct)|\(charging)|\(celebrating)|\(tint.cacheKey)|\(height)|\(anim)|\(transition?.rawValue ?? "-")\(transitionStep)|\(holding)|\(pluggedIn)|\(shake)"
+        let key = "\(style.rawValue)|\(pct)|\(charging)|\(mark)|\(tint.cacheKey)|\(height)|\(anim)|\(transition?.rawValue ?? "-")\(transitionStep)|\(holding)|\(shake)"
         if let cached = cache[key] { return cached }
 
         let color: NSColor = { if case .colored(let c) = tint { return c } else { return .black } }()
-        // A finished charge draws full, with the check in it. It used to blink the whole
-        // glyph for three seconds as well, which read as a warning rather than a result.
-        let effPct = celebrating ? 100 : pct
-        let effCharging = celebrating ? false : charging
+        // The check sits in the real level. It used to draw the battery full for the
+        // flash, which at an 80% limit was a lie — and a stuck flash then showed a full
+        // battery for as long as it was stuck.
         let vb = style.viewBox
         let s = height / vb.h
         let size = NSSize(width: vb.w * s, height: vb.h * s)
@@ -159,9 +160,8 @@ enum BatteryIconRenderer {
                 cg.scaleBy(x: shakeScale, y: shakeScale)
                 cg.translateBy(x: -cx, y: -cy)
             }
-            draw(style: style, pct: effPct, charging: effCharging, color: color,
-                 frame: frame, celebrating: celebrating,
-                 pluggedIn: pluggedIn, holding: holding,
+            draw(style: style, pct: pct, charging: charging, color: color,
+                 frame: frame, mark: mark, holding: holding,
                  transition: transition, transitionStep: transitionStep)
             return true
         }
@@ -195,8 +195,8 @@ enum BatteryIconRenderer {
     /// the mark reads over a sliver, a full bar or the outline alike, and it survives the
     /// template treatment because macOS tints by alpha and the halo *is* alpha.
     private static func draw(style: BatteryIconStyle, pct: Int, charging: Bool, color: NSColor,
-                             frame: Int = 0, celebrating: Bool = false,
-                             pluggedIn: Bool = false, holding: Bool = false,
+                             frame: Int = 0, mark steady: ChargeMark = .none,
+                             holding: Bool = false,
                              transition: IconTransition? = nil,
                              transitionStep: Int = 0) {
         color.setStroke(); color.setFill()
@@ -205,8 +205,7 @@ enum BatteryIconRenderer {
         // which is what a charging battery is expected to look like. The level itself
         // still shows: the sweep starts at it, so a glance at the low point reads true.
         let fillFrac = charging ? sweepFrac(frac, frame: frame) : frac
-        let mark = mark(pct: pct, charging: charging, pluggedIn: pluggedIn,
-                        celebrating: celebrating, transition: transition, step: transitionStep)
+        let mark = mark(steady: steady, transition: transition, step: transitionStep)
         // A pause dims the level behind it. Cut into a full-strength bar, two upright bars
         // read as more level stripes; over a dimmed one they read as a symbol on top.
         let dim = holding || mark?.kind == .pause
@@ -361,11 +360,16 @@ enum BatteryIconRenderer {
     private static let markHalo: CGFloat = 0.85
 
     /// The mark to draw and its scale, steady or part-way through a transition.
-    private static func mark(pct: Int, charging: Bool, pluggedIn: Bool, celebrating: Bool,
+    private static func mark(steady: ChargeMark,
                              transition: IconTransition?, step: Int) -> (kind: Mark, scale: CGFloat)? {
-        // Full on the charger is just a full battery: nothing is paused, there's nothing to say.
-        let steady: Mark? = celebrating ? .check : charging ? .bolt
-            : pluggedIn && pct < 100 ? .pause : nil
+        let steady: Mark? = {
+            switch steady {
+            case .none:  return nil
+            case .bolt:  return .bolt
+            case .pause: return .pause
+            case .check: return .check
+            }
+        }()
         let t = Double(step) / Double(transitionSteps - 1)
         switch transition {
         case .markIn?:

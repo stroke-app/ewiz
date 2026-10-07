@@ -465,6 +465,27 @@ final class ChargeLimitStore: ObservableObject {
         !chargingEnabled || discharging || pauseReason == "hold"
     }
 
+    /// The one reading of what charging is doing that every surface draws from — the
+    /// glyph, the header, the hint rows, the tooltip and the notifications. See
+    /// `ChargeDisplay` for why it isn't each view's own arithmetic.
+    func display(for snap: BatterySnapshot) -> ChargeDisplay {
+        ChargeDisplay(ChargeDisplayInput(
+            percentage: snap.percentage,
+            isCharging: snap.isCharging,
+            isPluggedIn: snap.isPluggedIn,
+            isFullyCharged: snap.isFullyCharged,
+            limitEnabled: limitEnabled,
+            effectiveLimit: effectiveLimit,
+            nativeLimitApplied: nativeLimitApplied,
+            usesNativeLimit: !nativeLimitSteps.isEmpty,
+            holdCharge: holdCharge,
+            pauseReason: pauseReason,
+            discharging: discharging,
+            isPaused: isPaused,
+            calibrating: calibrating,
+            chargePower: chargePower))
+    }
+
     // MARK: - Editing
 
     /// Controls the user has hold of right now (a slider mid-drag).

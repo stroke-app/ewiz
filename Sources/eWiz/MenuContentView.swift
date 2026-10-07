@@ -231,7 +231,7 @@ struct MenuContentView: View {
 
             // Only when it says something the gauge can't. "Limit 80%" is the marker the
             // gauge already draws; "Charging paused — warm" is not.
-            if let note = limitNote(snap) {
+            if let note = chargeLimit.display(for: snap).headerNote {
                 Text(note)
                     .font(DS.Typo.note).foregroundStyle(.secondary)
             }
@@ -252,26 +252,6 @@ struct MenuContentView: View {
         [statusLine(snap), etaLine(snap), liveWattsLine(snap)]
             .compactMap { $0 }
             .joined(separator: " · ")
-    }
-
-    /// What the gauge can't draw. Returns nil for the ordinary "limit is set and being
-    /// honoured" case, because the gauge's own marker already says that.
-    private func limitNote(_ snap: BatterySnapshot) -> String? {
-        if chargeLimit.isPaused { return "Charging paused" }
-        if chargeLimit.calibrating { return "Charging to 100% once" }
-        guard chargeLimit.limitEnabled else { return nil }
-        let stop = chargeLimit.holdingAt
-        // Above the stop, both levers run the Mac off the battery down to it. "Holding at
-        // 80%" over a gauge reading 85 was the panel contradicting itself.
-        if chargeLimit.discharging, chargeLimit.pauseReason != "hold", snap.percentage > stop {
-            return "Draining to \(stop)%"
-        }
-        if chargeLimit.isHoldingCharge { return "Holding at \(stop)%" }
-        if snap.isCharging {
-            let limit = chargeLimit.effectiveLimit
-            return snap.percentage >= limit ? "Above the \(limit)% limit" : "Charging to \(limit)%"
-        }
-        return nil
     }
 
     /// Red, yellow, green off the level while on power; plain foreground on battery.
@@ -451,22 +431,12 @@ struct MenuContentView: View {
     private var holdChargeControl: some View {
         // No caption while it's off. "Don't charge" with a switch beside it needs no
         // gloss; the explanation lives in Settings.
-        statusRow("Don't charge", chargeLimit.holdCharge ? holdCaption : nil) {
+        statusRow("Don't charge", chargeLimit.display(for: battery.snapshot).holdCaption) {
             Toggle("Don't charge", isOn: Binding(
                 get: { chargeLimit.holdCharge },
                 set: { chargeLimit.holdCharge = $0; chargeLimit.apply() }))
                 .labelsHidden().toggleStyle(.switch).controlSize(.small)
         }
-    }
-
-    /// What the hold is doing. Under macOS's limit it can only park on a step (80, 85, 90,
-    /// 95), so it rounds up and charges to the step first, and saying "Holding the level"
-    /// while the battery climbs would be the panel contradicting the gauge above it.
-    private var holdCaption: String {
-        guard !chargeLimit.nativeLimitSteps.isEmpty else { return "Holding the level" }
-        let level = battery.snapshot.percentage
-        let at = chargeLimit.nativeLimitApplied ?? 100
-        return at > level ? "Charges to \(at)%, then holds there" : "Holding at \(at)% on wall power"
     }
 
     @ViewBuilder
@@ -578,31 +548,13 @@ struct MenuContentView: View {
                 pauseChargingControl
                 calibrationControl
 
-                // Live state: why charging is currently paused.
-                //
-                // Gated on `pauseReason` alone. It used to require `!chargingEnabled` as
-                // well, which reads as a tautology and isn't: a Mac with no charge-inhibit
-                // key always reports charging as enabled, so on that hardware this whole
-                // block was dead and the panel explained nothing it was doing.
-                if chargeLimit.discharging {
-                    // A run down to the limit is the header's line ("Draining to 80%").
-                    // Repeated here it sat under "Don't charge", which it has nothing to do with.
-                    if chargeLimit.pauseReason == "hold" {
-                        hintLabel("Running off the battery to hold the level", systemImage: "batteryLow")
-                    }
-                } else if let reason = chargeLimit.pauseReason {
-                    switch reason {
-                    case "heat":     hintLabel("Charging paused, battery is warm", systemImage: "thermometer")
-                    case "limit":    hintLabel("Charging paused to hold limit", systemImage: "pause")
-                    case "settling": hintLabel("Charging resumes shortly after wake", systemImage: "sleep")
-                    case "hold":     hintLabel("Holding the level where it is", systemImage: "pause")
-                    case "schedule": hintLabel("A schedule is holding charging", systemImage: "clock")
-                    case "slow":     hintLabel("Charging gently, at \(chargeLimit.chargePower)% power",
-                                               systemImage: "batteryLow")
-                    // "paused" has its own row with a Resume button; "sleep" is the cut on
-                    // the way into sleep and is gone by the time anyone can read it.
-                    default:         EmptyView()
-                    }
+                // Live state: what the helper is doing about charging right now. The same
+                // reading the header and the menu-bar glyph draw from, so a hold the icon
+                // shows is a hold this row explains, and a pause the helper reported at
+                // 49% while the charger negotiated is not announced as the limit reached.
+                let display = chargeLimit.display(for: battery.snapshot)
+                if let hint = display.hint {
+                    hintLabel(hint, systemImage: hintIcon(for: display.state))
                 }
             } else {
                 helperMissingView
@@ -965,10 +917,19 @@ struct MenuContentView: View {
     // MARK: - Formatting
 
     private func statusLine(_ snap: BatterySnapshot) -> String {
-        if snap.isFullyCharged { return "Fully charged" }
-        if snap.isCharging { return "Charging" }
-        if snap.isPluggedIn { return "Plugged in, not charging" }
-        return "On battery"
+        chargeLimit.display(for: snap).statusLine
+    }
+
+    /// The glyph beside a live-state hint.
+    private func hintIcon(for state: ChargeDisplayState) -> String {
+        switch state {
+        case .charging:          return "batteryLow"      // charging gently
+        case .holding:           return chargeLimit.discharging ? "batteryLow" : "pause"
+        case .paused(.heat):     return "thermometer"
+        case .paused(.settling): return "sleep"
+        case .paused(.schedule): return "clock"
+        default:                 return "pause"
+        }
     }
 
     /// Trailing words dropped ("2h 38m", not "2h 38m left"). They sit in a middot-joined
