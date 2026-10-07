@@ -677,6 +677,15 @@ function ClosingCta() {
           <DownloadButton />
           <BuyButton>Buy · {PRICE}</BuyButton>
         </div>
+        <p className="mt-4 text-sm text-muted-foreground">
+          Already using it and want to help?{" "}
+          <Link
+            to="/donate"
+            className="text-foreground underline decoration-border underline-offset-4 transition-colors hover:decoration-foreground"
+          >
+            Donate
+          </Link>
+        </p>
       </Container>
     </section>
   );
