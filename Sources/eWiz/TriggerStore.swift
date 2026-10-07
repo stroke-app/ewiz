@@ -114,10 +114,22 @@ final class TriggerStore: ObservableObject {
 
     /// Sensors we need this tick: everything while a live view is open, otherwise
     /// only what the enabled rules actually reference.
+    ///
+    /// Bluetooth is the exception: it's read only when a rule asks for it. Listing paired
+    /// devices goes through IOBluetooth, which macOS gates behind a permission prompt, and
+    /// on grant it restarts the app. eWiz is ad-hoc signed, so TCC ties that grant to the
+    /// exact build and asks again after every update. Opening the Automation tab was
+    /// triggering all of that for a row nobody had set a rule on.
     private var kindsInUse: Set<TriggerKind> {
-        if viewers > 0 { return Set(TriggerKind.allCases) }
-        return Set(rules.filter(\.enabled).flatMap { $0.conditions.map(\.kind) })
+        let ruleKinds = Set(rules.filter(\.enabled).flatMap { $0.conditions.map(\.kind) })
+        guard viewers > 0 else { return ruleKinds }
+        var all = Set(TriggerKind.allCases)
+        if !ruleKinds.contains(.bluetoothDevice) { all.remove(.bluetoothDevice) }
+        return all
     }
+
+    /// Whether the live view is reading Bluetooth, so it can say why the row is blank.
+    var observesBluetooth: Bool { kindsInUse.contains(.bluetoothDevice) }
 
     /// Start, retime, or stop the poll depending on what's needed right now.
     private func reconfigure() {

@@ -17,12 +17,19 @@ let server = MCPServer(awake: awake, version: version)
 
 // A lid hold outlives this process, so it's handed back however the session ends: the
 // client closing stdin (below) or a signal (here).
+//
+// `awake` is bound to a local first. Top-level variables in main.swift are main-actor
+// isolated under Swift 6, and reading one from the signal source's global queue tripped
+// the runtime's isolation assertion: every SIGTERM from a client ending its session
+// crashed the server (EXC_BREAKPOINT in dispatch_assert_queue) instead of releasing the
+// hold. AgentAwake is Sendable and guards itself with a lock, so the local is safe anywhere.
+let awakeForSignals = awake
 var signalSources: [DispatchSourceSignal] = []
 for sig in [SIGTERM, SIGINT, SIGHUP] {
     signal(sig, SIG_IGN)
     let source = DispatchSource.makeSignalSource(signal: sig, queue: .global())
     source.setEventHandler {
-        awake.shutdown()
+        awakeForSignals.shutdown()
         exit(0)
     }
     source.resume()
