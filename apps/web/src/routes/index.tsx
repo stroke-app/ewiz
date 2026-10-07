@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { FAQS } from "#/components/landing/landing-data";
+import { FAQS, HEADLINES } from "#/components/landing/landing-data";
 import { LandingPage } from "#/components/landing/landing-page";
 import {
   faqSchema,
@@ -13,7 +13,12 @@ import { latestReleaseQueryOptions } from "#/lib/releases/queries";
 import { seo } from "#/lib/seo";
 
 export const Route = createFileRoute("/")({
-  loader: ({ context }) => context.queryClient.ensureQueryData(latestReleaseQueryOptions()),
+  loader: async ({ context }) => ({
+    latest: await context.queryClient.ensureQueryData(latestReleaseQueryOptions()),
+    // A different headline leads each visit. Picked here, not in the component,
+    // so the server render and the hydrated page show the same one.
+    headline: Math.floor(Math.random() * HEADLINES.length),
+  }),
   head: ({ loaderData }) => ({
     ...seo({
       path: "/",
@@ -29,7 +34,7 @@ export const Route = createFileRoute("/")({
         organizationSchema(),
         websiteSchema(),
         siteNavigationSchema(),
-        softwareApplicationSchema(loaderData),
+        softwareApplicationSchema(loaderData?.latest),
         faqSchema(FAQS.map((f) => ({ question: f.q, answer: f.a }))),
       ],
     }),
@@ -38,5 +43,6 @@ export const Route = createFileRoute("/")({
 });
 
 function HomePage() {
-  return <LandingPage headline={0} />;
+  const { headline } = Route.useLoaderData();
+  return <LandingPage headline={headline} />;
 }
