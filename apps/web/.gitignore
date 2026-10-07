@@ -23,3 +23,6 @@ dist
 /public/build
 
 .tanstack
+# Local Claude Code tool state
+.claude/phobos-state.md
+.claude/phobos-activity.log
