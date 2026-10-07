@@ -9,6 +9,37 @@ export const LINKS = {
   site: "https://nischal-dahal.com.np",
 } as const;
 
+/**
+ * The hero's headlines, each with the line under it. A random one leads on
+ * every visit, then they take turns.
+ */
+export const HEADLINES = [
+  {
+    title: "Stop charging your MacBook to 100%.",
+    body: "Sitting full and running hot are what wear a battery out. eWiz holds the charge where you set it and pauses charging when the battery gets warm.",
+  },
+  {
+    title: "Your Mac shouldn't drain in your bag.",
+    body: "A closed Mac still wakes itself for the network and for maintenance. Sealed Sleep switches every one of those wakes off and shows what the last close cost.",
+  },
+  {
+    title: "Your earbuds shouldn't connect to a closed Mac.",
+    body: "With Sealed Sleep on, closing the lid turns Bluetooth and Wi-Fi off, so your earbuds stay with your phone. Open it and everything comes back.",
+  },
+  {
+    title: "Play music with the lid closed.",
+    body: "Always Active keeps your Mac running with the lid shut, on the charger or, if you allow it, on battery. The screen and keyboard light go dark.",
+  },
+  {
+    title: "Clamshell mode, without the charger.",
+    body: "Let Always Active run on battery, close the lid, and keep working on your external display. eWiz keeps the Mac awake and leaves the monitor alone.",
+  },
+  {
+    title: "Let your AI agent keep the Mac awake.",
+    body: "Claude, Cursor and other MCP apps can switch keep-awake on for a long build or test run and off when they're done, on a timer that ends by itself.",
+  },
+] as const;
+
 /** Homebrew cask, published to the stroke-app/homebrew-ewiz tap on every release. */
 export const BREW_INSTALL = "brew install --cask stroke-app/ewiz/ewiz";
 
