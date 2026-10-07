@@ -17,6 +17,8 @@ export default defineConfig({
   },
   server: {
     port: 3000,
+    // /legal/license imports the repository's LICENSE, one level above the app.
+    fs: { allow: [".."] },
   },
   plugins: [
     devtools(),

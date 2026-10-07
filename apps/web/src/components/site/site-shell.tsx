@@ -44,7 +44,7 @@ export function SiteHeader() {
           <AppIcon className="size-8" />
         </Link>
         <nav className="flex items-center gap-3 text-sm text-muted-foreground sm:gap-6 sm:text-[15px]">
-          <Link to="/" hash="pricing" className={NAV_LINK}>
+          <Link to="/pricing" className={NAV_LINK}>
             Pricing
           </Link>
           <Link to="/changelog" className={NAV_LINK}>
@@ -70,7 +70,15 @@ export function SiteHeader() {
 
 type FooterLink = { label: string } & (
   | {
-      to: "/" | "/download" | "/changelog" | "/blog" | "/legal/privacy" | "/legal/terms";
+      to:
+        | "/"
+        | "/pricing"
+        | "/download"
+        | "/changelog"
+        | "/blog"
+        | "/legal/privacy"
+        | "/legal/terms"
+        | "/legal/license";
       hash?: string;
     }
   | { href: string }
@@ -80,7 +88,7 @@ const FOOTER_COLUMNS: Array<{ title: string; links: FooterLink[] }> = [
   {
     title: "Product",
     links: [
-      { label: "Pricing", to: "/", hash: "pricing" },
+      { label: "Pricing", to: "/pricing" },
       { label: "Download", to: "/download" },
       { label: "Changelog", to: "/changelog" },
       { label: "Blog", to: "/blog" },
@@ -106,6 +114,7 @@ const FOOTER_COLUMNS: Array<{ title: string; links: FooterLink[] }> = [
     links: [
       { label: "Privacy policy", to: "/legal/privacy" },
       { label: "Terms of service", to: "/legal/terms" },
+      { label: "Source license", to: "/legal/license" },
     ],
   },
 ];
