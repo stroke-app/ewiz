@@ -56,7 +56,7 @@ struct MenuContentView: View {
                     .padding(.top, DS.Space.m)
                     .padding(.bottom, DS.Space.m)
 
-                if let update = updater.available { notice { updateBanner(update) } }
+                if let version = updater.availableVersion { notice { updateBanner(version) } }
                 if !license.isLicensed { notice { licenseBanner } }
                 if restDue { notice { restBanner } }
 
@@ -132,19 +132,19 @@ struct MenuContentView: View {
 
     // MARK: - Update banner
 
-    private func updateBanner(_ update: AppUpdate) -> some View {
+    /// "Update" hands over to Sparkle's window, which downloads, installs and relaunches.
+    private func updateBanner(_ version: String) -> some View {
         HStack(spacing: DS.Space.s) {
             HugeIcon("download", size: DS.Icon.row).foregroundStyle(.secondary)
             VStack(alignment: .leading, spacing: 1) {
-                Text("Update available: v\(update.version)")
+                Text("Update available: v\(version)")
                     .font(DS.Typo.rowTitle.weight(.medium))
                 Text("You have v\(updater.currentVersion)")
                     .font(DS.Typo.rowCaption).foregroundStyle(.secondary)
             }
             Spacer(minLength: DS.Space.s)
-            Button(updater.installing ? "Installing…" : "Update") { updater.installUpdate() }
+            Button("Update") { updater.checkForUpdates() }
                 .controlSize(.small)
-                .disabled(updater.installing)
         }
     }
 

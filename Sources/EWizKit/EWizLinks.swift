@@ -26,8 +26,10 @@ public enum EWizLinks {
     public static let source = URL(string: "https://github.com/stroke-app/ewiz")!
     public static let newIssue = URL(string: "https://github.com/stroke-app/ewiz/issues/new")!
 
-    /// The update feed. On GitHub rather than the website: CI publishes it on every
-    /// release, and installs from before the rename still read it at its old address.
+    /// The update feed copies up to 0.18.5 poll with the app's old updater. The app itself
+    /// now updates through Sparkle, whose feed (appcast.xml, next to this one) is named in
+    /// Info.plist as SUFeedURL; CI publishes both on every release, this one until those
+    /// copies have moved on.
     public static let updateFeed =
         URL(string: "https://raw.githubusercontent.com/stroke-app/ewiz-releases/main/appcast.json")!
 }

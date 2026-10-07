@@ -117,29 +117,31 @@ reference / a future free tier.
 
 ## 6. Auto-update
 
-eWiz checks a **public JSON feed** (`appcast.json`) on launch + daily and shows
-an in-app "Update available" banner with a one-click download.
+eWiz updates through **Sparkle 2** (a SwiftPM dependency): a check on launch and daily
+(`SUEnableAutomaticChecks`, `SUScheduledCheckInterval` = 86400), or from About › "Check
+for Updates…" and the menu's Update banner. Sparkle's window shows the check, the notes,
+the download's progress and the install, then relaunches the new version.
 
-- Feed format: `{ "version": "0.2.0", "url": "https://…/eWiz-0.2.0.dmg", "notes": "…" }`
-- The app reads `UpdaterManager.feedURL` (currently
-  `raw.githubusercontent.com/stroke-app/ewiz-releases/main/appcast.json`).
-- The release workflow generates `dist/appcast.json` (via `scripts/make-appcast.sh`)
-  and attaches it to the GitHub Release.
-
-**Hosting (required, because the source repo is private):** create a **public**
-place for the feed + DMGs so users can reach them without auth. Easiest options:
-- A public `ewiz-releases` repo: commit `appcast.json` there and upload DMGs
-  to its Releases. Point `feedURL` at its `raw.githubusercontent.com/...` path.
-- GitHub Pages, or your storefront/CDN.
-
-Then per release: build → upload the DMG to the public location → update
-`appcast.json` there with the new version/url.
-
-**Full silent install (future):** for true "download + install + relaunch" with no
-manual drag, integrate **Sparkle** (`sparkle-project/Sparkle`). It needs Apple
-notarization and bundling Sparkle's XPC services into the `.app` — worth doing once
-you're enrolled and notarizing. The current updater is the no-notarization-needed
-stepping stone.
+- The app reads `SUFeedURL` from Info.plist (written by `scripts/package-app.sh`):
+  `raw.githubusercontent.com/stroke-app/ewiz-releases/main/appcast.xml`.
+- **Trust** is the EdDSA key, not a Developer ID: `SUPublicEDKey` in Info.plist is
+  `UpdateSignature.publicKeyBase64`, and every DMG in the feed carries that key's
+  `sparkle:edSignature`, made by `licensetool sign-update` from the
+  `UPDATE_SIGNING_PRIVATE_KEY` secret (a 32-byte Ed25519 seed, base64 — the same format
+  Sparkle's `generate_keys`/`sign_update` use). The app is ad-hoc signed; Sparkle accepts an
+  update when *either* the EdDSA signature *or* the Apple code-signing match holds, so
+  EdDSA alone carries it. Rotating the key means signing the release that introduces the
+  new key with the old one too; dropping it isn't supported.
+- `CFBundleVersion` is a build number derived from the version (`scripts/build-number.sh`:
+  `0.18.5` → `1805`), and the appcast's `sparkle:version` is the same number.
+- `scripts/package-app.sh` copies `Sparkle.framework` from the package artifact into
+  `Contents/Frameworks`, links the app with an `@executable_path/../Frameworks` rpath, and
+  re-signs the framework's XPC services, Autoupdate and Updater.app innermost-first.
+- `scripts/make-appcast.sh` writes `dist/appcast.xml` **and** `dist/appcast.json`. The JSON
+  feed is what copies up to 0.18.5 poll with the app's old updater (`{version, url, notes,
+  sha256, signature}`, signature over the digest's hex); they can only reach a Sparkle build
+  through it, so the release workflow keeps publishing both to `stroke-app/ewiz-releases`.
+  It can be retired once those copies have moved on.
 
 ## 7. Icons & branding (later)
 

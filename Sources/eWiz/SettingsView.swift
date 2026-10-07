@@ -1444,27 +1444,23 @@ struct SettingsView: View {
             }
 
             card("Updates") {
-                if let update = updater.available {
+                // Both buttons open Sparkle's window; it shows progress, installs, relaunches.
+                if let version = updater.availableVersion {
                     HStack(alignment: .center) {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("Update available · v\(update.version)")
+                            Text("Update available · v\(version)")
                                 .font(.callout.weight(.medium))
                             Text("You have v\(updater.currentVersion)")
                                 .font(.caption).foregroundStyle(.secondary)
                         }
                         Spacer()
-                        Button(updater.installing ? "Installing…" : "Update Now") {
-                            updater.installUpdate()
-                        }
-                        .disabled(updater.installing)
+                        Button("Update Now") { updater.checkForUpdates() }
                     }
                     .padding(.horizontal, rowInset).padding(.vertical, DS.Space.s + 2)
                 } else {
                     HStack {
-                        Button(updater.checking ? "Checking…" : "Check for Updates…") {
-                            updater.check(userInitiated: true)
-                        }
-                        .disabled(updater.checking)
+                        Button("Check for Updates…") { updater.checkForUpdates() }
+                            .disabled(!updater.canCheckForUpdates)
                         Spacer()
                         Text("v\(updater.currentVersion)")
                             .font(.callout).foregroundStyle(.secondary).monospacedDigit()

@@ -1,8 +1,10 @@
-name: Update appcast feed
+name: Update appcast feeds
 
-# Keeps the in-app update feed (stroke-app/ewiz-releases/appcast.json) in
-# sync with the latest *published* release. Runs on publish — not on tag push —
-# so the DMG download URL it points at is actually live (releases start as drafts).
+# Re-publishes the in-app update feeds in stroke-app/ewiz-releases from a *published*
+# release's assets: appcast.xml (Sparkle, what the app reads) and appcast.json (the old
+# updater in copies up to 0.18.5). The release workflow does this itself on every tag;
+# this is the manual way to redo it (workflow_dispatch) or to follow a release published
+# by hand.
 #
 # Requires a repo secret `RELEASES_TOKEN`: a PAT with contents:write on the
 # ewiz-releases repo (the default GITHUB_TOKEN can't push to another repo).
@@ -24,7 +26,7 @@ jobs:
   update-feed:
     runs-on: ubuntu-latest
     steps:
-      - name: Update ewiz-releases/appcast.json
+      - name: Update ewiz-releases appcast.xml and appcast.json
         env:
           GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
           REPO_TOKEN: ${{ github.token }}
@@ -41,19 +43,39 @@ jobs:
           DMG_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/eWiz-${VERSION}.dmg"
           NOTES="eWiz ${VERSION}"
 
-          # Publish the appcast the release carries, so the signature comes with it. A
-          # release from before signing has none; fall back to the bare entry.
+          # Publishes one feed file as-is; a file the repo doesn't have yet is created.
+          publish() {
+            local name="$1" path="$2"
+            local sha
+            sha=$(gh api "repos/${FEED_REPO}/contents/${name}" --jq .sha 2>/dev/null) || sha=""
+            if [ -n "$sha" ]; then
+              gh api -X PUT "repos/${FEED_REPO}/contents/${name}" \
+                -f message="chore: update ${name} to ${VERSION}" \
+                -f content="$(base64 < "$path" | tr -d '\n')" -f sha="$sha"
+            else
+              gh api -X PUT "repos/${FEED_REPO}/contents/${name}" \
+                -f message="chore: update ${name} to ${VERSION}" \
+                -f content="$(base64 < "$path" | tr -d '\n')"
+            fi
+            echo "${name} updated to ${VERSION}."
+          }
+
+          # The appcasts the release carries, so the signatures come with them.
+          # appcast.xml: only releases built with Sparkle have one; without it the
+          # Sparkle feed is left alone (an older release can't be served to Sparkle).
+          if GH_TOKEN="$REPO_TOKEN" gh release download "$TAG" --repo "$GITHUB_REPOSITORY" \
+               --pattern appcast.xml --output /tmp/appcast.xml 2>/dev/null; then
+            publish appcast.xml /tmp/appcast.xml
+          else
+            echo "Release $TAG has no appcast.xml — leaving the Sparkle feed as it is."
+          fi
+
+          # appcast.json: a release from before signing has none; fall back to the bare entry.
           if GH_TOKEN="$REPO_TOKEN" gh release download "$TAG" --repo "$GITHUB_REPOSITORY" \
                --pattern appcast.json --output /tmp/appcast.json 2>/dev/null; then
-            NEW=$(python3 -c 'import json; print(json.dumps(json.load(open("/tmp/appcast.json")), separators=(",", ":")))')
+            python3 -c 'import json; print(json.dumps(json.load(open("/tmp/appcast.json")), separators=(",", ":")))' > /tmp/appcast.min.json
           else
-            NEW=$(printf '{"version":"%s","url":"%s","notes":"%s"}' "$VERSION" "$DMG_URL" "$NOTES")
+            printf '{"version":"%s","url":"%s","notes":"%s"}' "$VERSION" "$DMG_URL" "$NOTES" > /tmp/appcast.min.json
           fi
-          echo "New feed: $NEW"
-
-          SHA=$(gh api "repos/${FEED_REPO}/contents/appcast.json" --jq .sha)
-          gh api -X PUT "repos/${FEED_REPO}/contents/appcast.json" \
-            -f message="chore: update appcast to ${VERSION}" \
-            -f content="$(printf '%s' "$NEW" | base64 | tr -d '\n')" \
-            -f sha="$SHA"
-          echo "Feed updated to ${VERSION}."
+          cat /tmp/appcast.min.json; echo
+          publish appcast.json /tmp/appcast.min.json

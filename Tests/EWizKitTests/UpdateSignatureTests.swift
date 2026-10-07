@@ -52,11 +52,53 @@ struct UpdateSignatureTests {
         _ = try Curve25519.Signing.PublicKey(rawRepresentation: raw)
     }
 
-    @Test("Feeds with and without a signature both decode")
-    func feedDecoding() throws {
-        let signed = try UpdateChecker.decode(Data(#"{"version":"0.18.3","url":"https://x/eWiz-0.18.3.dmg","notes":"n","sha256":"ab","signature":"cd"}"#.utf8))
-        #expect(signed.isSigned)
-        let bare = try UpdateChecker.decode(Data(#"{"version":"0.18.2","url":"https://x/eWiz-0.18.2.dmg","notes":"n"}"#.utf8))
-        #expect(!bare.isSigned)
+    // MARK: Sparkle
+
+    /// `sparkle:edSignature` is Ed25519 over the file's bytes, which is what Sparkle checks
+    /// against `SUPublicEDKey`: verify it the way Sparkle does, with nothing but the public
+    /// key and the bytes.
+    @Test("The Sparkle signature is Ed25519 over the file's bytes")
+    func sparkleSignature() throws {
+        let bytes = "eWiz 0.19.0"
+        let dmg = file(bytes)
+        let signed = try UpdateSignature.sparkleSignature(fileAt: dmg, privateKeyBase64: priv)
+        #expect(signed.length == bytes.utf8.count)
+        let sig = try #require(Data(base64Encoded: signed.edSignature))
+        #expect(sig.count == 64)
+        #expect(key.publicKey.isValidSignature(sig, for: Data(bytes.utf8)))
+        try UpdateSignature.verifySparkleSignature(fileAt: dmg, edSignature: signed.edSignature,
+                                                   publicKeyBase64: pub)
+    }
+
+    @Test("A Sparkle signature from another key, or over other bytes, is refused")
+    func sparkleSignatureRefused() throws {
+        let dmg = file("eWiz 0.19.0")
+        let forged = try UpdateSignature.sparkleSignature(
+            fileAt: dmg,
+            privateKeyBase64: Curve25519.Signing.PrivateKey().rawRepresentation.base64EncodedString())
+        #expect(throws: UpdateSignature.Failure.badSignature) {
+            try UpdateSignature.verifySparkleSignature(fileAt: dmg, edSignature: forged.edSignature,
+                                                       publicKeyBase64: pub)
+        }
+        let genuine = try UpdateSignature.sparkleSignature(fileAt: dmg, privateKeyBase64: priv)
+        #expect(throws: UpdateSignature.Failure.badSignature) {
+            try UpdateSignature.verifySparkleSignature(fileAt: file("something else"),
+                                                       edSignature: genuine.edSignature,
+                                                       publicKeyBase64: pub)
+        }
+    }
+
+    /// The legacy feed signs the digest's hex, Sparkle signs the bytes: two different
+    /// signatures from one key, and neither verifies as the other.
+    @Test("The two feed signatures are distinct")
+    func distinctSignatures() throws {
+        let dmg = file("eWiz 0.19.0")
+        let legacy = try UpdateSignature.sign(fileAt: dmg, privateKeyBase64: priv)
+        let sparkle = try UpdateSignature.sparkleSignature(fileAt: dmg, privateKeyBase64: priv)
+        #expect(legacy.signature != sparkle.edSignature)
+        #expect(throws: UpdateSignature.Failure.badSignature) {
+            try UpdateSignature.verifySparkleSignature(fileAt: dmg, edSignature: legacy.signature,
+                                                       publicKeyBase64: pub)
+        }
     }
 }
