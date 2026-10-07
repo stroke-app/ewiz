@@ -22,7 +22,7 @@ import { Container, SitePage } from "#/components/site/site-shell";
 import { Button } from "#/components/ui/button";
 import { cn } from "#/lib/utils";
 
-import { FAQS, LINKS, PRICE } from "./landing-data";
+import { FAQS, PRICE } from "./landing-data";
 import { LightningField } from "./lightning-field";
 import {
   DetailsWindow,
@@ -75,7 +75,7 @@ function Hero({
           className="animate-enter mx-auto mt-8 max-w-[40rem] text-[2.1rem] leading-[1.1] font-semibold tracking-tight text-balance sm:text-[3rem]"
           style={{ "--enter-delay": "100ms" } as React.CSSProperties}
         >
-          Make macOS stop wrecking your battery.
+          Stop charging your MacBook to 100%.
         </h1>
         <p
           className="animate-enter mx-auto mt-5 max-w-[36rem] text-lg leading-relaxed text-pretty text-muted-foreground"
@@ -574,33 +574,6 @@ function Bento() {
             }
           />
         </div>
-
-        <div className="mt-4 rounded-xl border border-border bg-surface-1 px-4 py-3">
-          <p className="font-medium">A note from the developer</p>
-          <p className="mt-1 text-[15px] leading-relaxed text-pretty text-muted-foreground">
-            Hi, I&apos;m{" "}
-            <a
-              href={LINKS.site}
-              target="_blank"
-              rel="noreferrer"
-              className="text-foreground underline decoration-border underline-offset-4 transition-colors hover:decoration-foreground"
-            >
-              Nischal
-            </a>
-            , and eWiz is a one-person project. macOS keeps a plugged-in MacBook at 100% and
-            Optimized Charging decides by itself when to hold back. I wanted that decision for
-            myself, so I built eWiz. If something is broken or missing,{" "}
-            <a
-              href={LINKS.feedback}
-              target="_blank"
-              rel="noreferrer"
-              className="text-foreground underline decoration-border underline-offset-4 transition-colors hover:decoration-foreground"
-            >
-              open an issue on GitHub
-            </a>
-            . It comes straight to me.
-          </p>
-        </div>
       </div>
     </section>
   );
@@ -704,6 +677,15 @@ function ClosingCta() {
           <DownloadButton />
           <BuyButton>Buy · {PRICE}</BuyButton>
         </div>
+        <p className="mt-4 text-sm text-muted-foreground">
+          Already using it and want to help?{" "}
+          <Link
+            to="/donate"
+            className="text-foreground underline decoration-border underline-offset-4 transition-colors hover:decoration-foreground"
+          >
+            Donate
+          </Link>
+        </p>
       </Container>
     </section>
   );

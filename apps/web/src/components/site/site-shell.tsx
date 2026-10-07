@@ -76,6 +76,7 @@ type FooterLink = { label: string } & (
         | "/download"
         | "/changelog"
         | "/blog"
+        | "/donate"
         | "/legal/privacy"
         | "/legal/terms"
         | "/legal/license";
@@ -92,6 +93,7 @@ const FOOTER_COLUMNS: Array<{ title: string; links: FooterLink[] }> = [
       { label: "Download", to: "/download" },
       { label: "Changelog", to: "/changelog" },
       { label: "Blog", to: "/blog" },
+      { label: "Donate", to: "/donate" },
     ],
   },
   {
@@ -127,7 +129,7 @@ export function SiteFooter() {
           <div className="col-span-2 sm:col-span-1">
             <Logo />
             <p className="mt-3 max-w-56 text-sm text-muted-foreground">
-              Battery care for your Mac, built by one developer.
+              Battery care for your Mac.
             </p>
           </div>
           {FOOTER_COLUMNS.map((col) => (

@@ -20,7 +20,7 @@ const header = () => `# ${SITE.name}
 
 > ${SITE.description}
 
-eWiz is a native macOS menu bar app by Nischal Dahal, an independent developer. It runs on Apple Silicon Macs (M1 or newer) with macOS 14 Sonoma or later. It is a one-time ${PRICE} purchase with a free 30-day trial of every feature; there is no subscription.`;
+eWiz is a native macOS menu bar app by Nischal Dahal. It runs on Apple Silicon Macs (M1 or newer) with macOS 14 Sonoma or later. It is a one-time ${PRICE} purchase with a free 30-day trial of every feature; there is no subscription.`;
 
 /** Releases from GitHub, or none when it can't be reached; the text reads fine either way. */
 async function releases(): Promise<Release[]> {
