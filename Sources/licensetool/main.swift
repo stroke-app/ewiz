@@ -55,8 +55,13 @@ case "sign":
     }
 
 case "sign-update":
-    // Release tooling: sign a DMG for the update feed. The key comes from
+    // Release tooling: sign a DMG for both update feeds. The key comes from
     // UPDATE_SIGNING_PRIVATE_KEY, so it never sits on a command line or in a log.
+    // Prints one `name value` pair per line:
+    //   sha256        the DMG's digest                      (appcast.json, Homebrew cask)
+    //   signature     signature over the digest's hex       (appcast.json, copies ≤ 0.18.5)
+    //   ed_signature  Sparkle's signature over the bytes    (appcast.xml  sparkle:edSignature)
+    //   length        the DMG's size in bytes               (appcast.xml  length)
     guard let path = value("--file"),
           let priv = ProcessInfo.processInfo.environment["UPDATE_SIGNING_PRIVATE_KEY"], !priv.isEmpty else {
         FileHandle.standardError.write(Data(
@@ -64,12 +69,17 @@ case "sign-update":
         exit(64)
     }
     do {
-        let signed = try UpdateSignature.sign(fileAt: URL(fileURLWithPath: path), privateKeyBase64: priv)
-        // Checked against the key the app ships with before it's printed, so a release
-        // signed with the wrong key fails here rather than on every user's Mac.
-        try UpdateSignature.verify(fileAt: URL(fileURLWithPath: path), sha256: signed.sha256,
-                                   signature: signed.signature)
-        print("\(signed.sha256) \(signed.signature)")
+        let file = URL(fileURLWithPath: path)
+        let signed = try UpdateSignature.sign(fileAt: file, privateKeyBase64: priv)
+        let sparkle = try UpdateSignature.sparkleSignature(fileAt: file, privateKeyBase64: priv)
+        // Checked against the key the app ships with before anything is printed, so a
+        // release signed with the wrong key fails here rather than on every user's Mac.
+        try UpdateSignature.verify(fileAt: file, sha256: signed.sha256, signature: signed.signature)
+        try UpdateSignature.verifySparkleSignature(fileAt: file, edSignature: sparkle.edSignature)
+        print("sha256 \(signed.sha256)")
+        print("signature \(signed.signature)")
+        print("ed_signature \(sparkle.edSignature)")
+        print("length \(sparkle.length)")
     } catch {
         FileHandle.standardError.write(Data("error: \(error) (is this the key matching UpdateSignature.publicKeyBase64?)\n".utf8))
         exit(1)
@@ -106,7 +116,7 @@ default:
     licensetool — eWiz license keys
 
       genkey                              Generate an Ed25519 keypair
-      sign-update --file <dmg>            Sign a release DMG for the update feed
+      sign-update --file <dmg>            Sign a release DMG for both update feeds
                                           (key in UPDATE_SIGNING_PRIVATE_KEY)
       sign --priv <b64> --email <e>       Mint a license token bound to one Mac
            --device <code>                (device code shown in the app's license window)

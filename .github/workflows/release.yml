@@ -74,8 +74,11 @@ jobs:
           ./scripts/notarize.sh "dist/eWiz-${{ steps.ver.outputs.version }}.dmg"
           rm -f AuthKey.p8
 
-      # Sign the DMG for the update feed, so a copy with no Developer ID can verify the
-      # update and install it itself (UpdateSignature). After stapling, which changes the file.
+      # Sign the DMG for both update feeds with the release key (UpdateSignature): the
+      # Sparkle signature appcast.xml carries, which is what the app checks against
+      # SUPublicEDKey, and the digest + signature appcast.json carries for copies up to
+      # 0.18.5. After stapling, which changes the file. Outputs: sha256, signature,
+      # ed_signature, length.
       - name: Sign the update
         id: sig
         env:
@@ -83,12 +86,11 @@ jobs:
         run: |
           set -euo pipefail
           if [ -z "${UPDATE_SIGNING_PRIVATE_KEY:-}" ]; then
-            echo "UPDATE_SIGNING_PRIVATE_KEY not set — the feed will carry no signature."
+            echo "UPDATE_SIGNING_PRIVATE_KEY not set — the feeds will carry no signature (Sparkle will refuse the update)."
             exit 0
           fi
-          OUT=$(swift run -c release licensetool sign-update --file "dist/eWiz-${{ steps.ver.outputs.version }}.dmg")
-          echo "sha256=${OUT%% *}" >> "$GITHUB_OUTPUT"
-          echo "signature=${OUT#* }" >> "$GITHUB_OUTPUT"
+          swift run -c release licensetool sign-update --file "dist/eWiz-${{ steps.ver.outputs.version }}.dmg" \
+            | while read -r name value; do echo "${name}=${value}" >> "$GITHUB_OUTPUT"; done
 
       # Always make the build downloadable from the run summary.
       - name: Upload build artifact
@@ -97,19 +99,10 @@ jobs:
           name: eWiz-${{ steps.ver.outputs.version }}
           path: dist/eWiz-${{ steps.ver.outputs.version }}.dmg
 
-      # Generate the update feed pointing at this release's DMG asset.
-      - name: Generate appcast
-        if: startsWith(github.ref, 'refs/tags/')
-        env:
-          UPDATE_SHA256: ${{ steps.sig.outputs.sha256 }}
-          UPDATE_SIGNATURE: ${{ steps.sig.outputs.signature }}
-        run: |
-          DMG_URL="https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/eWiz-${{ steps.ver.outputs.version }}.dmg"
-          ./scripts/make-appcast.sh "${{ steps.ver.outputs.version }}" "$DMG_URL" "eWiz ${{ steps.ver.outputs.version }}"
-
       # The release notes are this version's CHANGELOG.md section, which the
       # Version PR wrote. ewiz.app's changelog and download pages read them from
-      # the GitHub release, so the site needs no edit per release.
+      # the GitHub release, and Sparkle's update window shows them from the appcast,
+      # so the site needs no edit per release.
       - name: Write release notes
         if: startsWith(github.ref, 'refs/tags/')
         run: |
@@ -117,7 +110,20 @@ jobs:
           [ -s dist/release-notes.md ] || echo "eWiz ${{ steps.ver.outputs.version }}" > dist/release-notes.md
           cat dist/release-notes.md
 
-      # On a tag push, attach DMG + appcast.json to a published GitHub Release.
+      # Generate both update feeds (appcast.xml for Sparkle, appcast.json for copies up
+      # to 0.18.5) pointing at this release's DMG asset.
+      - name: Generate appcasts
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          UPDATE_SHA256: ${{ steps.sig.outputs.sha256 }}
+          UPDATE_SIGNATURE: ${{ steps.sig.outputs.signature }}
+          UPDATE_ED_SIGNATURE: ${{ steps.sig.outputs.ed_signature }}
+          UPDATE_LENGTH: ${{ steps.sig.outputs.length }}
+        run: |
+          DMG_URL="https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/eWiz-${{ steps.ver.outputs.version }}.dmg"
+          ./scripts/make-appcast.sh "${{ steps.ver.outputs.version }}" "$DMG_URL" "$(cat dist/release-notes.md)"
+
+      # On a tag push, attach DMG + both appcasts to a published GitHub Release.
       - name: Publish GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
@@ -127,16 +133,18 @@ jobs:
           body_path: dist/release-notes.md
           files: |
             dist/eWiz-${{ steps.ver.outputs.version }}.dmg
+            dist/appcast.xml
             dist/appcast.json
           draft: false
           make_latest: true
 
-      # Point the public in-app update feed at this release. Done inline here
-      # rather than in a separate `release: published` workflow because releases
+      # Point the public in-app update feeds at this release: appcast.xml (Sparkle,
+      # SUFeedURL) and appcast.json (the old updater in copies up to 0.18.5). Done inline
+      # here rather than in a separate `release: published` workflow because releases
       # published by the default GITHUB_TOKEN do NOT emit an event that can
       # trigger another workflow — so that feed workflow never fired on its own.
       # RELEASES_TOKEN is a PAT with contents:write on the ewiz-releases repo.
-      - name: Update appcast feed
+      - name: Update appcast feeds
         if: startsWith(github.ref, 'refs/tags/')
         env:
           GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
@@ -149,16 +157,26 @@ jobs:
             exit 0
           fi
           FEED_REPO="stroke-app/ewiz-releases"
-          DMG_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/eWiz-${VERSION}.dmg"
-          # The appcast the release just attached, signature included.
-          NEW=$(python3 -c 'import json; print(json.dumps(json.load(open("dist/appcast.json")), separators=(",", ":")))')
-          echo "New feed: $NEW"
-          SHA=$(gh api "repos/${FEED_REPO}/contents/appcast.json" --jq .sha)
-          gh api -X PUT "repos/${FEED_REPO}/contents/appcast.json" \
-            -f message="chore: update appcast to ${VERSION}" \
-            -f content="$(printf '%s' "$NEW" | base64 | tr -d '\n')" \
-            -f sha="$SHA"
-          echo "Feed updated to ${VERSION}."
+          # Publishes one feed file as-is; a file the repo doesn't have yet is created.
+          publish() {
+            local name="$1" path="$2"
+            local sha
+            sha=$(gh api "repos/${FEED_REPO}/contents/${name}" --jq .sha 2>/dev/null) || sha=""
+            if [ -n "$sha" ]; then
+              gh api -X PUT "repos/${FEED_REPO}/contents/${name}" \
+                -f message="chore: update ${name} to ${VERSION}" \
+                -f content="$(base64 < "$path" | tr -d '\n')" -f sha="$sha"
+            else
+              gh api -X PUT "repos/${FEED_REPO}/contents/${name}" \
+                -f message="chore: update ${name} to ${VERSION}" \
+                -f content="$(base64 < "$path" | tr -d '\n')"
+            fi
+            echo "${name} updated to ${VERSION}."
+          }
+          # The appcasts the release just attached, signatures included.
+          python3 -c 'import json; print(json.dumps(json.load(open("dist/appcast.json")), separators=(",", ":")))' > dist/appcast.min.json
+          publish appcast.xml dist/appcast.xml
+          publish appcast.json dist/appcast.min.json
 
       # Publish the Homebrew cask to the ewiz-releases tap, with the freshly
       # built DMG's sha256, so `brew install --cask` always matches the release.

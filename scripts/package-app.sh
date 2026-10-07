@@ -16,10 +16,20 @@ cd "$REPO_DIR"
 # Optimize for size (-Osize) and let the linker drop unreachable code
 # (-dead_strip). Smaller text pages → smaller footprint, no behavior change.
 BUILD_FLAGS=(-c release -Xswiftc -Osize -Xlinker -dead_strip)
-swift build "${BUILD_FLAGS[@]}" --product eWiz
+# Sparkle.framework's install name is @rpath/Sparkle.framework/…, and SwiftPM links it
+# without embedding it anywhere: the app finds it in Contents/Frameworks (copied below)
+# only because of this rpath.
+swift build "${BUILD_FLAGS[@]}" -Xlinker -rpath -Xlinker @executable_path/../Frameworks --product eWiz
 swift build "${BUILD_FLAGS[@]}" --product ewiz-helper
 swift build "${BUILD_FLAGS[@]}" --product ewiz-mcp
 BIN_DIR="$REPO_DIR/.build/release"
+
+# Sparkle ships as a binary xcframework inside the package artifact; take the macOS slice.
+SPARKLE_SRC="$(find "$REPO_DIR/.build/artifacts" -type d -name Sparkle.framework -path '*macos*' | head -1)"
+if [[ -z "$SPARKLE_SRC" ]]; then
+    echo "error: Sparkle.framework not found under .build/artifacts — did the package resolve?" >&2
+    exit 1
+fi
 
 echo "==> Assembling $APP"
 rm -rf "$APP_DIR"
@@ -89,6 +99,14 @@ chmod 755 "$CONTENTS/MacOS/ewiz-helper" "$CONTENTS/MacOS/ewiz-mcp" \
           "$CONTENTS/Resources/install-helper-bundled.sh" \
           "$CONTENTS/Resources/uninstall-helper.sh"
 
+# The updater. ditto keeps the framework's Versions/Current symlinks. Headers and module
+# maps are build-time only, so they stay out of the bundle (Xcode drops them on embed too).
+mkdir -p "$CONTENTS/Frameworks"
+SPARKLE="$CONTENTS/Frameworks/Sparkle.framework"
+ditto "$SPARKLE_SRC" "$SPARKLE"
+rm -rf "$SPARKLE/Versions/B/Headers" "$SPARKLE/Versions/B/PrivateHeaders" "$SPARKLE/Versions/B/Modules" \
+       "$SPARKLE/Headers" "$SPARKLE/PrivateHeaders" "$SPARKLE/Modules"
+
 # Strip local/debug symbols before signing (must precede codesign or it would
 # invalidate the signature). -x keeps external symbols, so nothing breaks.
 strip -x "$CONTENTS/MacOS/eWiz"
@@ -96,6 +114,22 @@ strip -x "$CONTENTS/MacOS/ewiz-helper"
 strip -x "$CONTENTS/MacOS/ewiz-mcp"
 
 # Info.plist — LSUIElement makes it a menu-bar-only (agent) app.
+#
+# CFBundleVersion is the build number Sparkle compares (see scripts/build-number.sh), and
+# the SU* keys configure it: the feed, the release key every download has to verify
+# against (UpdateSignature.publicKeyBase64 — the same key signs appcast.json for the old
+# updater), a check on launch and every day without asking first, and verification of the
+# image before it's even opened. The app is ad-hoc signed, so SUPublicEDKey is the only
+# proof Sparkle has; it accepts that in place of a Developer ID match.
+BUILD_NUMBER="$("$REPO_DIR/scripts/build-number.sh" "$VERSION")"
+SPARKLE_FEED="https://raw.githubusercontent.com/stroke-app/ewiz-releases/main/appcast.xml"
+# Read from the source so the key the app trusts and the key licensetool checks its
+# signatures against are one constant.
+SPARKLE_PUBLIC_KEY="$(sed -n 's/.*publicKeyBase64 = "\([A-Za-z0-9+\/=]*\)".*/\1/p' "$REPO_DIR/Sources/EWizKit/UpdateSignature.swift")"
+if [[ ${#SPARKLE_PUBLIC_KEY} -ne 44 ]]; then
+    echo "error: could not read UpdateSignature.publicKeyBase64 (got '$SPARKLE_PUBLIC_KEY')" >&2
+    exit 1
+fi
 cat > "$CONTENTS/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
@@ -109,10 +143,16 @@ cat > "$CONTENTS/Info.plist" <<PLIST
     <key>CFBundleIconFile</key>         <string>AppIcon</string>$ICON_NAME_PLIST
     <key>CFBundlePackageType</key>      <string>APPL</string>
     <key>CFBundleShortVersionString</key><string>$VERSION</string>
-    <key>CFBundleVersion</key>          <string>$VERSION</string>
+    <key>CFBundleVersion</key>          <string>$BUILD_NUMBER</string>
     <key>LSMinimumSystemVersion</key>   <string>14.0</string>
     <key>LSUIElement</key>              <true/>
     <key>NSHumanReadableCopyright</key> <string>eWiz</string>
+    <!-- Sparkle (in-app updates). -->
+    <key>SUFeedURL</key>                <string>$SPARKLE_FEED</string>
+    <key>SUPublicEDKey</key>            <string>$SPARKLE_PUBLIC_KEY</string>
+    <key>SUEnableAutomaticChecks</key>  <true/>
+    <key>SUScheduledCheckInterval</key> <integer>86400</integer>
+    <key>SUVerifyUpdateBeforeExtraction</key> <true/>
     <!-- Required: eWiz toggles Bluetooth power on lid close. Without this
          usage string macOS kills the app (TCC) when it touches Bluetooth. -->
     <key>NSBluetoothAlwaysUsageDescription</key>
@@ -141,11 +181,23 @@ fi
 chmod 755 "$CONTENTS/MacOS/eWiz" "$CONTENTS/MacOS/ewiz-helper" "$CONTENTS/MacOS/ewiz-mcp"
 chmod -R go+rX "$APP_DIR"
 
-# Sign nested executables first, then the app bundle (no deprecated --deep).
+# Sign innermost first, then outward, and never --deep (deprecated, and it signs in the
+# wrong order). Sparkle's pieces arrive ad-hoc signed by its own build; they are re-signed
+# here so the whole bundle carries one identity, in the order Sparkle's documentation
+# gives (sparkle-project.org/documentation/sandboxing): the XPC services, Autoupdate and
+# Updater.app inside the framework, then the framework, then our executables, then the app.
+# Downloader.xpc keeps its entitlements (network client), which --force would otherwise drop.
+codesign "${SIGN_FLAGS[@]}" "$SPARKLE/Versions/B/XPCServices/Installer.xpc"
+codesign "${SIGN_FLAGS[@]}" --preserve-metadata=entitlements "$SPARKLE/Versions/B/XPCServices/Downloader.xpc"
+codesign "${SIGN_FLAGS[@]}" "$SPARKLE/Versions/B/Autoupdate"
+codesign "${SIGN_FLAGS[@]}" "$SPARKLE/Versions/B/Updater.app"
+codesign "${SIGN_FLAGS[@]}" "$SPARKLE"
 codesign "${SIGN_FLAGS[@]}" "$CONTENTS/MacOS/ewiz-helper"
 codesign "${SIGN_FLAGS[@]}" "$CONTENTS/MacOS/ewiz-mcp"
 codesign "${SIGN_FLAGS[@]}" "$APP_DIR"
-codesign --verify --strict --verbose=2 "$APP_DIR" || echo "warning: verify failed"
+# --deep here only *checks* nested code; Sparkle's installer does the same before it
+# will swap this bundle in, so a mis-signed piece should fail the build, not the update.
+codesign --verify --deep --strict --verbose=2 "$APP_DIR" || echo "warning: verify failed"
 
 echo "==> Creating zip"
 cd "$DIST"

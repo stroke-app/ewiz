@@ -12,6 +12,11 @@ let package = Package(
         .executable(name: "ewiz-mcp", targets: ["ewiz-mcp"]),
         .executable(name: "licensetool", targets: ["licensetool"])
     ],
+    dependencies: [
+        // In-app updates: progress window, install, relaunch. The EdDSA key in the app's
+        // Info.plist (SUPublicEDKey) is what secures the download; see scripts/package-app.sh.
+        .package(url: "https://github.com/sparkle-project/Sparkle", from: "2.10.0")
+    ],
     targets: [
         // Low-level SMC access (C). Requires root to *write*.
         .target(
@@ -35,7 +40,10 @@ let package = Package(
         // The menu bar GUI app (runs as the user).
         .executableTarget(
             name: "eWiz",
-            dependencies: ["EWizKit"],
+            dependencies: [
+                "EWizKit",
+                .product(name: "Sparkle", package: "Sparkle")
+            ],
             path: "Sources/eWiz",
             linkerSettings: [
                 // Wi-Fi power control.
