@@ -3,7 +3,6 @@ import {
   BatteryChargingIcon,
   CoffeeIcon,
   CpuIcon,
-  HeartIcon,
   LaptopIcon,
   LayoutGridIcon,
   MousePointerClickIcon,
@@ -19,7 +18,7 @@ import { useCheckout } from "#/components/buy-button";
 import { DownloadButton } from "#/components/download-button";
 import { AppIcon } from "#/components/logo";
 import { PricingPlans } from "#/components/pricing-plans";
-import { Container, Eyebrow, SitePage } from "#/components/site/site-shell";
+import { Container, SitePage } from "#/components/site/site-shell";
 import { Button } from "#/components/ui/button";
 import { cn } from "#/lib/utils";
 
@@ -55,7 +54,7 @@ function BuyButton({ className, children }: { className?: string; children: Reac
 }
 
 /* ==========================================================================
-   Hero: the real eWiz panel dropping from the menu bar over a live desktop.
+   Hero: the eWiz panel, rebuilt for the web, dropping from the menu bar.
    ========================================================================== */
 type DesktopView = "settings" | "details" | "history";
 
@@ -72,14 +71,8 @@ function Hero({
     <section>
       <Container className="pt-8 text-center">
         <AppIcon className="animate-enter mx-auto size-[72px]" />
-        <Eyebrow
-          className="animate-enter mt-7"
-          style={{ "--enter-delay": "60ms" } as React.CSSProperties}
-        >
-          Introducing eWiz
-        </Eyebrow>
         <h1
-          className="animate-enter mx-auto mt-3 max-w-[40rem] text-[2.1rem] leading-[1.1] font-semibold tracking-tight text-balance sm:text-[3rem]"
+          className="animate-enter mx-auto mt-8 max-w-[40rem] text-[2.1rem] leading-[1.1] font-semibold tracking-tight text-balance sm:text-[3rem]"
           style={{ "--enter-delay": "100ms" } as React.CSSProperties}
         >
           Make macOS stop wrecking your battery.
@@ -88,8 +81,9 @@ function Hero({
           className="animate-enter mx-auto mt-5 max-w-[36rem] text-lg leading-relaxed text-pretty text-muted-foreground"
           style={{ "--enter-delay": "150ms" } as React.CSSProperties}
         >
-          Charge limiting, heat-aware charging, sleep-safe enforcement and one-tap save modes, all
-          from your menu bar. Built for Apple Silicon.
+          Sitting at 100% and running hot are what wear a battery out, and a plugged-in MacBook does
+          both all day. eWiz holds the charge where you set it and stops charging when the battery
+          gets warm.
         </p>
         <div
           className="animate-enter mt-9 flex justify-center gap-2"
@@ -143,7 +137,7 @@ function Hero({
         </div>
         <p className="mt-4 flex items-center justify-center gap-2 text-sm text-muted-foreground">
           <MousePointerClickIcon className="size-4" />
-          That&apos;s the real eWiz panel. Drag the limit, flip a mode, open Settings.
+          This is the eWiz panel, rebuilt for the web. Drag the limit, flip a mode, open Settings.
         </p>
       </div>
     </section>
@@ -168,49 +162,49 @@ const FEATURES: Array<{
   {
     id: "limit",
     title: "A charge limit that holds",
-    body: "Cap charging anywhere from 50 to 100%. eWiz holds the level with a buffer so the charger isn't flicking on and off, and speaks both Apple Silicon charging schemes, including macOS 26 Tahoe.",
+    body: "Pick a ceiling between 50 and 100% and eWiz holds it, with a small buffer so the charger isn't switching on and off all day. It keeps holding while the Mac sleeps, which is where a simple limiter lets macOS sneak back to 100%.",
     view: { kind: "settings", tab: "Charging" },
   },
   {
     id: "sealed",
     title: "Sealed Sleep",
-    body: "A closed Mac isn't off. One switch turns off every wake source behind it, shows you each one as sealed, and measures what the last close actually cost.",
+    body: "A closed Mac isn't off: it keeps memory powered and wakes itself for maintenance and the network. One switch shuts all of that down and shows what the last close cost. The catch is honest: opening the lid then takes 15 to 30 seconds.",
     view: { kind: "settings", tab: "Sleep & Power" },
   },
   {
     id: "rules",
     title: "Automation rules",
-    body: "While this is true, do that. Build rules from a dozen conditions, from a connected display to a Wi-Fi network. Each one undoes itself when it stops matching.",
+    body: "\u201cWhile this is true, do that.\u201d Plug into your desk display and the limit drops to 80%; join the office Wi-Fi and the Mac stays awake. A rule puts things back when it stops matching.",
     view: { kind: "settings", tab: "Automation" },
   },
   {
     id: "agents",
     title: "AI agents, kept in check",
-    body: "Let Claude, Cursor and other MCP apps keep your Mac awake through a long build or test run, on a timer that ends by itself. One click connects them.",
+    body: "Claude, Cursor and other MCP apps can keep your Mac awake through a long build or test run, on a timer that ends by itself. You can see which agent is holding it, and for how long.",
     view: { kind: "settings", tab: "Automation", scroll: 486 },
   },
   {
     id: "schedule",
     title: "Schedules and Ready By",
-    body: "Hold overnight, then top up in time for the morning. Charge on a weekly timetable, or turn charge power down to keep things cool.",
+    body: "Hold at your limit overnight and top up to full just before you leave. Or charge on a weekly timetable, and turn charge power down when you'd rather it ran cool.",
     view: { kind: "settings", tab: "Schedule" },
   },
   {
     id: "history",
     title: "Every close, measured",
-    body: "History lists each charge and every lid-closed session with its exact drop per hour. Export the lot as CSV.",
+    body: "Every charge and every lid-closed session, with how much it drained per hour. Export it all as CSV if you like a spreadsheet.",
     view: { kind: "history" },
   },
   {
     id: "details",
     title: "The numbers that matter",
-    body: "Health, cycle count, temperature and capacity, plus live power flow and what your adapter actually negotiated.",
+    body: "Health, cycle count, temperature and capacity, where the power is going right now, and what your charger actually agreed to deliver.",
     view: { kind: "details" },
   },
   {
     id: "menubar",
     title: "Your menu bar, your way",
-    body: "Twelve battery styles, from Bars to Dial. Pick one and watch the menu bar at the top of the page change with it.",
+    body: "Twelve battery icons, from Bars to Dial. Pick one and the menu bar at the top of this page changes with it.",
     view: { kind: "settings", tab: "General" },
   },
 ];
@@ -269,8 +263,8 @@ function Features({
       <div className={WIDE}>
         <h2 className={cn(H2, "max-w-xl")}>A closer look</h2>
         <p className="mt-3 max-w-xl text-lg leading-relaxed text-pretty text-muted-foreground">
-          Pick a feature to see it in the app. The window is live: switch tabs, flip a switch, or
-          try a menu bar style.
+          Pick a feature to see where it lives in the app. The window is clickable: switch tabs,
+          flip a switch, try a menu bar style.
         </p>
 
         <div className="mt-10 grid gap-8 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] lg:gap-14">
@@ -424,13 +418,12 @@ function Bento() {
   return (
     <section className="mt-32">
       <div className={WIDE}>
-        <Eyebrow>Everything else</Eyebrow>
-        <h2 className={cn(H2, "mt-1 max-w-xl")}>Small app. A lot of quiet work.</h2>
+        <h2 className={cn(H2, "max-w-xl")}>And the little things</h2>
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <BentoCard
             icon={LayoutGridIcon}
             title="One-tap save modes"
-            body="Flip a whole bundle of settings at once instead of hunting through toggles."
+            body="Off, Normal or Super Saver. One tap changes a whole set of settings, so you aren't hunting through toggles."
             visual={
               <MiniPanel>
                 <div className="flex rounded-[8px] bg-white/[0.06] p-[2px]">
@@ -460,7 +453,7 @@ function Bento() {
           <BentoCard
             icon={ThermometerIcon}
             title="Backs off when it runs hot"
-            body="Heat ages a battery faster than cycles do. Past your temperature, charging pauses and the menu tells you why."
+            body="Heat is hard on a battery. Above the temperature you set, charging pauses, and the menu says why so it never looks broken."
             visual={
               <MiniPanel>
                 <div className="flex items-center justify-between">
@@ -485,8 +478,8 @@ function Bento() {
           />
           <BentoCard
             icon={PlugIcon}
-            title="Your cable tells the truth"
-            body="eWiz drives the MagSafe LED from the real charge state: orange while charging, green when it's holding at your limit."
+            title="A MagSafe light that tells the truth"
+            body="Orange while it's charging, green while eWiz holds at your limit. On Macs whose MagSafe light can be controlled."
             visual={
               <MiniPanel className="flex justify-center gap-6">
                 {[
@@ -509,7 +502,7 @@ function Bento() {
           <BentoCard
             icon={CoffeeIcon}
             title="Keep Awake, one tap"
-            body="Stop the display sleeping for a long download or a talk. It lets go when the timer runs out, or when you unplug if you ask it to."
+            body="Keep the screen on for a long download or a talk. It lets go when the timer runs out, or when you unplug, if you ask it to."
             visual={
               <MiniPanel>
                 <div className="grid grid-cols-3 gap-1.5">
@@ -537,7 +530,7 @@ function Bento() {
           <BentoCard
             icon={CpuIcon}
             title="Know your charger"
-            body="See the wattage, voltage and current your adapter negotiated. If it could give more, eWiz says so. That gap is nearly always the cable."
+            body="The watts, volts and amps your charger agreed to. If it could deliver more, eWiz says so, and the culprit is nearly always the cable."
             visual={
               <MiniPanel>
                 <div className="overflow-hidden rounded-[10px] bg-(--m-card) text-[12px]">
@@ -583,12 +576,9 @@ function Bento() {
         </div>
 
         <div className="mt-4 rounded-xl border border-border bg-surface-1 px-4 py-3">
-          <p className="flex items-center gap-2.5 font-medium">
-            <HeartIcon className="size-4 fill-rose text-rose" />
-            Made by a single developer
-          </p>
+          <p className="font-medium">A note from the developer</p>
           <p className="mt-1 text-[15px] leading-relaxed text-pretty text-muted-foreground">
-            eWiz is built by{" "}
+            Hi, I&apos;m{" "}
             <a
               href={LINKS.site}
               target="_blank"
@@ -597,8 +587,18 @@ function Bento() {
             >
               Nischal
             </a>
-            , an independent developer who loves small, native Mac software that just works.
-            Questions and ideas go straight to the person who writes the code.
+            , and eWiz is a one-person project. macOS keeps a plugged-in MacBook at 100% and
+            Optimized Charging decides by itself when to hold back. I wanted that decision for
+            myself, so I built eWiz. If something is broken or missing,{" "}
+            <a
+              href={LINKS.feedback}
+              target="_blank"
+              rel="noreferrer"
+              className="text-foreground underline decoration-border underline-offset-4 transition-colors hover:decoration-foreground"
+            >
+              open an issue on GitHub
+            </a>
+            . It comes straight to me.
           </p>
         </div>
       </div>
@@ -654,10 +654,7 @@ function Pricing() {
     <section id="pricing" className="mt-32 scroll-mt-8">
       <div className={WIDE}>
         <div className="text-center">
-          <Eyebrow tone="success">Pricing</Eyebrow>
-          <h2 className={cn(H2, "mx-auto mt-1 max-w-lg")}>
-            Try it free for 30 days, then keep it for good
-          </h2>
+          <h2 className={cn(H2, "mx-auto max-w-lg")}>Free for 30 days, then {PRICE} once</h2>
         </div>
         <div className="mt-6">
           <PricingPlans />
@@ -679,8 +676,7 @@ function Faq() {
   return (
     <section className="mt-32">
       <div className={WIDE}>
-        <Eyebrow tone="warning">FAQ</Eyebrow>
-        <h2 className={cn(H2, "mt-1")}>Questions, answered</h2>
+        <h2 className={H2}>Questions people ask</h2>
         <dl className="mt-6 grid gap-3 lg:grid-cols-2">
           {FAQS.map((item) => (
             <div key={item.q} className="rounded-lg border border-border bg-surface-1 px-4 py-3">
@@ -699,9 +695,10 @@ function ClosingCta() {
     <section className="mt-32">
       <Container className="text-center">
         <AppIcon className="mx-auto size-20" />
-        <h2 className={cn(H2, "mx-auto mt-6 max-w-md")}>Give your battery its years back.</h2>
+        <h2 className={cn(H2, "mx-auto mt-6 max-w-md")}>Try it for 30 days</h2>
         <p className="mx-auto mt-3 max-w-md text-lg leading-relaxed text-pretty text-muted-foreground">
-          Set it once and forget it. eWiz keeps the promise in the background, awake or asleep.
+          Download it, set a limit, and forget about it. If it isn&apos;t for you, delete it. There
+          is no account and nothing to cancel.
         </p>
         <div className="mt-8 flex justify-center gap-2">
           <DownloadButton />
