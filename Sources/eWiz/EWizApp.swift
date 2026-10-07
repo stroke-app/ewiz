@@ -144,32 +144,39 @@ struct MenuBarLabel: View {
     let idleSaver: IdleSaverStore
     @Environment(\.openWindow) private var openWindow
 
-    /// Animation tick for the menu-bar glyph. Only runs while an animation is visible —
-    /// never while discharging (a battery saver shouldn't burn cycles on battery).
+    /// The completion flash is on. Set and cleared only by `celebrate`/`endCelebration`,
+    /// which own its clock — see `celebration`.
     @State private var celebrating = false
-    /// When charging last stopped — to tell "just finished" from arriving full via wake.
-    @State private var chargeStoppedAt: Date?
+    /// The flash's own timer. It used to ride the icon's animation tick, which only runs
+    /// while something animates: with the charging animation on, the tick's task was
+    /// already running when the flash began, so its closure had captured `celebrating ==
+    /// false` and never counted the flash down. The check mark then sat in the menu bar
+    /// until the screens next slept — over a battery that had long since gone back to
+    /// charging.
+    @State private var celebration: Task<Void, Never>?
+    /// The last state current was flowing in, and when it stopped. Charging and "stopped
+    /// at the limit" can arrive a poll apart, so a finish is still a finish for a while
+    /// after the bolt went out.
+    @State private var lastCharging: (state: ChargeDisplayState, until: Date)?
     /// A one-off connect/disconnect animation, and how far through it we are.
     @State private var transition: IconTransition?
-    /// Whether the mark on the adapter was last the bolt, so unplugging shrinks away the mark
-    /// that was actually showing. The snapshot that reports the unplug has already lost it.
-    @State private var lastMarkWasBolt = false
+
+    /// How long a finished charge may trail the last charging reading and still flash.
+    private static let completionGrace: TimeInterval = 120
+    /// How long the check mark shows.
+    private static let celebrationLength: UInt64 = 3_000_000_000
 
     var body: some View {
         let snap = battery.snapshot
+        let display = chargeLimit.display(for: snap)
         // One source of truth for motion: the system's Reduce Motion, unless the user has
         // overridden it for this app. Read here so every animation below agrees.
         let motion = settings.motionAllowed
-        let celebratingNow = celebrating && motion
-        // Plugged in and deliberately not charging. Worth a glyph of its own: without one
-        // the menu bar looks exactly like sitting at the limit, and the whole point of the
-        // switch is that you chose it.
-        // `|| discharging` for the same reason Caffeine's policy needs it: holding the
-        // level on a Mac with no charge-inhibit key means cutting the adapter, and macOS
-        // then reports "Battery Power" — so `isPluggedIn` went false and the icon stopped
-        // showing the hold at precisely the moment the hold was doing something.
-        let holdingNow = chargeLimit.holdCharge
-            && (snap.isPluggedIn || chargeLimit.discharging)
+        // Only a state that is a completion may wear the check. The flag can't lag the
+        // state (it is cleared in the same handler that notices the state change), but the
+        // glyph still derives from one reading rather than two flags that might disagree.
+        let celebratingNow = celebrating && motion && display.isComplete
+        let mark: ChargeMark = celebratingNow ? .check : display.mark
         // The success flash uses the ramp's own full-charge colour — which is what the
         // flash means — rather than a stock green that matches nothing else here. Mono
         // blinks by alpha instead.
@@ -179,12 +186,10 @@ struct MenuBarLabel: View {
             : settings.colorMenuBarIcon ? tint(for: snap) : .neutral
         // Each tick re-renders the status item, and that relayout measured ~10% of a
         // core sustained — the entire time the Mac was plugged in. So the charging
-        // animation is opt-in. The completion flash still runs when it fires: it's
-        // bounded to about three seconds, not the whole charge.
-        let animating = motion
-            && (celebrating
-                || (settings.animateMenuBarIcon
-                    && (snap.isCharging || settings.batteryIconStyle.animatesOnBattery)))
+        // animation is opt-in. The completion flash doesn't need the tick: the check
+        // holds still, and its three seconds run on their own task.
+        let animating = motion && settings.animateMenuBarIcon
+            && (snap.isCharging || settings.batteryIconStyle.animatesOnBattery)
         // The label renders at launch — a reliable hook to start notification detection.
         notifier.startIfNeeded(settings: settings, battery: battery, chargeLimit: chargeLimit)
         // Same reason, and it has to be here rather than in `onAppear`: a status-item
@@ -225,58 +230,37 @@ struct MenuBarLabel: View {
                         percentage: snap.percentage,
                         charging: snap.isCharging,
                         tint: tint,
-                        celebrating: celebratingNow,
-                        pluggedIn: snap.isPluggedIn,
-                        holding: holdingNow,
+                        mark: mark,
+                        holding: display.holdsLevel,
                         animating: animating,
-                        celebrateEnded: { celebrating = false },
                         transition: $transition,
-                        alarm: motion && settings.shakeOnLowBattery && !snap.isPluggedIn
+                        alarm: motion && settings.shakeOnLowBattery && display.state == .onBattery
                             ? LowBatteryAlarm(percentage: snap.percentage) : .none)
             if let text = labelText(snap) {
                 // Monospaced digits so the item doesn't shift width as it ticks.
                 Text(text).monospacedDigit()
             }
         }
-        .help(helpText(snap))
-        // Record when charging stops, *before* the completion check below reads it.
-        .onChange(of: snap.isCharging) { old, new in
-            if old && !new { chargeStoppedAt = Date() }
-            // Bolt ↔ pause while on the adapter. Plugging in lands here too, a few seconds
-            // after the pause mark popped in, once current actually starts: that change is
-            // the charger negotiating, shown rather than hidden.
-            guard snap.isPluggedIn else { return }
-            lastMarkWasBolt = new
-            if motion { transition = .markIn }
-        }
-        // Flash only when it lands full/at-limit right after charging, not on wake-already-holding.
-        .onChange(of: chargeComplete(snap)) { _, done in
-            let justCharged = snap.isCharging
-                || (chargeStoppedAt.map { Date().timeIntervalSince($0) < 120 } ?? false)
-            guard done, justCharged else { return }
-            if settings.hapticsEnabled { HapticFeedback.limitReached() }
-            if settings.soundAllowed {
-                ChargeSound.play(.complete, volume: settings.soundVolume,
-                                 theme: settings.soundTheme)
-            }
-            guard settings.motionAllowed else { return }
-            celebrating = true
-            transition = .markIn                 // the check springs in
-        }
-        // Held on or off: the mark springs again, so the switch visibly landed.
-        .onChange(of: holdingNow) { was, isNow in
-            guard was != isNow, settings.motionAllowed else { return }
-            transition = .markIn
+        .help(display.tooltip)
+        // Every reaction to the charge state hangs off this one change. It replaced four
+        // handlers on four different flags that each fired in modifier order and shared
+        // state through `@State` scratch variables: one recorded when charging stopped for
+        // another to read, a third remembered which mark was showing for a fourth. Here
+        // `old` is the mark that was showing, and whether it was a finish is a question
+        // about the pair. `onChange` fires only on change, so at launch the glyph simply
+        // draws the state it finds — a Mac woken already held at the limit gets the pause
+        // mark and nothing springs.
+        .onChange(of: display.state) { old, new in
+            chargeStateChanged(from: old, to: display, motion: motion)
         }
         // Plug and unplug feedback. Driven off the snapshot rather than a power-source
         // callback of its own: this view already re-renders on every snapshot change, and
         // `onChange` fires once per real transition rather than on every poll.
         .onChange(of: snap.isPluggedIn) { was, isNow in
             guard was != isNow else { return }
-            if settings.motionAllowed {
-                transition = isNow ? .markIn : lastMarkWasBolt ? .markOutBolt : .markOutPause
-            }
-            if isNow { lastMarkWasBolt = snap.isCharging }
+            // The helper cutting the adapter to drain or hold flips this too, with the
+            // cable still in. That isn't an unplug and shouldn't sound like one.
+            guard isNow || !chargeLimit.discharging else { return }
             if settings.hapticsEnabled {
                 isNow ? HapticFeedback.chargeConnected() : HapticFeedback.chargeDisconnected()
             }
@@ -297,14 +281,67 @@ struct MenuBarLabel: View {
         .onAppear { triggers.attach(chargeLimit: chargeLimit, battery: battery) }
     }
 
-    /// Truly full, or held at the user's charge limit.
-    ///
-    /// Both halves of the old test failed on a Mac with no charge-inhibit key: charging is
-    /// always reported enabled there, and the reason the daemon gives for an adapter hold
-    /// is "hold", not "limit". So the icon never once showed a limit being honoured on that
-    /// hardware. `isHoldingCharge` asks the question without naming a lever.
-    private func chargeComplete(_ snap: BatterySnapshot) -> Bool {
-        snap.isFullyCharged || (chargeLimit.limitEnabled && chargeLimit.isHoldingCharge)
+    /// One state gave way to another: decide what the glyph does about it.
+    private func chargeStateChanged(from old: ChargeDisplayState, to display: ChargeDisplay,
+                                    motion: Bool) {
+        let new = display.state
+        // Remember where the charge was heading, so a finish that reports a poll later
+        // still counts. Cleared (by expiry) rather than on every state so a hold switched
+        // on and off again doesn't resurrect a stale target.
+        if case .charging = old {
+            lastCharging = (old, Date().addingTimeInterval(Self.completionGrace))
+        } else if case .calibrating(charging: true) = old {
+            lastCharging = (old, Date().addingTimeInterval(Self.completionGrace))
+        }
+        let recent = lastCharging.flatMap { $0.until > Date() ? $0.state : nil }
+
+        // A flash outlives the state it celebrated only as a stuck one. Unplugged, level
+        // dropped, hold released: the check goes with it.
+        if !display.isComplete { endCelebration() }
+
+        let finished = display.completes(from: old) || (recent.map(display.completes) ?? false)
+        if finished {
+            lastCharging = nil
+            if settings.hapticsEnabled { HapticFeedback.limitReached() }
+            if settings.soundAllowed {
+                ChargeSound.play(.complete, volume: settings.soundVolume,
+                                 theme: settings.soundTheme)
+            }
+            if motion { celebrate() }
+        }
+
+        guard motion else { return }
+        if new == .onBattery {
+            // Unplugged: whatever mark was showing shrinks away. `old` is what was
+            // showing; the snapshot that reports the unplug has already lost it.
+            switch ChargeDisplay.steadyMark(for: old, percentage: display.input.percentage) {
+            case .bolt:        transition = .markOutBolt
+            case .pause, .check: transition = .markOutPause
+            case .none:        break
+            }
+        } else if finished || !old.sameKind(as: new) {
+            // Something started — plugged in, charging began or stopped, a hold switched,
+            // a charge finished — and the mark springs in so the menu bar is seen to
+            // notice. A target moving (the limit slider) is not that.
+            transition = .markIn
+        }
+    }
+
+    /// Start the completion flash, with its own bounded clock.
+    private func celebrate() {
+        celebration?.cancel()
+        celebrating = true
+        celebration = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: Self.celebrationLength)
+            guard !Task.isCancelled else { return }
+            celebrating = false
+        }
+    }
+
+    private func endCelebration() {
+        celebration?.cancel()
+        celebration = nil
+        celebrating = false
     }
 
     /// Red when warm or critically low, the red-yellow-green ramp on power, neutral on
@@ -351,26 +388,6 @@ struct MenuBarLabel: View {
         let minutes = snap.isCharging ? snap.timeToFull : snap.timeToEmpty
         guard let minutes, minutes > 0 else { return nil }
         return String(format: "%d:%02d", minutes / 60, minutes % 60)
-    }
-
-    private func helpText(_ snap: BatterySnapshot) -> String {
-        // `isHoldingCharge`, not `!chargingEnabled`: a Mac with no charge-inhibit key
-        // always reports charging as enabled, so this whole block never ran there and the
-        // menu-bar tooltip explained none of it. Same fix as the panel's hint rows.
-        if chargeLimit.isHoldingCharge, let reason = chargeLimit.pauseReason {
-            switch reason {
-            case "limit":    return "Holding at \(chargeLimit.holdingAt)% limit"
-            case "hold":     return "Holding the level where it is"
-            case "heat":     return "Charging paused, battery warm"
-            case "settling": return "Settling after wake"
-            case "paused":   return "Charging paused"
-            case "sleep":    return "Charging cut for sleep"
-            default: break
-            }
-        }
-        if snap.isCharging  { return "Charging · \(snap.percentage)%" }
-        if snap.isPluggedIn { return "Plugged in · \(snap.percentage)%" }
-        return "On battery · \(snap.percentage)%"
     }
 
 }
@@ -460,20 +477,16 @@ private struct MenuBarIcon: View {
     let percentage: Int
     let charging: Bool
     let tint: MenuBarTint
-    let celebrating: Bool
-    let pluggedIn: Bool
+    /// What the glyph says, decided by the label from the shared charge state.
+    let mark: ChargeMark
     let holding: Bool
     let animating: Bool
-    /// Called when the completion flash has run its ~3 seconds; the parent owns that flag
-    /// because the tint depends on it.
-    let celebrateEnded: () -> Void
     @Binding var transition: IconTransition?
     /// How hard the battery is running out, which decides how often the glyph shakes.
     var alarm: LowBatteryAlarm = .none
 
     @State private var animFrame = 0
     @State private var shake: CGFloat = 0
-    @State private var celebrateTicks = 0
     @State private var transitionStep = 0
     @State private var screensAsleep = false
 
@@ -488,8 +501,7 @@ private struct MenuBarIcon: View {
             charging: charging,
             tint: tint,
             frame: animFrame,
-            celebrating: celebrating,
-            pluggedIn: pluggedIn,
+            mark: mark,
             holding: holding,
             transition: transition,
             transitionStep: transitionStep,
@@ -497,19 +509,14 @@ private struct MenuBarIcon: View {
         Image(nsImage: glyph)
         // One shared tick; task(id:) cancels it when nothing animates. 250ms — twice the
         // rate of the old 500ms, because a six-step sweep at 2fps reads as a slideshow no
-        // matter how it's eased.
+        // matter how it's eased. Nothing but the frame counter lives in here: the task's
+        // closure captures this struct's `let`s as they were when it started, so any flag
+        // read inside it is a flag frozen at that moment.
         .task(id: running) {
             guard running else { animFrame = 0; return }
             while !Task.isCancelled {
                 try? await Task.sleep(nanoseconds: 250_000_000)
                 animFrame &+= 1
-                if celebrating {
-                    celebrateTicks += 1
-                    if celebrateTicks >= 12 {   // ~3 s at 250ms, as before
-                        celebrateTicks = 0
-                        celebrateEnded()
-                    }
-                }
             }
         }
         // The transition runs on its own clock: the shared tick is far too slow to read as

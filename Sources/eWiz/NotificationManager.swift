@@ -125,7 +125,8 @@ final class NotificationManager: NSObject, ObservableObject, UNUserNotificationC
 
     // Last-seen state, for edge detection.
     private var initialized = false
-    private var lastReason: String?
+    private var lastLimitReached = false
+    private var lastHeatPaused = false
     private var lastLow = false
     private var lastFull = false
 
@@ -142,17 +143,23 @@ final class NotificationManager: NSObject, ObservableObject, UNUserNotificationC
     /// Evaluate current state and fire notifications for new transitions. Idempotent.
     func evaluate(settings: AppSettings, battery: BatteryStore, chargeLimit: ChargeLimitStore) {
         let snap = battery.snapshot
-        // `isHoldingCharge`, not `!chargingEnabled`. A Mac with no SMC charge-inhibit key
-        // always reports charging as enabled, so `reason` was permanently nil there and
-        // neither "Charge limit reached" nor "Charging paused, battery warm" could ever
-        // fire — on the hardware that holds the level by cutting the adapter instead.
-        let reason = chargeLimit.isHoldingCharge ? chargeLimit.pauseReason : nil
-        let low = !snap.isPluggedIn && snap.percentage <= lowThreshold
+        // The same reading as the glyph and the panel. Under macOS's charge limit the
+        // helper reports "limit" whenever current isn't flowing — including the seconds
+        // after plugging in at 49% — and this used to announce the limit reached on that.
+        // `heldAtLimit` is only produced with the level actually at or above the limit.
+        let display = chargeLimit.display(for: snap)
+        let limitReached: Bool = {
+            if case .heldAtLimit = display.state { return display.isComplete }
+            return false
+        }()
+        let heatPaused = display.state == .paused(.heat)
+        let low = display.state == .onBattery && snap.percentage <= lowThreshold
         let full = snap.isFullyCharged
 
         // Always advance the baseline so events while off don't fire retroactively later.
         defer {
-            lastReason = reason
+            lastLimitReached = limitReached
+            lastHeatPaused = heatPaused
             lastLow = low
             lastFull = full
             initialized = true
@@ -161,19 +168,15 @@ final class NotificationManager: NSObject, ObservableObject, UNUserNotificationC
         guard settings.notificationsEnabled, initialized else { return }
         requestAuthorization()
 
-        if reason != lastReason {
-            switch reason {
-            case "heat":
-                post("heat", "Charging paused",
-                     "Your battery is warm, so charging is paused to protect it.",
-                     icon: "thermometer")
-            case "limit":
-                post("limit", "Charge limit reached",
-                     "Holding at \(chargeLimit.effectiveLimit)% to reduce battery wear.",
-                     icon: "battery")
-            default:
-                break   // "paused"/"settling"/"sleep" are user- or system-driven
-            }
+        if heatPaused && !lastHeatPaused {
+            post("heat", "Charging paused",
+                 "Your battery is warm, so charging is paused to protect it.",
+                 icon: "thermometer")
+        }
+        if limitReached && !lastLimitReached, let at = display.state.target {
+            post("limit", "Charge limit reached",
+                 "Holding at \(at)% to reduce battery wear.",
+                 icon: "battery")
         }
 
         if low && !lastLow {
