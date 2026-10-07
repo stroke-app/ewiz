@@ -16,10 +16,12 @@ function urls(): UrlEntry[] {
   const staticPages: UrlEntry[] = [
     { path: "/", changefreq: "weekly", priority: "1.0" },
     { path: "/download", changefreq: "weekly", priority: "0.9" },
+    { path: "/pricing", changefreq: "monthly", priority: "0.8" },
     { path: "/blog", changefreq: "weekly", priority: "0.8" },
     { path: "/changelog", changefreq: "weekly", priority: "0.6" },
     { path: "/legal/privacy", changefreq: "yearly", priority: "0.3" },
     { path: "/legal/terms", changefreq: "yearly", priority: "0.3" },
+    { path: "/legal/license", changefreq: "yearly", priority: "0.3" },
   ];
 
   const posts: UrlEntry[] = POSTS.map((p) => ({

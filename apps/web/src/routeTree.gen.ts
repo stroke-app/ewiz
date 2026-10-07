@@ -13,6 +13,7 @@ import { Route as TermsRouteImport } from './routes/terms'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
 import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as LlmsDottxtRouteImport } from './routes/llms[.]txt'
 import { Route as LlmsFullDottxtRouteImport } from './routes/llms-full[.]txt'
 import { Route as LicenseRouteImport } from './routes/license'
@@ -28,6 +29,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as BlogIndexRouteImport } from './routes/blog/index'
 import { Route as LegalTermsRouteImport } from './routes/legal/terms'
 import { Route as LegalPrivacyRouteImport } from './routes/legal/privacy'
+import { Route as LegalLicenseRouteImport } from './routes/legal/license'
 import { Route as BlogSlugRouteImport } from './routes/blog/$slug'
 import { Route as GuestSignupRouteImport } from './routes/_guest/signup'
 import { Route as GuestLoginRouteImport } from './routes/_guest/login'
@@ -53,6 +55,11 @@ const RobotsDottxtRoute = RobotsDottxtRouteImport.update({
 const PrivacyRoute = PrivacyRouteImport.update({
   id: '/privacy',
   path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PricingRoute = PricingRouteImport.update({
+  id: '/pricing',
+  path: '/pricing',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LlmsDottxtRoute = LlmsDottxtRouteImport.update({
@@ -128,6 +135,11 @@ const LegalPrivacyRoute = LegalPrivacyRouteImport.update({
   path: '/privacy',
   getParentRoute: () => LegalRouteRoute,
 } as any)
+const LegalLicenseRoute = LegalLicenseRouteImport.update({
+  id: '/license',
+  path: '/license',
+  getParentRoute: () => LegalRouteRoute,
+} as any)
 const BlogSlugRoute = BlogSlugRouteImport.update({
   id: '/$slug',
   path: '/$slug',
@@ -170,6 +182,7 @@ export interface FileRoutesByFullPath {
   '/license': typeof LicenseRoute
   '/llms-full.txt': typeof LlmsFullDottxtRoute
   '/llms.txt': typeof LlmsDottxtRoute
+  '/pricing': typeof PricingRoute
   '/privacy': typeof PrivacyRoute
   '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -178,6 +191,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof GuestLoginRoute
   '/signup': typeof GuestSignupRoute
   '/blog/$slug': typeof BlogSlugRoute
+  '/legal/license': typeof LegalLicenseRoute
   '/legal/privacy': typeof LegalPrivacyRoute
   '/legal/terms': typeof LegalTermsRoute
   '/blog/': typeof BlogIndexRoute
@@ -194,6 +208,7 @@ export interface FileRoutesByTo {
   '/license': typeof LicenseRoute
   '/llms-full.txt': typeof LlmsFullDottxtRoute
   '/llms.txt': typeof LlmsDottxtRoute
+  '/pricing': typeof PricingRoute
   '/privacy': typeof PrivacyRoute
   '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -201,6 +216,7 @@ export interface FileRoutesByTo {
   '/login': typeof GuestLoginRoute
   '/signup': typeof GuestSignupRoute
   '/blog/$slug': typeof BlogSlugRoute
+  '/legal/license': typeof LegalLicenseRoute
   '/legal/privacy': typeof LegalPrivacyRoute
   '/legal/terms': typeof LegalTermsRoute
   '/blog': typeof BlogIndexRoute
@@ -221,6 +237,7 @@ export interface FileRoutesById {
   '/license': typeof LicenseRoute
   '/llms-full.txt': typeof LlmsFullDottxtRoute
   '/llms.txt': typeof LlmsDottxtRoute
+  '/pricing': typeof PricingRoute
   '/privacy': typeof PrivacyRoute
   '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -229,6 +246,7 @@ export interface FileRoutesById {
   '/_guest/login': typeof GuestLoginRoute
   '/_guest/signup': typeof GuestSignupRoute
   '/blog/$slug': typeof BlogSlugRoute
+  '/legal/license': typeof LegalLicenseRoute
   '/legal/privacy': typeof LegalPrivacyRoute
   '/legal/terms': typeof LegalTermsRoute
   '/blog/': typeof BlogIndexRoute
@@ -248,6 +266,7 @@ export interface FileRouteTypes {
     | '/license'
     | '/llms-full.txt'
     | '/llms.txt'
+    | '/pricing'
     | '/privacy'
     | '/robots.txt'
     | '/sitemap.xml'
@@ -256,6 +275,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/signup'
     | '/blog/$slug'
+    | '/legal/license'
     | '/legal/privacy'
     | '/legal/terms'
     | '/blog/'
@@ -272,6 +292,7 @@ export interface FileRouteTypes {
     | '/license'
     | '/llms-full.txt'
     | '/llms.txt'
+    | '/pricing'
     | '/privacy'
     | '/robots.txt'
     | '/sitemap.xml'
@@ -279,6 +300,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/signup'
     | '/blog/$slug'
+    | '/legal/license'
     | '/legal/privacy'
     | '/legal/terms'
     | '/blog'
@@ -298,6 +320,7 @@ export interface FileRouteTypes {
     | '/license'
     | '/llms-full.txt'
     | '/llms.txt'
+    | '/pricing'
     | '/privacy'
     | '/robots.txt'
     | '/sitemap.xml'
@@ -306,6 +329,7 @@ export interface FileRouteTypes {
     | '/_guest/login'
     | '/_guest/signup'
     | '/blog/$slug'
+    | '/legal/license'
     | '/legal/privacy'
     | '/legal/terms'
     | '/blog/'
@@ -326,6 +350,7 @@ export interface RootRouteChildren {
   LicenseRoute: typeof LicenseRoute
   LlmsFullDottxtRoute: typeof LlmsFullDottxtRoute
   LlmsDottxtRoute: typeof LlmsDottxtRoute
+  PricingRoute: typeof PricingRoute
   PrivacyRoute: typeof PrivacyRoute
   RobotsDottxtRoute: typeof RobotsDottxtRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
@@ -361,6 +386,13 @@ declare module '@tanstack/react-router' {
       path: '/privacy'
       fullPath: '/privacy'
       preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pricing': {
+      id: '/pricing'
+      path: '/pricing'
+      fullPath: '/pricing'
+      preLoaderRoute: typeof PricingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/llms.txt': {
@@ -468,6 +500,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LegalPrivacyRouteImport
       parentRoute: typeof LegalRouteRoute
     }
+    '/legal/license': {
+      id: '/legal/license'
+      path: '/license'
+      fullPath: '/legal/license'
+      preLoaderRoute: typeof LegalLicenseRouteImport
+      parentRoute: typeof LegalRouteRoute
+    }
     '/blog/$slug': {
       id: '/blog/$slug'
       path: '/$slug'
@@ -566,11 +605,13 @@ const BlogRouteRouteWithChildren = BlogRouteRoute._addFileChildren(
 )
 
 interface LegalRouteRouteChildren {
+  LegalLicenseRoute: typeof LegalLicenseRoute
   LegalPrivacyRoute: typeof LegalPrivacyRoute
   LegalTermsRoute: typeof LegalTermsRoute
 }
 
 const LegalRouteRouteChildren: LegalRouteRouteChildren = {
+  LegalLicenseRoute: LegalLicenseRoute,
   LegalPrivacyRoute: LegalPrivacyRoute,
   LegalTermsRoute: LegalTermsRoute,
 }
@@ -592,6 +633,7 @@ const rootRouteChildren: RootRouteChildren = {
   LicenseRoute: LicenseRoute,
   LlmsFullDottxtRoute: LlmsFullDottxtRoute,
   LlmsDottxtRoute: LlmsDottxtRoute,
+  PricingRoute: PricingRoute,
   PrivacyRoute: PrivacyRoute,
   RobotsDottxtRoute: RobotsDottxtRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,

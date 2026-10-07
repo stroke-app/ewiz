@@ -41,7 +41,7 @@ export async function llmsTxt() {
 
 - [Home](${absoluteUrl("/")}): what eWiz does, with the real app UI
 - [Download](${absoluteUrl("/download")}): ${latest ? `latest version ${latest.version}, ` : ""}DMG and Homebrew (\`${BREW_INSTALL}\`)
-- [Pricing](${absoluteUrl("/#pricing")}): free 30-day trial, then ${PRICE} once
+- [Pricing](${absoluteUrl("/pricing")}): free 30-day trial, then ${PRICE} once
 - [Changelog](${absoluteUrl("/changelog")}): every release
 - [Full details for LLMs](${absoluteUrl("/llms-full.txt")}): features, FAQ and release notes in one file
 
@@ -54,6 +54,7 @@ ${POSTS.map((p) => `- [${p.title}](${absoluteUrl(`/blog/${p.slug}`)}): ${p.descr
 - [Source and issues](${LINKS.github})
 - [Privacy policy](${absoluteUrl("/legal/privacy")})
 - [Terms of service](${absoluteUrl("/legal/terms")})
+- [Source license](${absoluteUrl("/legal/license")}): source-available under the eWiz License
 `;
 }
 

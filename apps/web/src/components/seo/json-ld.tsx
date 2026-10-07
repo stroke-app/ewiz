@@ -124,10 +124,12 @@ export function breadcrumbSchema(crumbs: Array<{ name: string; path: string }>) 
 export function siteNavigationSchema() {
   const items = [
     { name: "Download", path: "/download" },
+    { name: "Pricing", path: "/pricing" },
     { name: "Blog", path: "/blog" },
     { name: "Changelog", path: "/changelog" },
     { name: "Privacy Policy", path: "/legal/privacy" },
     { name: "Terms of Service", path: "/legal/terms" },
+    { name: "eWiz License", path: "/legal/license" },
   ];
   return {
     "@context": "https://schema.org",

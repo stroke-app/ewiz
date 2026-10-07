@@ -1,5 +1,7 @@
 export const LINKS = {
   github: "https://github.com/stroke-app/ewiz",
+  /** This website's source. */
+  siteSource: "https://github.com/stroke-app/ewiz-releases",
   releases: "https://github.com/stroke-app/ewiz/releases",
   feedback: "https://github.com/stroke-app/ewiz/issues",
   x: "https://x.com/broisnischal",
