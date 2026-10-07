@@ -282,9 +282,7 @@ effect.
 
 ## License
 
-eWiz is **source-available** under the [eWiz License](LICENSE), modelled on the
-[MMF License](https://github.com/noah-nuebling/mac-mouse-fix/blob/master/License)
-Mac Mouse Fix uses. In short: do whatever you like with the source. If you publish an
+eWiz is **source-available** under the [eWiz License](LICENSE). In short: do whatever you like with the source. If you publish an
 app built from it, it must say it's derived from eWiz, carry no malware, and keep
 eWiz's licensing, trial and payment systems intact and paying the author — unless
 yours is a substantially new work. Buying eWiz buys a license key for the app; the
