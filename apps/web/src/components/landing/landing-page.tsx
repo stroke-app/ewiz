@@ -75,7 +75,7 @@ function Hero({
           className="animate-enter mx-auto mt-8 max-w-[40rem] text-[2.1rem] leading-[1.1] font-semibold tracking-tight text-balance sm:text-[3rem]"
           style={{ "--enter-delay": "100ms" } as React.CSSProperties}
         >
-          Make macOS stop wrecking your battery.
+          Stop charging your MacBook to 100%.
         </h1>
         <p
           className="animate-enter mx-auto mt-5 max-w-[36rem] text-lg leading-relaxed text-pretty text-muted-foreground"

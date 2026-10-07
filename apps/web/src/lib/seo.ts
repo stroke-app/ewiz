@@ -16,7 +16,7 @@ export const SITE = {
   twitter: "@broisnischal",
   /** 1200x630 share image lives in /public. */
   ogImage: "/og.png",
-  ogImageAlt: "eWiz: make macOS stop wrecking your battery",
+  ogImageAlt: "eWiz: stop charging your MacBook to 100%",
 } as const;
 
 /** Trim a trailing slash so we never emit a double slash when joining paths. */
