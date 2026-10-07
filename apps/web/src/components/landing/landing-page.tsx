@@ -1,20 +1,15 @@
 import { Link } from "@tanstack/react-router";
 import {
-  ActivityIcon,
-  BotIcon,
   BatteryChargingIcon,
-  ClockIcon,
   CoffeeIcon,
   CpuIcon,
   HeartIcon,
-  HistoryIcon,
   LaptopIcon,
   LayoutGridIcon,
   MousePointerClickIcon,
   MoonStarIcon,
   PlugIcon,
   ThermometerIcon,
-  WandSparklesIcon,
   XIcon,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -166,63 +161,54 @@ type FeatureView =
 
 const FEATURES: Array<{
   id: string;
-  icon: LucideIcon;
   title: string;
   body: string;
   view: FeatureView;
 }> = [
   {
     id: "limit",
-    icon: BatteryChargingIcon,
     title: "A charge limit that holds",
     body: "Cap charging anywhere from 50 to 100%. eWiz holds the level with a buffer so the charger isn't flicking on and off, and speaks both Apple Silicon charging schemes, including macOS 26 Tahoe.",
     view: { kind: "settings", tab: "Charging" },
   },
   {
     id: "sealed",
-    icon: MoonStarIcon,
     title: "Sealed Sleep",
     body: "A closed Mac isn't off. One switch turns off every wake source behind it, shows you each one as sealed, and measures what the last close actually cost.",
     view: { kind: "settings", tab: "Sleep & Power" },
   },
   {
     id: "rules",
-    icon: WandSparklesIcon,
     title: "Automation rules",
     body: "While this is true, do that. Build rules from a dozen conditions, from a connected display to a Wi-Fi network. Each one undoes itself when it stops matching.",
     view: { kind: "settings", tab: "Automation" },
   },
   {
     id: "agents",
-    icon: BotIcon,
     title: "AI agents, kept in check",
     body: "Let Claude, Cursor and other MCP apps keep your Mac awake through a long build or test run, on a timer that ends by itself. One click connects them.",
     view: { kind: "settings", tab: "Automation", scroll: 486 },
   },
   {
     id: "schedule",
-    icon: ClockIcon,
     title: "Schedules and Ready By",
     body: "Hold overnight, then top up in time for the morning. Charge on a weekly timetable, or turn charge power down to keep things cool.",
     view: { kind: "settings", tab: "Schedule" },
   },
   {
     id: "history",
-    icon: HistoryIcon,
     title: "Every close, measured",
     body: "History lists each charge and every lid-closed session with its exact drop per hour. Export the lot as CSV.",
     view: { kind: "history" },
   },
   {
     id: "details",
-    icon: ActivityIcon,
     title: "The numbers that matter",
     body: "Health, cycle count, temperature and capacity, plus live power flow and what your adapter actually negotiated.",
     view: { kind: "details" },
   },
   {
     id: "menubar",
-    icon: LayoutGridIcon,
     title: "Your menu bar, your way",
     body: "Twelve battery styles, from Bars to Dial. Pick one and watch the menu bar at the top of the page change with it.",
     view: { kind: "settings", tab: "General" },
@@ -230,6 +216,17 @@ const FEATURES: Array<{
 ];
 
 const FEATURE_MS = 7000;
+
+/** The feature a Settings tab belongs to, so clicking around the window moves the list too. */
+function featureForTab(tab: SettingsTab) {
+  return FEATURES.findIndex(
+    (f) => f.view.kind === "settings" && f.view.tab === tab && !f.view.scroll,
+  );
+}
+
+/** Stage size and the windows inside it, with even margins all round. */
+const STAGE = { width: 760, height: 680, inset: 44 };
+const WINDOW_HEIGHT = STAGE.height - 2 * STAGE.inset;
 
 function Features({
   iconStyle,
@@ -241,7 +238,8 @@ function Features({
   const [index, setIndex] = useState(0);
   const [auto, setAuto] = useState(true);
   const [paused, setPaused] = useState(false);
-  const [tabOverride, setTabOverride] = useState<SettingsTab | null>(null);
+  // A tab picked in the window that no feature covers (Shortcuts, About).
+  const [looseTab, setLooseTab] = useState<SettingsTab | null>(null);
 
   useEffect(() => {
     if (!auto || paused || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
@@ -251,83 +249,97 @@ function Features({
 
   const feature = FEATURES[index];
   const view = feature.view;
-  const tab = tabOverride ?? (view.kind === "settings" ? view.tab : "Charging");
+  const tab = looseTab ?? (view.kind === "settings" ? view.tab : "Charging");
   const select = (i: number) => {
     setAuto(false);
-    setTabOverride(null);
+    setLooseTab(null);
     setIndex(i);
+  };
+  const selectTab = (t: SettingsTab) => {
+    const i = featureForTab(t);
+    if (i >= 0) select(i);
+    else {
+      setAuto(false);
+      setLooseTab(t);
+    }
   };
 
   return (
     <section id="features" className="mt-32 scroll-mt-8">
       <div className={WIDE}>
-        <Eyebrow tone="rose">Made with care</Eyebrow>
-        <h2 className={cn(H2, "mt-1 max-w-xl")}>What sets eWiz apart?</h2>
+        <h2 className={cn(H2, "max-w-xl")}>A closer look</h2>
+        <p className="mt-3 max-w-xl text-lg leading-relaxed text-pretty text-muted-foreground">
+          Pick a feature to see it in the app. The window is live: switch tabs, flip a switch, or
+          try a menu bar style.
+        </p>
 
-        <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] lg:gap-10">
-          <ul className="flex flex-col gap-1">
+        <div className="mt-10 grid gap-8 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] lg:gap-14">
+          <ol className="flex flex-col self-start border-l border-border">
             {FEATURES.map((f, i) => {
-              const on = i === index;
+              const on = i === index && !looseTab;
               return (
-                <li key={f.id}>
+                <li key={f.id} className="relative">
+                  {on ? (
+                    <span
+                      key={`${index}-${auto}`}
+                      aria-hidden
+                      className={cn(
+                        "absolute top-0 -left-px h-full w-px bg-foreground",
+                        auto && "feature-progress",
+                      )}
+                      style={
+                        auto
+                          ? ({
+                              "--feature-ms": `${FEATURE_MS}ms`,
+                              animationPlayState: paused ? "paused" : "running",
+                            } as React.CSSProperties)
+                          : undefined
+                      }
+                    />
+                  ) : null}
                   <button
                     type="button"
                     aria-pressed={on}
                     onClick={() => select(i)}
                     onMouseEnter={() => setPaused(true)}
                     onMouseLeave={() => setPaused(false)}
-                    className={cn(
-                      "relative w-full overflow-hidden rounded-lg px-4 py-3 text-left transition-colors",
-                      on ? "bg-surface-2" : "hover:bg-surface-2/50",
-                    )}
+                    className="group w-full py-2 pl-5 text-left"
                   >
                     <span
                       className={cn(
-                        "flex items-center gap-2.5 font-medium transition-colors",
-                        on ? "text-foreground" : "text-muted-foreground",
+                        "text-[15px] font-medium transition-colors",
+                        on
+                          ? "text-foreground"
+                          : "text-muted-foreground group-hover:text-foreground",
                       )}
                     >
-                      <f.icon className={cn("size-4", on && "text-primary")} />
                       {f.title}
                     </span>
                     {on ? (
-                      <span className="animate-fade mt-1.5 block text-[15px] leading-relaxed text-pretty text-muted-foreground">
+                      <span className="animate-fade mt-1 mb-2 block text-[15px] leading-relaxed text-pretty text-muted-foreground">
                         {f.body}
                       </span>
-                    ) : null}
-                    {on && auto ? (
-                      <span
-                        key={index}
-                        className="feature-progress absolute inset-x-0 bottom-0 h-0.5 bg-primary/70 motion-reduce:hidden"
-                        style={
-                          {
-                            "--feature-ms": `${FEATURE_MS}ms`,
-                            animationPlayState: paused ? "paused" : "running",
-                          } as React.CSSProperties
-                        }
-                      />
                     ) : null}
                   </button>
                 </li>
               );
             })}
-          </ul>
+          </ol>
 
           <div className="overflow-hidden rounded-xl ring-1 ring-black/10 lg:sticky lg:top-6 lg:self-start dark:ring-white/10">
-            <Stage width={760} height={620}>
+            <Stage width={STAGE.width} height={STAGE.height}>
               <div className="wallpaper absolute inset-0" />
               <div
-                key={feature.id}
-                className="animate-fade absolute inset-0 flex justify-center pt-[44px]"
+                key={looseTab ?? feature.id}
+                className="animate-fade absolute inset-0 flex justify-center"
+                style={{ paddingTop: STAGE.inset }}
               >
-                {view.kind === "settings" ? (
+                {view.kind === "settings" || looseTab ? (
                   <SettingsWindow
                     tab={tab}
-                    scroll={!tabOverride && view.kind === "settings" ? (view.scroll ?? 0) : 0}
-                    onTab={(t) => {
-                      setAuto(false);
-                      setTabOverride(t);
-                    }}
+                    height={WINDOW_HEIGHT}
+                    scroll={!looseTab && view.kind === "settings" ? (view.scroll ?? 0) : 0}
+                    onTab={selectTab}
                     iconStyle={iconStyle}
                     onIconStyle={(s) => {
                       setAuto(false);
@@ -335,8 +347,12 @@ function Features({
                     }}
                   />
                 ) : null}
-                {view.kind === "history" ? <HistoryWindow height={600} /> : null}
-                {view.kind === "details" ? <DetailsWindow /> : null}
+                {!looseTab && view.kind === "history" ? (
+                  <HistoryWindow height={WINDOW_HEIGHT} />
+                ) : null}
+                {!looseTab && view.kind === "details" ? (
+                  <DetailsWindow height={WINDOW_HEIGHT} />
+                ) : null}
               </div>
             </Stage>
           </div>

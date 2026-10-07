@@ -264,14 +264,14 @@
 /* Feature list auto-advance progress bar. */
 @keyframes featureProgress {
   from {
-    transform: scaleX(0);
+    transform: scaleY(0);
   }
   to {
-    transform: scaleX(1);
+    transform: scaleY(1);
   }
 }
 .feature-progress {
-  transform-origin: left;
+  transform-origin: top;
   animation: featureProgress var(--feature-ms, 7000ms) linear both;
 }
 @media (prefers-reduced-motion: reduce) {
