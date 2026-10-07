@@ -43,8 +43,8 @@ function Entry({
   const pillClass =
     "w-fit rounded-md border border-border bg-surface-1 px-1.5 text-[15px] tabular-nums";
   return (
-    <li className="grid gap-3 sm:grid-cols-[140px_1fr] sm:gap-6">
-      <div className="flex items-center gap-2 sm:flex-col sm:items-start sm:gap-0.5">
+    <li className="grid gap-3 border-t border-border pt-10 first:border-t-0 first:pt-0 sm:grid-cols-[140px_1fr] sm:gap-8">
+      <div className="flex items-center gap-2 sm:sticky sm:top-8 sm:flex-col sm:items-start sm:gap-1 sm:self-start">
         {href ? (
           <a
             href={href}
@@ -60,9 +60,7 @@ function Entry({
         {date ? <span className="text-sm text-muted-foreground">{date}</span> : null}
       </div>
       <div>
-        <h2 className="rounded-lg border border-border bg-surface-1 px-2 py-0.5 text-lg font-semibold">
-          {title}
-        </h2>
+        <h2 className="text-lg/7 font-semibold tracking-tight text-balance">{title}</h2>
         {children}
       </div>
     </li>
@@ -71,7 +69,7 @@ function Entry({
 
 /** Styles the HTML GitHub renders from a release's markdown notes. */
 const NOTES =
-  "mt-4 text-[15px] leading-relaxed [&_a]:underline [&_a]:underline-offset-4 [&_code]:rounded [&_code]:bg-muted [&_code]:px-1 [&_code]:font-mono [&_code]:text-[13px] [&_h3]:mt-5 [&_h3]:font-semibold [&_li]:pl-1 [&_li]:marker:text-muted-foreground [&_li>p:first-child]:mt-0 [&_ol]:mt-2 [&_ol]:list-decimal [&_ol]:space-y-1.5 [&_ol]:pl-6 [&_p]:mt-3 [&_strong]:font-semibold [&_ul]:mt-2 [&_ul]:list-disc [&_ul]:space-y-1.5 [&_ul]:pl-6 [&>*:first-child]:mt-0";
+  "mt-3 text-[15px] leading-relaxed text-foreground/80 [&_a]:underline [&_a]:underline-offset-4 [&_code]:rounded [&_code]:bg-muted [&_code]:px-1 [&_code]:font-mono [&_code]:text-[13px] [&_h3]:mt-8 [&_h3]:font-semibold [&_h3]:text-foreground [&_h3+ol]:mt-2 [&_h3+p]:mt-1.5 [&_h3+ul]:mt-2 [&_li]:pl-1 [&_li]:marker:text-muted-foreground [&_li>p:first-child]:mt-0 [&_ol]:mt-3 [&_ol]:list-decimal [&_ol]:space-y-1.5 [&_ol]:pl-5 [&_p]:mt-3 [&_strong]:font-semibold [&_strong]:text-foreground [&_ul]:mt-3 [&_ul]:list-disc [&_ul]:space-y-1.5 [&_ul]:pl-5 [&>*:first-child]:mt-0";
 
 /** Notes longer than this start folded, so one big release doesn't bury the rest. */
 const FOLD_AT = 3000;
@@ -122,7 +120,7 @@ function ChangelogPage() {
           </Button>
         </div>
 
-        <ol className="mt-12 flex flex-col gap-12">
+        <ol className="mt-12 flex flex-col gap-10">
           {releases.length === 0 ? (
             <li className="text-[15px] text-muted-foreground">
               The release notes couldn&apos;t be loaded just now. They&apos;re all on{" "}
