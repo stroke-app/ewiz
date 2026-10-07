@@ -107,6 +107,16 @@ jobs:
           DMG_URL="https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/eWiz-${{ steps.ver.outputs.version }}.dmg"
           ./scripts/make-appcast.sh "${{ steps.ver.outputs.version }}" "$DMG_URL" "eWiz ${{ steps.ver.outputs.version }}"
 
+      # The release notes are this version's CHANGELOG.md section, which the
+      # Version PR wrote. ewiz.app's changelog and download pages read them from
+      # the GitHub release, so the site needs no edit per release.
+      - name: Write release notes
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          ./scripts/release-notes.sh "${{ steps.ver.outputs.version }}" > dist/release-notes.md
+          [ -s dist/release-notes.md ] || echo "eWiz ${{ steps.ver.outputs.version }}" > dist/release-notes.md
+          cat dist/release-notes.md
+
       # On a tag push, attach DMG + appcast.json to a published GitHub Release.
       - name: Publish GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
@@ -114,12 +124,12 @@ jobs:
         with:
           name: "eWiz ${{ steps.ver.outputs.version }}"
           tag_name: ${{ github.ref_name }}
+          body_path: dist/release-notes.md
           files: |
             dist/eWiz-${{ steps.ver.outputs.version }}.dmg
             dist/appcast.json
           draft: false
           make_latest: true
-          generate_release_notes: true
 
       # Point the public in-app update feed at this release. Done inline here
       # rather than in a separate `release: published` workflow because releases
