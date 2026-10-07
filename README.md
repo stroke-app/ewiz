@@ -282,11 +282,13 @@ effect.
 
 ## License
 
-eWiz is **source-available** under the [PolyForm Noncommercial License
-1.0.0](LICENSE). Use it, modify it, and contribute back freely for any
-noncommercial purpose — but you may not sell it or use it commercially (including
-paid products, hosted services, or enterprise support). All commercial rights are
-reserved by the author.
+eWiz is **source-available** under the [eWiz License](LICENSE), modelled on the
+[MMF License](https://github.com/noah-nuebling/mac-mouse-fix/blob/master/License)
+Mac Mouse Fix uses. In short: do whatever you like with the source. If you publish an
+app built from it, it must say it's derived from eWiz, carry no malware, and keep
+eWiz's licensing, trial and payment systems intact and paying the author — unless
+yours is a substantially new work. Buying eWiz buys a license key for the app; the
+source terms are the same for everyone.
 
 ## Credits
 
