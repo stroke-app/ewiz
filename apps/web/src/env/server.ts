@@ -23,6 +23,10 @@ export const env = createEnv({
     // Ed25519 private key (base64, 32-byte seed) used to sign Battlify license
     // tokens after checkout. The Battlify app embeds only the matching public key.
     LICENSE_SIGNING_PRIVATE_KEY: z.string().min(1),
+
+    // Read-only GitHub token for the releases API (changelog, download links).
+    // Optional: without it requests share GitHub's 60/hour unauthenticated limit.
+    GITHUB_RELEASES_TOKEN: z.string().optional(),
   },
   runtimeEnv: process.env,
 });

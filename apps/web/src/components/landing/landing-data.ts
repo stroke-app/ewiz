@@ -7,12 +7,6 @@ export const LINKS = {
   site: "https://nischal-dahal.com.np",
 } as const;
 
-/** Latest public build. Kept in sync with the newest GitHub release. */
-export const LATEST = {
-  version: "0.18.2",
-  dmg: "https://github.com/stroke-app/ewiz/releases/download/v0.18.2/eWiz-0.18.2.dmg",
-} as const;
-
 /** Homebrew cask, published to the stroke-app/homebrew-ewiz tap on every release. */
 export const BREW_INSTALL = "brew install --cask stroke-app/ewiz/ewiz";
 

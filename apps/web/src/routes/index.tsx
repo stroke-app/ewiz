@@ -9,10 +9,12 @@ import {
   softwareApplicationSchema,
   websiteSchema,
 } from "#/components/seo/json-ld";
+import { latestReleaseQueryOptions } from "#/lib/releases/queries";
 import { seo } from "#/lib/seo";
 
 export const Route = createFileRoute("/")({
-  head: () => ({
+  loader: ({ context }) => context.queryClient.ensureQueryData(latestReleaseQueryOptions()),
+  head: ({ loaderData }) => ({
     ...seo({
       path: "/",
       keywords: [
@@ -27,7 +29,7 @@ export const Route = createFileRoute("/")({
         organizationSchema(),
         websiteSchema(),
         siteNavigationSchema(),
-        softwareApplicationSchema(),
+        softwareApplicationSchema(loaderData),
         faqSchema(FAQS.map((f) => ({ question: f.q, answer: f.a }))),
       ],
     }),

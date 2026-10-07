@@ -1,15 +1,20 @@
 import { SiX } from "@icons-pack/react-simple-icons";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { DownloadIcon } from "lucide-react";
+import { ChevronDownIcon, DownloadIcon } from "lucide-react";
+import { useState } from "react";
 
 import { LINKS } from "#/components/landing/landing-data";
 import { breadcrumbSchema } from "#/components/seo/json-ld";
 import { Container, SitePage } from "#/components/site/site-shell";
 import { Button } from "#/components/ui/button";
-import { RELEASES, ROADMAP } from "#/lib/changelog";
+import { ROADMAP } from "#/lib/changelog";
+import { releasesQueryOptions } from "#/lib/releases/queries";
 import { seo } from "#/lib/seo";
+import { cn } from "#/lib/utils";
 
 export const Route = createFileRoute("/changelog")({
+  loader: ({ context }) => context.queryClient.ensureQueryData(releasesQueryOptions()),
   head: () => ({
     ...seo({
       title: "Changelog: what's new",
@@ -21,10 +26,6 @@ export const Route = createFileRoute("/changelog")({
   }),
   component: ChangelogPage,
 });
-
-function releaseUrl(v: string) {
-  return `https://github.com/stroke-app/ewiz/releases/tag/v${v}`;
-}
 
 function Entry({
   pill,
@@ -68,7 +69,38 @@ function Entry({
   );
 }
 
+/** Styles the HTML GitHub renders from a release's markdown notes. */
+const NOTES =
+  "mt-4 text-[15px] leading-relaxed [&_a]:underline [&_a]:underline-offset-4 [&_code]:rounded [&_code]:bg-muted [&_code]:px-1 [&_code]:font-mono [&_code]:text-[13px] [&_h3]:mt-5 [&_h3]:font-semibold [&_li]:pl-1 [&_li]:marker:text-muted-foreground [&_li>p:first-child]:mt-0 [&_ol]:mt-2 [&_ol]:list-decimal [&_ol]:space-y-1.5 [&_ol]:pl-6 [&_p]:mt-3 [&_strong]:font-semibold [&_ul]:mt-2 [&_ul]:list-disc [&_ul]:space-y-1.5 [&_ul]:pl-6 [&>*:first-child]:mt-0";
+
+/** Notes longer than this start folded, so one big release doesn't bury the rest. */
+const FOLD_AT = 3000;
+
+function Notes({ html }: { html: string }) {
+  const [open, setOpen] = useState(html.length <= FOLD_AT);
+  return (
+    <>
+      <div
+        className={cn(
+          NOTES,
+          !open &&
+            "max-h-80 overflow-hidden mask-[linear-gradient(to_bottom,black_55%,transparent)]",
+        )}
+        // Sanitized by GitHub when it rendered the release's markdown.
+        dangerouslySetInnerHTML={{ __html: html }}
+      />
+      {open ? null : (
+        <Button variant="outline" size="sm" className="mt-2" onClick={() => setOpen(true)}>
+          Show all notes
+          <ChevronDownIcon />
+        </Button>
+      )}
+    </>
+  );
+}
+
 function ChangelogPage() {
+  const { data: releases } = useSuspenseQuery(releasesQueryOptions());
   return (
     <SitePage>
       <Container className="pt-6">
@@ -91,25 +123,24 @@ function ChangelogPage() {
         </div>
 
         <ol className="mt-12 flex flex-col gap-12">
-          {RELEASES.map((r) => (
-            <Entry key={r.v} pill={r.v} href={releaseUrl(r.v)} date={r.date} title={r.title}>
-              {r.groups.map((g) => (
-                <div key={g.heading} className="mt-5">
-                  <h3 className="font-semibold">{g.heading}</h3>
-                  <ul className="mt-2 list-disc space-y-1.5 pl-6 marker:text-muted-foreground">
-                    {g.items.map((item) => (
-                      <li key={item} className="pl-1 text-[15px] leading-relaxed">
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-              {r.quote ? (
-                <blockquote className="mt-5 border-l-2 border-border pl-3 text-[15px] text-muted-foreground italic">
-                  {r.quote}
-                </blockquote>
-              ) : null}
+          {releases.length === 0 ? (
+            <li className="text-[15px] text-muted-foreground">
+              The release notes couldn&apos;t be loaded just now. They&apos;re all on{" "}
+              <a href={LINKS.releases} target="_blank" rel="noreferrer" className="underline">
+                GitHub
+              </a>
+              .
+            </li>
+          ) : null}
+          {releases.map((r) => (
+            <Entry
+              key={r.version}
+              pill={r.version}
+              href={r.url}
+              date={r.date}
+              title={r.title || `eWiz ${r.version}`}
+            >
+              <Notes html={r.notesHtml} />
             </Entry>
           ))}
 

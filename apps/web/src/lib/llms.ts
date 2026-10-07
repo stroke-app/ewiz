@@ -1,6 +1,6 @@
-import { BREW_INSTALL, FAQS, LATEST, LINKS, PRICE } from "#/components/landing/landing-data";
+import { BREW_INSTALL, FAQS, LINKS, PRICE } from "#/components/landing/landing-data";
 import { POSTS } from "#/lib/blog/posts";
-import { RELEASES } from "#/lib/changelog";
+import { formatReleaseDate, getReleases, type Release } from "#/lib/releases/service";
 import { absoluteUrl, SITE } from "#/lib/seo";
 
 const FEATURES = [
@@ -22,14 +22,25 @@ const header = () => `# ${SITE.name}
 
 eWiz is a native macOS menu bar app by Nischal Dahal, an independent developer. It runs on Apple Silicon Macs (M1 or newer) with macOS 14 Sonoma or later. It is a one-time ${PRICE} purchase with a free 30-day trial of every feature; there is no subscription.`;
 
+/** Releases from GitHub, or none when it can't be reached; the text reads fine either way. */
+async function releases(): Promise<Release[]> {
+  try {
+    return await getReleases();
+  } catch (err) {
+    console.error("llms: could not load releases", err);
+    return [];
+  }
+}
+
 /** llms.txt (https://llmstxt.org): a short, curated map of the site for AI assistants. */
-export function llmsTxt() {
+export async function llmsTxt() {
+  const latest = (await releases())[0];
   return `${header()}
 
 ## Product
 
 - [Home](${absoluteUrl("/")}): what eWiz does, with the real app UI
-- [Download](${absoluteUrl("/download")}): latest version ${LATEST.version}, DMG and Homebrew (\`${BREW_INSTALL}\`)
+- [Download](${absoluteUrl("/download")}): ${latest ? `latest version ${latest.version}, ` : ""}DMG and Homebrew (\`${BREW_INSTALL}\`)
 - [Pricing](${absoluteUrl("/#pricing")}): free 30-day trial, then ${PRICE} once
 - [Changelog](${absoluteUrl("/changelog")}): every release
 - [Full details for LLMs](${absoluteUrl("/llms-full.txt")}): features, FAQ and release notes in one file
@@ -47,7 +58,8 @@ ${POSTS.map((p) => `- [${p.title}](${absoluteUrl(`/blog/${p.slug}`)}): ${p.descr
 }
 
 /** llms-full.txt: the same, expanded into self-contained text. */
-export function llmsFullTxt() {
+export async function llmsFullTxt() {
+  const recent = (await releases()).slice(0, 6);
   return `${header()}
 
 ## Features
@@ -56,7 +68,7 @@ ${FEATURES.map((f) => `- ${f}`).join("\n")}
 
 ## Install
 
-- Download the DMG: ${LATEST.dmg}
+- Download the DMG: ${recent.find((r) => r.dmg)?.dmg ?? `${LINKS.releases}/latest`}
 - Or with Homebrew: \`${BREW_INSTALL}\`
 - Builds are not notarized yet; on first launch, right-click the app and choose Open.
 
@@ -72,14 +84,14 @@ ${FAQS.map((f) => `### ${f.q}\n\n${f.a}`).join("\n\n")}
 
 ## Recent releases
 
-${RELEASES.slice(0, 6)
+${recent
   .map(
     (r) =>
-      `### ${r.v} (${r.date}): ${r.title}\n\n${r.groups
-        .map((g) => g.items.map((i) => `- ${g.heading}: ${i}`).join("\n"))
-        .join("\n")}`,
+      `### ${r.version} (${formatReleaseDate(r.publishedAt)})${r.title ? `: ${r.title}` : ""}\n\n${r.notes.replace(/^#{1,3} /gm, "#### ")}`,
   )
   .join("\n\n")}
+
+All releases: ${absoluteUrl("/changelog")}
 
 ## Links
 

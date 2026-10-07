@@ -1,4 +1,5 @@
 import { SiApple, SiGithub, SiHomebrew } from "@icons-pack/react-simple-icons";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   ArrowUpRightIcon,
@@ -9,14 +10,16 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 
-import { BREW_INSTALL, LATEST, LINKS } from "#/components/landing/landing-data";
+import { BREW_INSTALL, LINKS } from "#/components/landing/landing-data";
 import { breadcrumbSchema, softwareApplicationSchema } from "#/components/seo/json-ld";
 import { Container, SitePage } from "#/components/site/site-shell";
 import { Button } from "#/components/ui/button";
+import { latestReleaseQueryOptions } from "#/lib/releases/queries";
 import { seo } from "#/lib/seo";
 
 export const Route = createFileRoute("/download")({
-  head: () => ({
+  loader: ({ context }) => context.queryClient.ensureQueryData(latestReleaseQueryOptions()),
+  head: ({ loaderData }) => ({
     ...seo({
       title: "Download for Mac",
       description:
@@ -24,7 +27,7 @@ export const Route = createFileRoute("/download")({
       path: "/download",
       keywords: ["download eWiz", "eWiz download", "eWiz mac", "eWiz app"],
       jsonLd: [
-        softwareApplicationSchema(),
+        softwareApplicationSchema(loaderData),
         breadcrumbSchema([{ name: "Download", path: "/download" }]),
       ],
     }),
@@ -36,6 +39,7 @@ const PILL =
   "inline-flex h-8 items-center gap-1.5 rounded-lg border border-border bg-surface-1 px-3 text-[15px] transition-colors hover:bg-surface-2";
 
 function DownloadPage() {
+  const { data: latest } = useSuspenseQuery(latestReleaseQueryOptions());
   return (
     <SitePage>
       <Container className="max-w-[38rem] pt-10">
@@ -48,7 +52,13 @@ function DownloadPage() {
 
         <div className="mt-6 flex items-end justify-between gap-4 border-b border-border pb-2">
           <p className="text-lg text-muted-foreground">
-            Version - <span className="text-foreground tabular-nums">{LATEST.version}</span>
+            {latest ? (
+              <>
+                Version - <span className="text-foreground tabular-nums">{latest.version}</span>
+              </>
+            ) : (
+              "Latest version"
+            )}
           </p>
           <Button render={<Link to="/changelog" />} nativeButton={false} className="text-[15px]">
             View Changelog
@@ -61,7 +71,8 @@ function DownloadPage() {
             <SiApple className="size-5" aria-hidden />
             macOS
           </span>
-          <a href={LATEST.dmg} className={PILL}>
+          {/* Without the release list, GitHub's latest-release page has the DMG. */}
+          <a href={latest?.dmg ?? `${LINKS.releases}/latest`} className={PILL}>
             Apple Silicon
           </a>
         </div>

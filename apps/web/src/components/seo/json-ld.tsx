@@ -1,4 +1,5 @@
-import { LATEST, LINKS } from "#/components/landing/landing-data";
+import { LINKS } from "#/components/landing/landing-data";
+import type { LatestReleaseDTO } from "#/lib/releases/functions";
 import { absoluteUrl, SITE } from "#/lib/seo";
 
 /** The publisher/brand. Referenced by other schemas via @id. */
@@ -31,7 +32,7 @@ export function websiteSchema() {
 }
 
 /** The product. Powers the app rich result (price, platform, rating). */
-export function softwareApplicationSchema() {
+export function softwareApplicationSchema(latest?: LatestReleaseDTO | null) {
   return {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
@@ -42,7 +43,7 @@ export function softwareApplicationSchema() {
     description: SITE.description,
     url: absoluteUrl("/"),
     image: absoluteUrl("/og.png"),
-    downloadUrl: LATEST.dmg,
+    downloadUrl: latest?.dmg ?? `${LINKS.releases}/latest`,
     installUrl: absoluteUrl("/download"),
     releaseNotes: absoluteUrl("/changelog"),
     screenshot: absoluteUrl("/og.png"),
@@ -57,7 +58,7 @@ export function softwareApplicationSchema() {
       "MagSafe LED that shows the real charge state",
       "Battery health, history and power adapter details",
     ],
-    softwareVersion: LATEST.version,
+    ...(latest ? { softwareVersion: latest.version } : {}),
     offers: {
       "@type": "Offer",
       price: "2.99",

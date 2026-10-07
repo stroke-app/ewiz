@@ -5,6 +5,7 @@
  * at 1x and scaled to fit by <Stage>.
  */
 import { SiApple } from "@icons-pack/react-simple-icons";
+import { useQuery } from "@tanstack/react-query";
 import {
   ActivityIcon,
   BatteryChargingIcon,
@@ -40,6 +41,7 @@ import type { LucideIcon } from "lucide-react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { AppIcon } from "#/components/logo";
+import { latestReleaseQueryOptions } from "#/lib/releases/queries";
 import { cn } from "#/lib/utils";
 
 const useIsoLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
@@ -1242,11 +1244,14 @@ function GeneralTab({
 }
 
 function AboutTab() {
+  const { data: latest } = useQuery(latestReleaseQueryOptions());
   return (
     <div className="flex flex-col items-center pt-[40px] text-center">
       <AppIcon className="size-[84px]" />
       <p className="mt-[12px] text-[20px] font-semibold">eWiz</p>
-      <p className="mt-[2px] text-[11px] text-(--m-text-2)">Version 0.17.0</p>
+      <p className="mt-[2px] min-h-[1lh] text-[11px] text-(--m-text-2)">
+        {latest ? `Version ${latest.version}` : null}
+      </p>
       <p className="mt-[14px] max-w-[300px] text-[12px] leading-snug text-(--m-text-2)">
         Charge limiting, heat-aware charging, sleep-safe enforcement, and one-tap save modes.
       </p>
