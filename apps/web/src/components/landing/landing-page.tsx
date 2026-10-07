@@ -22,7 +22,7 @@ import { Container, SitePage } from "#/components/site/site-shell";
 import { Button } from "#/components/ui/button";
 import { cn } from "#/lib/utils";
 
-import { FAQS, PRICE } from "./landing-data";
+import { FAQS, HEADLINES, PRICE } from "./landing-data";
 import { LightningField } from "./lightning-field";
 import {
   DetailsWindow,
@@ -58,10 +58,68 @@ function BuyButton({ className, children }: { className?: string; children: Reac
    ========================================================================== */
 type DesktopView = "settings" | "details" | "history";
 
+const HEADLINE_MS = 5000;
+
+/**
+ * The headline and the line under it, taking turns. Every headline sits in the
+ * same grid cell, so the block keeps the height of the longest one and nothing
+ * below it jumps when they change. Headlines sit at the bottom of that space,
+ * so a short one stays next to its line instead of leaving a gap between them.
+ */
+function RotatingHeadline({ start }: { start: number }) {
+  const [index, setIndex] = useState(start);
+  const [prev, setPrev] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const id = window.setTimeout(() => {
+      setPrev(index);
+      setIndex((index + 1) % HEADLINES.length);
+    }, HEADLINE_MS);
+    return () => window.clearTimeout(id);
+  }, [index]);
+
+  // The new line rises into place while the old one lifts away.
+  const item = (i: number) =>
+    cn(
+      "transition-[opacity,translate,filter] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] [grid-area:1/1]",
+      i === index
+        ? "translate-y-0 opacity-100 blur-none"
+        : cn("opacity-0 blur-[4px]", i === prev ? "-translate-y-2" : "translate-y-2"),
+    );
+
+  return (
+    <>
+      <h1
+        className="animate-enter mx-auto mt-8 grid max-w-[40rem] items-end text-[2.1rem] leading-[1.1] font-semibold tracking-tight text-balance sm:text-[3rem]"
+        style={{ "--enter-delay": "100ms" } as React.CSSProperties}
+      >
+        {HEADLINES.map((h, i) => (
+          <span key={h.title} aria-hidden={i !== index} className={item(i)}>
+            {h.title}
+          </span>
+        ))}
+      </h1>
+      <p
+        className="animate-enter mx-auto mt-5 grid max-w-[36rem] text-lg leading-relaxed text-pretty text-muted-foreground"
+        style={{ "--enter-delay": "150ms" } as React.CSSProperties}
+      >
+        {HEADLINES.map((h, i) => (
+          <span key={h.title} aria-hidden={i !== index} className={item(i)}>
+            {h.body}
+          </span>
+        ))}
+      </p>
+    </>
+  );
+}
+
 function Hero({
+  headline,
   iconStyle,
   onIconStyle,
 }: {
+  headline: number;
   iconStyle: IconStyle;
   onIconStyle: (s: IconStyle) => void;
 }) {
@@ -71,20 +129,7 @@ function Hero({
     <section>
       <Container className="pt-8 text-center">
         <AppIcon className="animate-enter mx-auto size-[72px]" />
-        <h1
-          className="animate-enter mx-auto mt-8 max-w-[40rem] text-[2.1rem] leading-[1.1] font-semibold tracking-tight text-balance sm:text-[3rem]"
-          style={{ "--enter-delay": "100ms" } as React.CSSProperties}
-        >
-          Stop charging your MacBook to 100%.
-        </h1>
-        <p
-          className="animate-enter mx-auto mt-5 max-w-[36rem] text-lg leading-relaxed text-pretty text-muted-foreground"
-          style={{ "--enter-delay": "150ms" } as React.CSSProperties}
-        >
-          Sitting at 100% and running hot are what wear a battery out, and a plugged-in MacBook does
-          both all day. eWiz holds the charge where you set it and stops charging when the battery
-          gets warm.
-        </p>
+        <RotatingHeadline start={headline} />
         <div
           className="animate-enter mt-9 flex justify-center gap-2"
           style={{ "--enter-delay": "200ms" } as React.CSSProperties}
@@ -691,7 +736,8 @@ function ClosingCta() {
   );
 }
 
-export function LandingPage() {
+/** `headline` is the index of the hero headline to lead with. */
+export function LandingPage({ headline }: { headline: number }) {
   const [iconStyle, setIconStyle] = useState<IconStyle>("Bars");
   return (
     <SitePage
@@ -699,7 +745,7 @@ export function LandingPage() {
         <LightningField className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[720px] w-full [mask-image:linear-gradient(to_bottom,black_55%,transparent)]" />
       }
     >
-      <Hero iconStyle={iconStyle} onIconStyle={setIconStyle} />
+      <Hero headline={headline} iconStyle={iconStyle} onIconStyle={setIconStyle} />
       <Features iconStyle={iconStyle} onIconStyle={setIconStyle} />
       <Bento />
       <Supported />

@@ -38,5 +38,5 @@ export const Route = createFileRoute("/")({
 });
 
 function HomePage() {
-  return <LandingPage />;
+  return <LandingPage headline={0} />;
 }
