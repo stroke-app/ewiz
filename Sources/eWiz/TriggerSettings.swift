@@ -69,7 +69,9 @@ struct TriggerLiveStateView: View {
             Divider().padding(.leading, 12)
             row("USB devices", list(s.usbDevices, empty: "None"))
             Divider().padding(.leading, 12)
-            row("Bluetooth", list(s.bluetoothDevices, empty: "None connected"))
+            row("Bluetooth", store.observesBluetooth
+                ? list(s.bluetoothDevices, empty: "None connected")
+                : "Read when a rule uses it (needs Bluetooth access)")
             Divider().padding(.leading, 12)
             row("Volumes", list(s.externalVolumes, empty: "None mounted"))
             Divider().padding(.leading, 12)
