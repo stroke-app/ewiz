@@ -1,8 +1,8 @@
 #!/bin/bash
 # Prints one version's release notes: its section of CHANGELOG.md without the
 # changesets bookkeeping (the "### Patch Changes" headings and the commit-hash
-# prefix on each entry). The GitHub release carries this text, and ewiz.app's
-# changelog page reads it from there.
+# prefix on each entry), with each entry under a heading of its own. The GitHub
+# release carries this text, and ewiz.app's changelog page reads it from there.
 # Usage: ./scripts/release-notes.sh <version>
 set -euo pipefail
 
@@ -35,4 +35,34 @@ awk '
     flush(); buf = $0; have = 1
   }
   END { flush() }
+' |
+# Each entry becomes a "### " heading, from its bold lead-in or a short first
+# sentence, with the rest as plain text below; so does a later paragraph that
+# opens with a bold lead-in sentence (a second change in the same entry).
+# Entries without either stay as paragraphs; nested lists move up a level.
+awk '
+  function out(line) { if (line == "" && last == "") return; print line; last = line }
+  # "**Lead sentence.** rest" -> H, REST
+  function lead(s) {
+    if (!match(s, /^\*\*[^*]+\*\*/) || substr(s, RLENGTH - 2, 1) !~ /[.!?]/) return 0
+    H = substr(s, 3, RLENGTH - 4); REST = substr(s, RLENGTH + 1); return 1
+  }
+  function section(h, rest) {
+    gsub(/\*\*/, "", h); sub(/[.!?]$/, "", h); sub(/^ +/, "", rest)
+    if (last != "") out("")
+    out("### " h)
+    if (rest != "") { out(""); out(rest) }
+  }
+  /^- / {
+    s = substr($0, 3)
+    if (lead(s)) section(H, REST)
+    else if (match(s, /[.!?]( |$)/) && RSTART <= 100) section(substr(s, 1, RSTART), substr(s, RSTART + 1))
+    else { if (last != "") out(""); out(s) }
+    next
+  }
+  {
+    sub(/^  /, "")
+    if (last == "" && lead($0)) section(H, REST)
+    else out($0)
+  }
 '
