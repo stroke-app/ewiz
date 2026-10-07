@@ -13,8 +13,7 @@ export const Route = createFileRoute("/donate")({
   head: () => ({
     ...seo({
       title: "Support eWiz",
-      description:
-        "eWiz is built by one independent developer. Buying a license, starring the repo or reporting a bug keeps it going.",
+      description: "Buying a license, starring the repo or reporting a bug keeps eWiz going.",
       path: "/donate",
     }),
   }),
@@ -34,7 +33,7 @@ function DonatePage() {
     {
       icon: BugIcon,
       title: "Report a bug or idea",
-      body: "Every report goes straight to the person who writes the code.",
+      body: "Bug reports and ideas decide what gets fixed and built next.",
       href: LINKS.feedback,
       cta: "Open an issue",
     },
@@ -45,8 +44,8 @@ function DonatePage() {
         <HeartIcon className="size-8 fill-rose text-rose" aria-hidden />
         <h1 className="mt-4 text-3xl font-semibold tracking-tight">Support eWiz</h1>
         <p className="mt-2 text-lg leading-relaxed text-pretty text-muted-foreground">
-          eWiz is made by one independent developer. The best way to support it is a license: it is
-          a one-time {PRICE}, and it keeps updates coming for everyone.
+          The best way to support eWiz is a license: it&apos;s a one-time {PRICE}, and it keeps
+          updates coming for everyone.
         </p>
         <Button type="button" onClick={buy} disabled={loading} className="mt-6 text-[15px]">
           Buy a license · {PRICE}
