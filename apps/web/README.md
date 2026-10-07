@@ -83,7 +83,7 @@ We use **pnpm** by default, but you can modify these scripts in [package.json](.
 
 ## License
 
-Code in this template is public domain via [Unlicense](./LICENSE). Feel free to remove or replace for your own project.
+This site is **source-available** under the [eWiz License](../LICENSE). It started from the TanStarter template, which is public domain via the [Unlicense](https://unlicense.org).
 
 ## Ecosystem
 
