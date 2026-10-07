@@ -12,7 +12,7 @@ import type { LucideIcon } from "lucide-react";
 import { PRICE } from "#/components/landing/landing-data";
 import { PricingPlans } from "#/components/pricing-plans";
 import { breadcrumbSchema, softwareApplicationSchema } from "#/components/seo/json-ld";
-import { Container, Eyebrow, SitePage } from "#/components/site/site-shell";
+import { Container, SitePage } from "#/components/site/site-shell";
 import { latestReleaseQueryOptions } from "#/lib/releases/queries";
 import { seo } from "#/lib/seo";
 
@@ -94,12 +94,12 @@ function PricingPage() {
     <SitePage>
       <Container className="pt-10">
         <div className="text-center">
-          <Eyebrow tone="success">Pricing</Eyebrow>
-          <h1 className="mx-auto mt-1 max-w-lg text-3xl font-semibold tracking-tight text-balance sm:text-[2.25rem] sm:leading-[1.15]">
-            Try it free for 30 days, then keep it for good
+          <h1 className="mx-auto max-w-lg text-3xl font-semibold tracking-tight text-balance sm:text-[2.25rem] sm:leading-[1.15]">
+            Free for 30 days, then {PRICE} once
           </h1>
           <p className="mx-auto mt-3 max-w-md text-lg leading-relaxed text-pretty text-muted-foreground">
-            One price, paid once. No subscription, and every update is included.
+            Try every feature first. If eWiz earns its place, buy it once and keep it, updates
+            included.
           </p>
         </div>
         <div className="mt-10">
@@ -107,8 +107,7 @@ function PricingPage() {
         </div>
 
         <section className="mt-24">
-          <Eyebrow>Details</Eyebrow>
-          <h2 className="mt-1 text-2xl font-semibold tracking-tight">How the license works</h2>
+          <h2 className="text-2xl font-semibold tracking-tight">How the license works</h2>
           <dl className="mt-6 grid gap-3 sm:grid-cols-2">
             {DETAILS.map(({ icon: Icon, title, body }) => (
               <div key={title} className="rounded-lg border border-border bg-surface-1 px-4 py-3">
