@@ -18,23 +18,27 @@ let server = MCPServer(awake: awake, version: version)
 // A lid hold outlives this process, so it's handed back however the session ends: the
 // client closing stdin (below) or a signal (here).
 //
-// `awake` is bound to a local first. Top-level variables in main.swift are main-actor
-// isolated under Swift 6, and reading one from the signal source's global queue tripped
-// the runtime's isolation assertion: every SIGTERM from a client ending its session
-// crashed the server (EXC_BREAKPOINT in dispatch_assert_queue) instead of releasing the
-// hold. AgentAwake is Sendable and guards itself with a lock, so the local is safe anywhere.
-let awakeForSignals = awake
-var signalSources: [DispatchSourceSignal] = []
-for sig in [SIGTERM, SIGINT, SIGHUP] {
-    signal(sig, SIG_IGN)
-    let source = DispatchSource.makeSignalSource(signal: sig, queue: .global())
-    source.setEventHandler {
-        awakeForSignals.shutdown()
-        exit(0)
+// The handler must not inherit the main actor. Top-level code in main.swift is main-actor
+// isolated, and against the macOS 26.5 SDK the release is built with, a closure written
+// there and handed to setEventHandler inherits that isolation. The runtime then checks it
+// on the signal source's global queue and traps (EXC_BREAKPOINT in dispatch_assert_queue),
+// so every client ending its session crashed the server instead of releasing the hold.
+// Newer SDKs don't, which is why local builds never showed it. An explicitly @Sendable
+// closure is nonisolated on every toolchain, and taking `awake` as a parameter keeps it off
+// main-actor globals. AgentAwake is Sendable and guards itself with a lock.
+func releaseOnSignals(_ awake: AgentAwake) -> [DispatchSourceSignal] {
+    [SIGTERM, SIGINT, SIGHUP].map { sig in
+        signal(sig, SIG_IGN)
+        let source = DispatchSource.makeSignalSource(signal: sig, queue: .global())
+        source.setEventHandler { @Sendable in
+            awake.shutdown()
+            exit(0)
+        }
+        source.resume()
+        return source
     }
-    source.resume()
-    signalSources.append(source)
 }
+let signalSources = releaseOnSignals(awake)
 
 FileHandle.standardError.write(Data("ewiz-mcp \(version) ready on stdio\n".utf8))
 
