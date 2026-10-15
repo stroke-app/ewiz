@@ -74,6 +74,11 @@ struct EWizApp: App {
                          idleSaver: idleSaver)
         }
         .menuBarExtraStyle(.window)
+        // No ⌘Q. Clicking the panel or a window makes eWiz the active app, so a ⌘Q meant for
+        // the app you were just in quit eWiz instead — silently, taking hotkeys, automations
+        // and keep-awake with it until it was next opened by hand. The panel's power button
+        // is the way out.
+        .commands { CommandGroup(replacing: .appTermination) {} }
 
         // Set-once controls live here so the menu dropdown stays focused on daily use.
         Window("eWiz Settings", id: "settings") {
