@@ -339,6 +339,24 @@ final class Daemon: @unchecked Sendable {
             releaseMemoryIfSealed()
             return status(ok: cut, message: "sleep handled")
 
+        case .scheduleWake(let seconds):
+            // At least 5s, or the wake can land before the Mac has finished going to sleep;
+            // at most a day, which is past anything the app offers.
+            let lead = min(86_400, max(5, seconds))
+            guard let stamp = ScheduledWake.book(at: Date().addingTimeInterval(Double(lead))) else {
+                err("could not book a wake \(lead)s out")
+                return status(ok: false, message: "could not book a wake")
+            }
+            log("wake booked for \(stamp)")
+            return status(ok: true, message: stamp)
+
+        case .cancelWake(let stamp):
+            guard ScheduledWake.isStamp(stamp) else {
+                return status(ok: false, message: "not a wake stamp")
+            }
+            ScheduledWake.cancel(stamp)
+            return status(ok: true, message: "wake cancelled")
+
         case .calibrateToFull(let on):
             var cfg = ConfigStore.load()
             cfg.calibrateToFull = on

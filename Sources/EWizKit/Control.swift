@@ -94,6 +94,13 @@ public enum ControlRequest: Codable, Sendable {
     /// legacy `/usr/local/bin` install can take a new build without an administrator prompt.
     /// Honoured only when both binaries carry the same Developer ID team — see `HelperUpdate`.
     case installUpdate(path: String)
+    /// Book a wake this many seconds from now. A successful response carries the booking's
+    /// `pmset` stamp in `message`, which is the only handle `pmset` gives for cancelling it.
+    /// Lid-close radios use it to switch off after a delay: by then the Mac is asleep, and
+    /// only a wake gets the app running again to do it.
+    case scheduleWake(seconds: Int)
+    /// Cancel a wake booked by `scheduleWake`, by the stamp it answered with.
+    case cancelWake(stamp: String)
 }
 
 public struct ControlResponse: Codable, Sendable {
@@ -231,10 +238,13 @@ public enum ControlProtocol {
     ///       `SaveMode` the old daemon has never heard of, and an unknown enum case fails
     ///       the whole request decode — the daemon wouldn't apply a weaker version of the
     ///       mode, it would drop the request on the floor.
+    ///   v8: scheduleWake / cancelWake, for switching the lid-close radios off after a delay.
+    ///       An older daemon answers "unrecognized request" and the app switches them off
+    ///       at sleep instead, as it always did.
     // Note: the dim-on-battery toggle is a plain additive pmset write — an older
     // helper simply ignores an unknown toggle, so it doesn't warrant a version
     // bump or an "outdated helper" warning.
-    public static let version = 7
+    public static let version = 8
 }
 
 public enum HelperBuild {
@@ -368,7 +378,10 @@ public enum HelperBuild {
     ///        doing rather than what the daemon intended, and is rewritten every tick and
     ///        again after each power change: macOS repaints it without touching ACLC, so
     ///        the readback said green while the connector showed amber.
-    public static let version = 26
+    ///   v27: books and cancels wakes for the app (`scheduleWake`, `cancelWake`). Turning
+    ///        Wi-Fi and Bluetooth off a while after the lid closes needs the Mac awake at
+    ///        that moment, and only root can ask `pmset` for a wake.
+    public static let version = 27
 }
 
 public enum ControlError: Error, CustomStringConvertible {

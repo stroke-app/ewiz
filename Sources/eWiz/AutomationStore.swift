@@ -23,6 +23,23 @@ final class AutomationStore: ObservableObject {
     @Published var restoreOnWake: Bool {
         didSet { defaults.set(restoreOnWake, forKey: Keys.restore) }
     }
+    /// How long the lid stays shut before the radios go off, in seconds. 0 is as the Mac
+    /// sleeps. Anything longer needs the helper to wake the Mac when it's up — see
+    /// `armRadioCut` — so a lid opened again inside it never loses Wi-Fi or Bluetooth.
+    @Published var radioOffDelay: Int {
+        didSet { defaults.set(radioOffDelay, forKey: Keys.radioDelay) }
+    }
+
+    static let radioOffDelayChoices = [0, 10, 30, 60, 300, 900, 1800]
+
+    static func radioOffDelayLabel(_ seconds: Int) -> String {
+        switch seconds {
+        case 0: return "Immediately"
+        case ..<60: return "After \(seconds) seconds"
+        case 60: return "After 1 minute"
+        default: return "After \(seconds / 60) minutes"
+        }
+    }
 
     @Published private(set) var isLidClosed = false
     @Published private(set) var externalDisplayCount = 0
@@ -44,10 +61,19 @@ final class AutomationStore: ObservableObject {
     private var wifiWasOn = false
     private var bluetoothWasOn = false
 
+    // A delayed switch-off waiting for its moment: when it's due, the wake booked for it,
+    // the timer that runs it if the app is already up, and the activity that keeps App Nap
+    // from sitting on that timer.
+    private var radioCutDue: Date?
+    private var radioWakeStamp: String?
+    private var radioCutTask: Task<Void, Never>?
+    private var radioCutActivity: NSObjectProtocol?
+
     private enum Keys {
         static let wifi = "automation.wifiOffOnLidClose"
         static let bt = "automation.bluetoothOffOnLidClose"
         static let restore = "automation.restoreOnWake"
+        static let radioDelay = "automation.radioOffDelay"
         // What the radio preferences were before Sealed Sleep took them over.
         static let sealedRadioRestore = "automation.sealedRadioRestore"
         // Pending lid session (persisted so it survives the sleep).
@@ -59,11 +85,21 @@ final class AutomationStore: ObservableObject {
         wifiOffOnLidClose = defaults.bool(forKey: Keys.wifi)
         bluetoothOffOnLidClose = defaults.bool(forKey: Keys.bt)
         restoreOnWake = defaults.object(forKey: Keys.restore) as? Bool ?? true
+        radioOffDelay = defaults.integer(forKey: Keys.radioDelay)
         lastLidSession = LidSessionStore.recent(limit: 1).first
+        // A close still pending with the lid open is one whose opening this app never saw
+        // (it wasn't running). A session closed only when the next one starts would span both.
+        if !LidMonitor.isClamshellClosed() {
+            defaults.removeObject(forKey: Keys.pendingCloseAt)
+            defaults.removeObject(forKey: Keys.pendingCloseCharge)
+        }
 
-        lid.onWillSleep = { [weak self] clamshellClosed in
+        lid.onWillSleep = { [weak self] clamshellClosed, done in
             // assumeIsolated traps on macOS 26 when the IOKit callback isn't on the main actor's executor.
-            Task { @MainActor in self?.handleWillSleep(clamshellClosed) }
+            Task { @MainActor in
+                self?.handleWillSleep(clamshellClosed)
+                done()
+            }
         }
         lid.onDidWake = { [weak self] in
             Task { @MainActor in self?.handleWake() }
@@ -89,6 +125,9 @@ final class AutomationStore: ObservableObject {
         if closed != isLidClosed { isLidClosed = closed }
         if externals != externalDisplayCount { externalDisplayCount = externals }
         updateClamshellSaver()
+        // The wake notification is one way to notice a due switch-off or an opened lid;
+        // this poll is the other, for the times that notification doesn't come.
+        if closed { radioCutIfDue() } else { lidOpened() }
     }
 
     // MARK: - Clamshell display saver
@@ -178,24 +217,118 @@ final class AutomationStore: ObservableObject {
     private func handleLidClose(_ clamshellClosed: Bool) {
         guard clamshellClosed else { return }
 
-        // Record the charge at close so we can measure the drop on wake.
-        defaults.set(Date(), forKey: Keys.pendingCloseAt)
-        defaults.set(BatteryMonitor.read().percentage, forKey: Keys.pendingCloseCharge)
-
-        if wifiOffOnLidClose {
-            wifiWasOn = RadioControl.isWiFiOn
-            if wifiWasOn { RadioControl.setWiFi(false) }
+        // Record the charge at close so we can measure the drop on wake. Only on the first
+        // sleep of a close: the Mac goes back down after every wake inside it, and those
+        // aren't new closes.
+        if defaults.object(forKey: Keys.pendingCloseAt) == nil {
+            defaults.set(Date(), forKey: Keys.pendingCloseAt)
+            defaults.set(BatteryMonitor.read().percentage, forKey: Keys.pendingCloseCharge)
         }
-        if bluetoothOffOnLidClose {
-            bluetoothWasOn = RadioControl.isBluetoothOn
-            if bluetoothWasOn { RadioControl.setBluetooth(false) }
+
+        let wantWifi = wifiOffOnLidClose && RadioControl.isWiFiOn
+        let wantBT = bluetoothOffOnLidClose && RadioControl.isBluetoothOn
+        guard wantWifi || wantBT else { return }
+
+        if let due = radioCutDue {
+            // Already counting down from the first sleep of this close. Past due means the
+            // wake booked for it came and went without the app getting to run.
+            if Date() >= due { disarmRadioCut(); cutRadios() }
+            return
+        }
+        // Docked, a booked wake would light the monitor on the desk, so the delay is for a
+        // laptop shut on its own.
+        if radioOffDelay > 0, !Self.hasExternalDisplay(), armRadioCut() { return }
+        cutRadios()
+    }
+
+    /// Switch off the radios the settings name. Records a radio as having been on only when
+    /// this actually turns it off: one an earlier sleep in the same close already switched off
+    /// reads as off now, and still has to come back when the lid opens.
+    private func cutRadios() {
+        if wifiOffOnLidClose, RadioControl.isWiFiOn {
+            wifiWasOn = true
+            RadioControl.setWiFi(false)
+        }
+        if bluetoothOffOnLidClose, RadioControl.isBluetoothOn {
+            bluetoothWasOn = true
+            RadioControl.setBluetooth(false)
         }
     }
 
+    // MARK: - Delayed switch-off
+
+    /// Book a wake for when the delay is up, and leave the radios on until then. False when
+    /// the helper can't book one (not installed, or too old to know the request); the caller
+    /// then switches off at once, because a close that never wakes would otherwise keep the
+    /// radios on all night — the opposite of what was asked for.
+    private func armRadioCut() -> Bool {
+        let delay = radioOffDelay
+        guard let r = try? ControlClient.send(.scheduleWake(seconds: delay)), r.ok,
+              let stamp = r.message else { return false }
+        radioWakeStamp = stamp
+        radioCutDue = Date().addingTimeInterval(TimeInterval(delay))
+        // ContinuousClock counts time asleep, so this fires as soon as the app runs past the
+        // due time — on the booked wake, or on any other.
+        radioCutTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(delay))
+            guard !Task.isCancelled else { return }
+            self?.radioCutIfDue()
+        }
+        radioCutActivity = ProcessInfo.processInfo.beginActivity(
+            options: .userInitiatedAllowingIdleSystemSleep,
+            reason: "Switching Wi-Fi and Bluetooth off once the lid has been shut long enough")
+        return true
+    }
+
+    /// The delay is up: switch off if the lid is still shut on its own. Opened, or docked
+    /// since, and the countdown is simply dropped.
+    private func radioCutIfDue() {
+        guard let due = radioCutDue, Date() >= due else { return }
+        disarmRadioCut()
+        guard LidMonitor.isClamshellClosed(), !Self.hasExternalDisplay() else { return }
+        cutRadios()
+    }
+
+    private func disarmRadioCut() {
+        radioCutTask?.cancel()
+        radioCutTask = nil
+        radioCutDue = nil
+        if let activity = radioCutActivity {
+            ProcessInfo.processInfo.endActivity(activity)
+            radioCutActivity = nil
+        }
+        // Cancelled even when it has fired: `pmset` shrugs at a past stamp, and an unfired
+        // one would wake the Mac for nothing.
+        if let stamp = radioWakeStamp {
+            radioWakeStamp = nil
+            Task.detached { _ = try? ControlClient.send(.cancelWake(stamp: stamp)) }
+        }
+    }
+
+    // MARK: - Wake
+
     private func handleWake() {
         pollLidState()        // reflect "lid open" immediately
+        // Woken inside a close — the wake booked for a delayed switch-off, or a maintenance
+        // wake — rather than by the lid opening. Nothing is restored and no session ends:
+        // switching the radios back on with the lid shut undoes what the close is for.
+        // `pollLidState` above has already run a due switch-off.
+        guard !LidMonitor.isClamshellClosed() || Self.hasExternalDisplay() else { return }
+        lidOpened()
+    }
+
+    /// The lid is open (or the Mac is docked and awake): end the session, drop any countdown
+    /// and put back what the close switched off. Safe to call on every poll — each part runs
+    /// once per close.
+    private func lidOpened() {
         completeLidSession()
-        if restoreOnWake { restoreRadios() }
+        if radioCutDue != nil { disarmRadioCut() }
+        if restoreOnWake {
+            restoreRadios()
+        } else {
+            wifiWasOn = false
+            bluetoothWasOn = false
+        }
     }
 
     private func completeLidSession() {

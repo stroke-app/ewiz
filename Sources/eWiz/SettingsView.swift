@@ -968,6 +968,26 @@ struct SettingsView: View {
                     divider
                     toggleRow("Turn off Bluetooth", isOn: $automation.bluetoothOffOnLidClose)
                     divider
+                    HStack(spacing: 10) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Switch off").font(.callout)
+                            Text("Wait, and a lid you open again soon keeps its Wi-Fi and Bluetooth. When the time is up, eWiz wakes the Mac for a moment to switch them off.")
+                                .font(.caption).foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        Picker("Switch off", selection: $automation.radioOffDelay) {
+                            ForEach(AutomationStore.radioOffDelayChoices, id: \.self) {
+                                Text(AutomationStore.radioOffDelayLabel($0)).tag($0)
+                            }
+                        }
+                        .labelsHidden()
+                        .fixedSize()
+                    }
+                    .padding(.horizontal, rowInset).padding(.vertical, DS.Space.s + 2)
+                    .frame(minHeight: 34)
+                    .disabled(!automation.wifiOffOnLidClose && !automation.bluetoothOffOnLidClose)
+                    divider
                     toggleRow("Restore Wi-Fi & Bluetooth on wake", isOn: $automation.restoreOnWake)
                     if chargeLimit.sealedSleep {
                         divider

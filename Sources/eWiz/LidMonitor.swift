@@ -12,8 +12,10 @@ private let kIOMessageSystemHasPoweredOn: UInt32 = 0xE000_0300
 /// Observes sleep/wake via IOKit and reports lid-close (clamshell) sleeps. macOS
 /// sleeps on lid close, so "lid closed" is detected at the will-sleep moment.
 final class LidMonitor {
-    /// Called just before sleep. `clamshellClosed` is true when the lid is shut.
-    var onWillSleep: ((_ clamshellClosed: Bool) -> Void)?
+    /// Called just before sleep. `clamshellClosed` is true when the lid is shut. Sleep waits
+    /// until `done` is called — macOS stops waiting after 30 seconds — so whatever has to land
+    /// before the Mac goes down can finish on the main actor first.
+    var onWillSleep: ((_ clamshellClosed: Bool, _ done: @escaping @Sendable () -> Void) -> Void)?
     var onDidWake: (() -> Void)?
 
     private var rootPort: io_connect_t = 0
@@ -62,9 +64,13 @@ final class LidMonitor {
 
         case UInt32(kIOMessageSystemWillSleep):
             let closed = Self.isClamshellClosed()
-            onWillSleep?(closed)
-            // Must acknowledge so sleep can proceed.
-            IOAllowPowerChange(rootPort, Int(bitPattern: argument))
+            // Must acknowledge so sleep can proceed — but only once the handler is through.
+            // Acknowledging straight away let sleep start before the handler's main-actor
+            // task had run, so the radios went off whenever that task got its turn, which
+            // could be the next wake.
+            let port = rootPort, token = Int(bitPattern: argument)
+            let allow: @Sendable () -> Void = { IOAllowPowerChange(port, token) }
+            if let onWillSleep { onWillSleep(closed, allow) } else { allow() }
 
         case UInt32(kIOMessageSystemHasPoweredOn):
             onDidWake?()

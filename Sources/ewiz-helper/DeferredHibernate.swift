@@ -19,25 +19,13 @@ import EWizKit
 /// dark wake of a few seconds; the saving is every hour after it.
 enum DeferredHibernate {
 
-    /// `pmset`'s own date format. It parses what it prints, and this is what it prints.
-    private static let stampFormat: DateFormatter = {
-        let f = DateFormatter()
-        f.locale = Locale(identifier: "en_US_POSIX")
-        f.timeZone = .current
-        f.dateFormat = "MM/dd/yyyy HH:mm:ss"
-        return f
-    }()
-
-    /// Book the wake. Returns the stamp to cancel it by, which is the only handle `pmset`
-    /// gives you — cancelling takes the same string that scheduled it, to the second.
+    /// Book the wake. Returns the stamp to cancel it by (see `ScheduledWake`).
     static func schedule(after minutes: Int) -> String? {
-        let stamp = stampFormat.string(from: Date().addingTimeInterval(Double(minutes) * 60))
-        guard Shell.run("/usr/bin/pmset", ["schedule", "wake", stamp]) != nil else { return nil }
-        return stamp
+        ScheduledWake.book(at: Date().addingTimeInterval(Double(minutes) * 60))
     }
 
     static func cancel(_ stamp: String) {
-        _ = Shell.run("/usr/bin/pmset", ["schedule", "cancel", "wake", stamp])
+        ScheduledWake.cancel(stamp)
     }
 
     /// Switch memory off and go straight back down.
