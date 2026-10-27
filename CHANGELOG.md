@@ -1,5 +1,40 @@
 # ewiz
 
+## 0.19.0
+
+### Minor Changes
+
+- 82c5569: **Wi-Fi and Bluetooth can wait before switching off when the lid closes.** Settings ›
+  When the lid closes › Switch off: immediately, as before, or after 10 seconds up to 30
+  minutes. Open the lid again inside that time and your connections, AirPods and calls
+  included, are never touched. When the time is up and the lid is still shut, eWiz wakes the
+  Mac for a moment to switch them off. A docked Mac switches off as it sleeps, as before,
+  because a wake would light the monitor on the desk. This needs the updated helper, which
+  installs itself; with an older one the radios switch off at sleep as they always have.
+
+  Lid-close radios are also more dependable. Sleep now waits for them to switch off; it used
+  to start straight away, so they could go off late, sometimes only at the next wake. A wake
+  with the lid still shut no longer turns them back on inside the closed lid or logs a lid
+  session. And a second sleep in the same close no longer forgets they were on, which could
+  leave them off when you opened the lid.
+
+### Patch Changes
+
+- 1e40a7c: **The helper no longer crashes when the app stops waiting for it, and a held charge stays
+  held across helper restarts.** When the helper was busy (a sleep transition, a settings
+  write) the app gave up on its request after a few seconds and closed the connection. The
+  helper's reply to that closed connection raised a broken-pipe signal that killed it; launchd
+  started it again, but the restarted helper had forgotten where "don't charge" had parked the
+  battery and let it charge on to the limit, and the app showed "The helper installed but
+  isn't responding" beside "Installed and running" until it was relaunched. The helper now
+  survives a client that hangs up, remembers the hold level on disk, the app waits longer for a
+  freshly installed helper to come up, and the error clears as soon as the helper answers.
+- a5dd72e: **The menu-bar battery no longer gets stuck showing a pause after you unplug.** Unplugging
+  while the charge was held plays a short animation of the pause mark dropping away. If the
+  lid had just opened or the displays were changing, that animation could stop on its first
+  frame and stay there, so an unplugged battery kept a pause mark until the next plug-in. It
+  now always finishes.
+
 ## 0.18.8
 
 ### Patch Changes
