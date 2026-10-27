@@ -381,7 +381,15 @@ public enum HelperBuild {
     ///   v27: books and cancels wakes for the app (`scheduleWake`, `cancelWake`). Turning
     ///        Wi-Fi and Bluetooth off a while after the lid closes needs the Mac awake at
     ///        that moment, and only root can ask `pmset` for a wake.
-    public static let version = 27
+    ///   v28: the daemon no longer dies answering a client that gave up. The app closes its
+    ///        socket after a few seconds; the reply written to it raised SIGPIPE, whose
+    ///        default action ended the process — launchd recorded "Broken pipe" as the
+    ///        last terminating signal. launchd restarted it, but the restart forgot the
+    ///        hold anchor and let a held battery charge on to the limit, and the app
+    ///        reported a helper that "isn't responding". v28 ignores SIGPIPE, sets
+    ///        SO_NOSIGPIPE on every connection, finishes partial writes, and keeps the
+    ///        hold anchor on disk across restarts.
+    public static let version = 28
 }
 
 public enum ControlError: Error, CustomStringConvertible {
@@ -407,9 +415,18 @@ public enum ControlClient {
         defer { close(fd) }
 
         // Bound send/recv so a wedged daemon can't hang the caller (some call synchronously).
-        var tv = timeval(tv_sec: 5, tv_usec: 0)
+        // Ten seconds, not five: every request is answered under the daemon's lock, and a
+        // tick that forks pmset, reads the sensors and asks PowerUIAgent for the limit —
+        // or a sleep transition — holds that lock for seconds. Giving up sooner made a
+        // busy daemon read as a missing one.
+        var tv = timeval(tv_sec: 10, tv_usec: 0)
         setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &tv, socklen_t(MemoryLayout<timeval>.size))
         setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &tv, socklen_t(MemoryLayout<timeval>.size))
+        // If the daemon is gone by the time the request is written (it was just replaced,
+        // or had crashed with connections still queued), the write must fail, not raise
+        // SIGPIPE — which no process here handles, and which would take the app down.
+        var noSigpipe: Int32 = 1
+        setsockopt(fd, SOL_SOCKET, SO_NOSIGPIPE, &noSigpipe, socklen_t(MemoryLayout<Int32>.size))
 
         var addr = sockaddr_un()
         addr.sun_family = sa_family_t(AF_UNIX)

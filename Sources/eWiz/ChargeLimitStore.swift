@@ -304,7 +304,13 @@ final class ChargeLimitStore: ObservableObject {
     /// This replaced a flat two-second sleep, which had to be either optimistic or slow:
     /// launchd still has to start the helper and the helper binds its socket before it
     /// serves, so a fixed wait raced the daemon on a busy Mac and idled on a quick one.
-    private nonisolated func resyncAfterInstall(attempts: Int = 20) async {
+    ///
+    /// Sixty tries at half a second: the installer waits up to five seconds for the old
+    /// job to unload, launchd holds a job that ran for under ten seconds back before
+    /// relaunching it, and the new daemon evicts legacy jobs and re-seals sleep before it
+    /// listens. Twenty tries ran out inside that on a busy Mac, and a daemon that came up
+    /// a moment later was reported as "isn't responding" for the rest of the session.
+    private nonisolated func resyncAfterInstall(attempts: Int = 60) async {
         var answered = false
         for _ in 0..<attempts {
             try? await Task.sleep(nanoseconds: 500_000_000)
@@ -638,6 +644,14 @@ final class ChargeLimitStore: ObservableObject {
         set(\.daemonAvailable, true)
         set(\.daemonProtocolVersion, r.daemonProtocolVersion)
         set(\.daemonBuildVersion, r.daemonBuildVersion)
+        // An answer from a current daemon settles any install complaint. The "isn't
+        // responding" message in particular is written when a freshly installed daemon
+        // takes longer to come up than the resync waited, and it used to sit beside
+        // "Installed and running" until the app was relaunched.
+        if helperInstallFailure != nil, !daemonOutdated {
+            helperInstallFailure = nil
+            autoInstallDeclined = false
+        }
         autoInstallHelperIfNeeded(missing: false)
         set(\.currentConfig, r.config)
         set(\.schemeDescription, r.schemeDescription)

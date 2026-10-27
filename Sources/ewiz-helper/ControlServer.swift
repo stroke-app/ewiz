@@ -131,6 +131,7 @@ final class ControlServer {
         var tv = timeval(tv_sec: Int(timeout), tv_usec: 0)
         setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &tv, socklen_t(MemoryLayout<timeval>.size))
         setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &tv, socklen_t(MemoryLayout<timeval>.size))
+        Self.disableSigpipe(fd)
 
         var addr = sockaddr_un()
         addr.sun_family = sa_family_t(AF_UNIX)
@@ -204,6 +205,12 @@ final class ControlServer {
             // and with it every other client, indefinitely. The app writes its request the
             // moment it connects, so a short read bound costs nothing.
             setTimeouts(client, seconds: 2)
+            // The app gives up on a slow answer after a few seconds and closes its end. A
+            // reply written to that socket raised SIGPIPE, and SIGPIPE's default action
+            // killed the whole daemon — launchd recorded "last terminating signal: Broken
+            // pipe" — taking the charge hold, a deferral in progress and the sealed-sleep
+            // snapshot with it. With this set the write fails with EPIPE and nothing else.
+            disableSigpipe(client)
             guard let request = readLine(client) else { close(client); continue }
             if request == probeLine {
                 _ = "\"pong\"\n".withCString { write(client, $0, strlen($0)) }
@@ -230,6 +237,12 @@ final class ControlServer {
         var tv = timeval(tv_sec: seconds, tv_usec: 0)
         setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &tv, socklen_t(MemoryLayout<timeval>.size))
         setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &tv, socklen_t(MemoryLayout<timeval>.size))
+    }
+
+    /// Writes to a peer that has hung up fail with EPIPE instead of raising SIGPIPE.
+    private static func disableSigpipe(_ fd: Int32) {
+        var on: Int32 = 1
+        setsockopt(fd, SOL_SOCKET, SO_NOSIGPIPE, &on, socklen_t(MemoryLayout<Int32>.size))
     }
 
     /// Whether the process on the other end may command this daemon.
@@ -267,8 +280,18 @@ final class ControlServer {
 
         guard var out = try? JSONEncoder().encode(resp) else { return }
         out.append(0x0A)
-        _ = out.withUnsafeBytes { raw -> Int in
-            write(fd, raw.baseAddress, raw.count)
+        // A status response runs to a few kilobytes, and a single write may send only part
+        // of it. The client reads to the newline, so a short write left it waiting on a
+        // reply that never finished.
+        out.withUnsafeBytes { raw in
+            guard var cursor = raw.baseAddress else { return }
+            var left = raw.count
+            while left > 0 {
+                let n = write(fd, cursor, left)
+                if n <= 0 { return }   // peer gone (EPIPE) or send timeout; nothing to do
+                cursor += n
+                left -= n
+            }
         }
     }
 

@@ -90,17 +90,37 @@ public final class NativeChargeLimit {
 /// forgot it owned the limit would leave the Mac stopping at 80% after the user had
 /// switched eWiz's limit off. And one the user set in System Settings is theirs.
 public enum NativeChargeLimitOwnership {
-    static let file = EWizPaths.configDirectory.appendingPathComponent("native-limit")
+    public static let file = EWizPaths.configDirectory.appendingPathComponent("native-limit")
 
-    public static func load() -> Int? {
+    public static func load(from file: URL = file) -> Int? { PersistedLevel.load(file) }
+    public static func save(_ limit: Int?, to file: URL = file) { PersistedLevel.save(limit, to: file) }
+}
+
+/// The level "don't charge" was thrown at, kept across daemon restarts.
+///
+/// The hold's whole meaning is "leave the battery where it was when I asked", and the
+/// daemon restarts on every helper update and every crash. One that came back with no
+/// anchor fell through to the charge limit, so a battery parked at 80% charged on to the
+/// 85% limit with the switch still on. The anchor lives beside the native-limit ownership,
+/// in the same root-owned directory, so a restarted daemon picks up exactly where it was.
+public enum HoldAnchorStore {
+    public static let file = EWizPaths.configDirectory.appendingPathComponent("hold-anchor")
+
+    public static func load(from file: URL = file) -> Int? { PersistedLevel.load(file) }
+    public static func save(_ level: Int?, to file: URL = file) { PersistedLevel.save(level, to: file) }
+}
+
+/// One optional whole number on disk: the file holds it, or doesn't exist.
+enum PersistedLevel {
+    static func load(_ file: URL) -> Int? {
         guard let s = try? String(contentsOf: file, encoding: .utf8) else { return nil }
         return Int(s.trimmingCharacters(in: .whitespacesAndNewlines))
     }
 
-    public static func save(_ limit: Int?) {
-        guard let limit else { try? FileManager.default.removeItem(at: file); return }
-        try? FileManager.default.createDirectory(at: EWizPaths.configDirectory,
+    static func save(_ value: Int?, to file: URL) {
+        guard let value else { try? FileManager.default.removeItem(at: file); return }
+        try? FileManager.default.createDirectory(at: file.deletingLastPathComponent(),
                                                  withIntermediateDirectories: true)
-        try? "\(limit)\n".write(to: file, atomically: true, encoding: .utf8)
+        try? "\(value)\n".write(to: file, atomically: true, encoding: .utf8)
     }
 }

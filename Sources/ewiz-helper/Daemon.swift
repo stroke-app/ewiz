@@ -69,9 +69,12 @@ final class Daemon: @unchecked Sendable {
     private var deferredHibernateDue: Date?
     private var handedOverToHibernation = false
 
-    /// Level the adapter hold is parked at, remembered from the tick that armed it, and
-    /// whether the adapter is currently cut to defend it. Only used on Macs with no
-    /// charge-inhibit key, where the adapter is the one lever there is.
+    /// Level the hold is parked at, remembered from the tick that armed it, and whether
+    /// the adapter is currently cut to defend it. Only used on Macs with no charge-inhibit
+    /// key, where macOS's limit or the adapter is the lever. On disk as well as here
+    /// (`HoldAnchorStore`): the daemon restarts on every update and every crash, and a
+    /// restarted daemon that had forgotten the anchor fell back to the charge limit — so
+    /// a battery held at 80% charged on to 85% with "don't charge" still switched on.
     private var holdAnchor: Int?
     private var adapterHolding = false
     /// The mark `adapterHolding` was worked out against; see `adapterHoldWanted`.
@@ -166,6 +169,8 @@ final class Daemon: @unchecked Sendable {
         // the sleep/wake toggles, Low Power Mode and Always Active all work without it.
         chargeControlSupported = charge.isChargingControlSupported
         if !chargeControlSupported {
+            holdAnchor = HoldAnchorStore.load()
+            if let holdAnchor { log("hold: resuming at \(holdAnchor)% from before the restart") }
             let native = NativeChargeLimit()
             if native.isSupported {
                 nativeLimit = native
@@ -184,6 +189,10 @@ final class Daemon: @unchecked Sendable {
         reassertSealedSleepIfNeeded()
 
         installSignalHandlers()
+        // Belt and braces with SO_NOSIGPIPE on every socket the daemon writes to: a write
+        // to a peer that has hung up must fail with EPIPE, never deliver a signal whose
+        // default action is to end the process.
+        signal(SIGPIPE, SIG_IGN)
 
         let server = ControlServer { [weak self] req in
             self?.handle(req) ?? Self.failureResponse()
@@ -1147,6 +1156,7 @@ final class Daemon: @unchecked Sendable {
         if cfg.holdCharge || cfg.pauseUntil != nil {
             guard holdAnchor == nil, snap.onExternalPower else { return }
             holdAnchor = snap.percentage
+            HoldAnchorStore.save(snap.percentage)
             if let native = nativeLimit {
                 let step = NativeChargeLimit.target(holdAnchor: snap.percentage, limit: nil,
                                                     in: native.steps) ?? 100
@@ -1158,6 +1168,7 @@ final class Daemon: @unchecked Sendable {
             }
         } else if holdAnchor != nil {
             holdAnchor = nil
+            HoldAnchorStore.save(nil)
             log("hold: released")
         }
     }
