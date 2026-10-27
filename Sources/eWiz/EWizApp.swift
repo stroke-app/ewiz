@@ -165,11 +165,18 @@ struct MenuBarLabel: View {
     @State private var lastCharging: (state: ChargeDisplayState, until: Date)?
     /// A one-off connect/disconnect animation, and how far through it we are.
     @State private var transition: IconTransition?
+    /// Ends the transition if the glyph's own clock doesn't. That clock is a `.task` on
+    /// the icon, and a status-item label's tasks get cancelled or never start around a
+    /// lid open or a display change; the transition then stayed set, frozen on its first
+    /// frame — a full pause mark drawn over an unplugged battery until the next plug.
+    @State private var transitionTimeout: Task<Void, Never>?
 
     /// How long a finished charge may trail the last charging reading and still flash.
     private static let completionGrace: TimeInterval = 120
     /// How long the check mark shows.
     private static let celebrationLength: UInt64 = 3_000_000_000
+    /// Latest a transition may still be showing: it plays in about 0.3 s.
+    private static let transitionDeadline: UInt64 = 1_000_000_000
 
     var body: some View {
         let snap = battery.snapshot
@@ -320,15 +327,26 @@ struct MenuBarLabel: View {
             // Unplugged: whatever mark was showing shrinks away. `old` is what was
             // showing; the snapshot that reports the unplug has already lost it.
             switch ChargeDisplay.steadyMark(for: old, percentage: display.input.percentage) {
-            case .bolt:        transition = .markOutBolt
-            case .pause, .check: transition = .markOutPause
+            case .bolt:        play(.markOutBolt)
+            case .pause, .check: play(.markOutPause)
             case .none:        break
             }
         } else if finished || !old.sameKind(as: new) {
             // Something started — plugged in, charging began or stopped, a hold switched,
             // a charge finished — and the mark springs in so the menu bar is seen to
             // notice. A target moving (the limit slider) is not that.
-            transition = .markIn
+            play(.markIn)
+        }
+    }
+
+    /// Start a transition, with a deadline of its own. See `transitionTimeout`.
+    private func play(_ next: IconTransition) {
+        transition = next
+        transitionTimeout?.cancel()
+        transitionTimeout = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: Self.transitionDeadline)
+            guard !Task.isCancelled else { return }
+            transition = nil
         }
     }
 
