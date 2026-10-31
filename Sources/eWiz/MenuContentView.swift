@@ -16,14 +16,16 @@ struct MenuContentView: View {
     @EnvironmentObject private var idleSaver: IdleSaverStore
     @EnvironmentObject private var settings: AppSettings
     @Environment(\.openWindow) private var openWindow
-    @State private var installError: String?
     /// A performance mode waiting on confirmation — see `requestMode`.
     @State private var pendingPerformanceMode: SaveMode?
     // Deliberately an under-estimate. `MenuBarExtra(.window)` sizes its window to this
     // frame, and a window taller than the panel drawn in it leaves a transparent band above
     // the content — which is exactly what a too-generous starting guess produced. Growing
     // into the measured height on the first layout pass is invisible; shrinking is not.
-    @State private var contentHeight: CGFloat = 320
+    @State private var contentHeight: CGFloat = Self.lastContentHeight
+    /// The height the panel last measured. The panel is rebuilt on every open, so without
+    /// this each one would start at the under-estimate above and visibly grow into place.
+    private static var lastContentHeight: CGFloat = 320
 
     // The system's own menu-bar panels (Bluetooth, Wi-Fi, Sound) are ~320pt wide with a
     // 16pt margin. Matching them is most of what makes a panel read as part of the menu
@@ -102,7 +104,10 @@ struct MenuContentView: View {
         // appears. No system menu-bar panel does that, so the ring reads as a rendering
         // artifact rather than as focus. Drop it panel-wide.
         .focusEffectDisabled()
-        .onPreferenceChange(ContentHeightKey.self) { contentHeight = $0 }
+        .onPreferenceChange(ContentHeightKey.self) {
+            contentHeight = $0
+            Self.lastContentHeight = $0
+        }
         // Re-sync every time the menu opens so it never shows stale state.
         .onAppear {
             battery.refresh()
@@ -604,7 +609,7 @@ struct MenuContentView: View {
                         chargeLimit.clearAutoInstallRefusal()
                         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { chargeLimit.refresh() }
                     } else {
-                        installError = result.message
+                        chargeLimit.recordInstallFailure(result.message)
                     }
                 }
                 .controlSize(.small)
@@ -613,7 +618,7 @@ struct MenuContentView: View {
             Text("Or run scripts/install-helper.sh")
                 .font(DS.Typo.note).foregroundStyle(.secondary)
         }
-        if let installError {
+        if let installError = chargeLimit.helperInstallFailure {
             Text(installError).font(DS.Typo.note).foregroundStyle(.red).lineLimit(3)
         }
     }

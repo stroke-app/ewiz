@@ -338,6 +338,13 @@ final class ChargeLimitStore: ObservableObject {
         helperInstallFailure = nil
     }
 
+    /// A failed install from a button. Kept here rather than in the view: the menu panel is
+    /// rebuilt on every open, and the admin prompt closes it, so a view's own state would
+    /// lose the message before anyone could read it.
+    func recordInstallFailure(_ message: String) {
+        helperInstallFailure = message
+    }
+
     /// Uninstalling is an explicit no, and has to be recorded as one.
     ///
     /// Otherwise the very next status poll finds no daemon, decides that's a fresh machine
