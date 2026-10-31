@@ -272,7 +272,7 @@ struct MenuBarLabel: View {
             guard was != isNow else { return }
             // The helper cutting the adapter to drain or hold flips this too, with the
             // cable still in. That isn't an unplug and shouldn't sound like one.
-            guard isNow || !chargeLimit.discharging else { return }
+            guard isNow || !(chargeLimit.discharging && snap.isExternalConnected) else { return }
             if settings.hapticsEnabled {
                 isNow ? HapticFeedback.chargeConnected() : HapticFeedback.chargeDisconnected()
             }
@@ -287,6 +287,13 @@ struct MenuBarLabel: View {
                          percentage: snap.percentage,
                          plugging: isNow,
                          allowMotion: settings.motionAllowed)
+        }
+        // A real plug or unplug changes what the helper is doing (hold, drain, pause), and
+        // its state otherwise waits for the 30 s poll — the icon lagged up to ~45 s behind
+        // the cable. Ask now, and again once the helper has reacted.
+        .onChange(of: snap.isExternalConnected) { _, _ in
+            chargeLimit.refresh()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) { chargeLimit.refresh() }
         }
         // The status item exists from launch, so this is where the automation
         // rules start watching — they must run whether or not the menu is opened.

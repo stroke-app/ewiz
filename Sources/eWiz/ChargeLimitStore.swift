@@ -486,7 +486,10 @@ final class ChargeLimitStore: ObservableObject {
             usesNativeLimit: !nativeLimitSteps.isEmpty,
             holdCharge: holdCharge,
             pauseReason: pauseReason,
-            discharging: discharging,
+            // The daemon's flag is only as fresh as the last 30 s poll. With the cable
+            // physically out it can't be a cut adapter, so a stale `true` mustn't hold the
+            // icon on "plugged in" after a real unplug.
+            discharging: discharging && snap.isExternalConnected,
             isPaused: isPaused,
             calibrating: calibrating,
             chargePower: chargePower))
