@@ -3,6 +3,8 @@ import AppKit
 import EWizKit
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    @MainActor let menuBar = MenuBarController()
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Menu-bar-only app: no Dock icon, no app-switcher entry.
         NSApp.setActivationPolicy(.accessory)
@@ -39,46 +41,48 @@ struct EWizApp: App {
     @StateObject private var idleSaver = IdleSaverStore()
 
     var body: some Scene {
-        MenuBarExtra {
-            MenuContentView()
-                .environmentObject(battery)
-                .environmentObject(chargeLimit)
-                .environmentObject(automation)
-                .environmentObject(processes)
-                .environmentObject(license)
-                .environmentObject(startup)
-                .environmentObject(updater)
-                .environmentObject(actions)
-                .environmentObject(caffeine)
-                .environmentObject(settings)
-                .environmentObject(notifier)
-                .environmentObject(network)
-                .environmentObject(triggers)
-                .environmentObject(hotkeys)
-                .environmentObject(restReminder)
-                .environmentObject(idleSaver)
-                .environmentObject(overlay)
-                .onAppear {
-                    network.chargeLimit = chargeLimit
-                    automation.chargeLimit = chargeLimit
-                }
-        } label: {
-            // Its own observing view so it re-renders reliably — a label closure that
-            // reads the store inline can render once and go stale. It also renders at
-            // launch, which is where the automation rules get started (the dropdown's
-            // `onAppear` wouldn't run until you first opened the menu).
-            MenuBarLabel(battery: battery, chargeLimit: chargeLimit,
-                         settings: settings, notifier: notifier, triggers: triggers,
-                         hotkeys: hotkeys, caffeine: caffeine, actions: actions,
-                         license: license, restReminder: restReminder, overlay: overlay,
-                         idleSaver: idleSaver)
-        }
-        .menuBarExtraStyle(.window)
-        // No ⌘Q. Clicking the panel or a window makes eWiz the active app, so a ⌘Q meant for
-        // the app you were just in quit eWiz instead — silently, taking hotkeys, automations
-        // and keep-awake with it until it was next opened by hand. The panel's power button
-        // is the way out.
-        .commands { CommandGroup(replacing: .appTermination) {} }
+        // The menu-bar item and its panel are AppKit-owned — see `MenuBarController`. Set up
+        // from here because this is the first place the stores exist; `install` is
+        // idempotent, so the body being evaluated again is harmless.
+        let _ = appDelegate.menuBar.install(
+            label: {
+                // Its own observing view so it re-renders reliably. It also exists from
+                // launch, which is where the automation rules, shortcuts and the rest of
+                // the always-on behaviour get started.
+                AnyView(MenuBarLabel(battery: battery, chargeLimit: chargeLimit,
+                                     settings: settings, notifier: notifier, triggers: triggers,
+                                     hotkeys: hotkeys, caffeine: caffeine, actions: actions,
+                                     license: license, restReminder: restReminder,
+                                     overlay: overlay, idleSaver: idleSaver))
+            },
+            panel: { [self] in
+                AnyView(MenuContentView()
+                    .environmentObject(battery)
+                    .environmentObject(chargeLimit)
+                    .environmentObject(automation)
+                    .environmentObject(processes)
+                    .environmentObject(license)
+                    .environmentObject(startup)
+                    .environmentObject(updater)
+                    .environmentObject(actions)
+                    .environmentObject(caffeine)
+                    .environmentObject(settings)
+                    .environmentObject(notifier)
+                    .environmentObject(network)
+                    .environmentObject(triggers)
+                    .environmentObject(hotkeys)
+                    .environmentObject(restReminder)
+                    .environmentObject(idleSaver)
+                    .environmentObject(overlay)
+                    .onAppear {
+                        network.chargeLimit = chargeLimit
+                        automation.chargeLimit = chargeLimit
+                    })
+            })
+
+        // Never shown: no status item, no panel. Without a menu-bar scene SwiftUI treats eWiz
+        // as a windowed app and opens Settings, the first window below, at every launch.
+        MenuBarExtra("eWiz", isInserted: .constant(false)) { EmptyView() }
 
         // Set-once controls live here so the menu dropdown stays focused on daily use.
         Window("eWiz Settings", id: "settings") {
@@ -99,6 +103,11 @@ struct EWizApp: App {
                 .environmentObject(idleSaver)
         }
         .windowResizability(.contentSize)
+        // No ⌘Q. Clicking the panel or a window makes eWiz the active app, so a ⌘Q meant for
+        // the app you were just in quit eWiz instead — silently, taking hotkeys, automations
+        // and keep-awake with it until it was next opened by hand. The panel's power button
+        // is the way out. (Commands are app-wide, whichever scene carries them.)
+        .commands { CommandGroup(replacing: .appTermination) {} }
 
         Window("Battery Details", id: "details") {
             DetailsView()
@@ -128,7 +137,7 @@ struct EWizApp: App {
 }
 
 /// Its own View with @ObservedObject stores so SwiftUI re-renders on snapshot/charge
-/// changes — a MenuBarExtra label closure reading a store inline can go stale/blank.
+/// changes. Hosted in the status item by `MenuBarController`.
 struct MenuBarLabel: View {
     @ObservedObject var battery: BatteryStore
     @ObservedObject var chargeLimit: ChargeLimitStore
