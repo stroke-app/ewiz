@@ -31,6 +31,11 @@ let package = Package(
             path: "Sources/CPowerUI",
             linkerSettings: [.linkedFramework("Foundation")]
         ),
+        // Catches Objective-C exceptions, which Swift can't. See `ewiz_try`.
+        .target(
+            name: "CTry",
+            path: "Sources/CTry"
+        ),
         // Shared Swift library used by both the GUI and the privileged helper.
         .target(
             name: "EWizKit",
@@ -42,6 +47,7 @@ let package = Package(
             name: "eWiz",
             dependencies: [
                 "EWizKit",
+                "CTry",
                 .product(name: "Sparkle", package: "Sparkle")
             ],
             path: "Sources/eWiz",

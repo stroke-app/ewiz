@@ -1,4 +1,5 @@
 import AVFoundation
+import CTry
 import Foundation
 
 /// The sounds eWiz makes when power changes, synthesised rather than shipped.
@@ -77,17 +78,43 @@ enum ChargeSound {
     static func play(_ cue: Cue, volume: Double, theme: Theme = defaultTheme) {
         let level = min(1, max(0, volume))
         guard level > 0.001 else { return }
-        guard let node = startedPlayer() else { return }
+        let buffer = buffer(for: cue, theme: theme)
 
-        node.volume = Float(level)
-        // Re-triggering restarts the cue rather than queueing behind the last one:
-        // plug-unplug-plug in quick succession should sound like the last thing that
-        // happened, not like a backlog. `stop()` clears anything already scheduled.
-        node.stop()
-        node.scheduleBuffer(buffer(for: cue, theme: theme), at: nil, options: [],
-                            completionHandler: nil)
-        node.play()
-        scheduleIdleTeardown()
+        // AVFAudio reports some failures as Objective-C exceptions, which Swift can't
+        // catch: `play()` raises "player did not see an IO cycle" when the output device
+        // drops out from under the engine (headphones, a display's speakers). This runs
+        // inside SwiftUI's `onChange`, and an exception unwinding through that left every
+        // control in eWiz dead until relaunch. So catch it, drop the cue and the engine.
+        var played = false
+        let raised = ewiz_try {
+            guard let node = startedPlayer() else { return }
+            node.volume = Float(level)
+            // Re-triggering restarts the cue rather than queueing behind the last one:
+            // plug-unplug-plug in quick succession should sound like the last thing that
+            // happened, not like a backlog. `stop()` clears anything already scheduled.
+            node.stop()
+            node.scheduleBuffer(buffer, at: nil, options: [], completionHandler: nil)
+            node.play()
+            played = true
+        }
+        if raised != nil {
+            discardEngine()
+        } else if played {
+            scheduleIdleTeardown()
+        }
+    }
+
+    /// Throw away an engine that raised, so the next cue builds a fresh one against
+    /// whatever output device is current.
+    private static func discardEngine() {
+        idleTeardown?.cancel()
+        let (engine, player) = (Self.engine, Self.player)
+        Self.engine = nil
+        Self.player = nil
+        _ = ewiz_try {
+            player?.stop()
+            engine?.stop()
+        }
     }
 
     // MARK: - Engine
