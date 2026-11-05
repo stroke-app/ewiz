@@ -3,12 +3,17 @@ import AppKit
 
 /// The menu-bar item and its dropdown, owned here rather than by SwiftUI's `MenuBarExtra`.
 ///
-/// `MenuBarExtra(.window)` builds its panel once and reuses that window for the life of the
-/// process. After hours of running, that window could come loose from the view graph behind
-/// it: clicks still arrived (AppKit tracked them and sent the action) but no SwiftUI action
-/// ran and nothing redrew, so every control in the panel was dead until eWiz was relaunched.
-/// Here the panel and its hosting view are built on every open and thrown away on close, so
-/// there is no long-lived panel to go stale.
+/// The panel and its hosting view are built on every open and thrown away on close, so each
+/// open starts from current state and nothing in the panel stays alive while it's shut. It
+/// also lets the window take its size from the content in the same layout pass, and keep
+/// its top edge pinned under the menu bar.
+///
+/// This was first written to fix the panel's controls going dead after hours of running:
+/// clicks arrived, but no SwiftUI action ran and nothing redrew until eWiz was relaunched.
+/// The panel window turned out not to be the cause, and rebuilding it didn't fix it. An
+/// Objective-C exception from AVFAudio, raised inside a SwiftUI `onChange`, had unwound
+/// through SwiftUI's update code, and after that no action ran anywhere in the process.
+/// See `ewiz_try` and `ChargeSound.play`.
 @MainActor
 final class MenuBarController: NSObject {
     private var statusItem: NSStatusItem?
