@@ -58,6 +58,10 @@ final class AppSettings: ObservableObject {
     @Published var agentsAllowLidClosed: Bool {
         didSet { defaults.set(agentsAllowLidClosed, forKey: AgentAccess.lidClosedKey) }
     }
+    /// And may change power settings: Low Power Mode, charge limit, modes, sleep features.
+    @Published var agentsAllowPowerControl: Bool {
+        didSet { defaults.set(agentsAllowPowerControl, forKey: AgentAccess.powerControlKey) }
+    }
     /// Shake the menu-bar glyph as the battery runs out. See `LowBatteryAlarm`.
     @Published var shakeOnLowBattery: Bool {
         didSet { defaults.set(shakeOnLowBattery, forKey: Keys.shakeOnLow) }
@@ -192,6 +196,7 @@ final class AppSettings: ObservableObject {
         shakeOnLowBattery = defaults.object(forKey: Keys.shakeOnLow) as? Bool ?? true
         agentsEnabled = defaults.object(forKey: AgentAccess.enabledKey) as? Bool ?? true
         agentsAllowLidClosed = defaults.object(forKey: AgentAccess.lidClosedKey) as? Bool ?? true
+        agentsAllowPowerControl = defaults.object(forKey: AgentAccess.powerControlKey) as? Bool ?? true
         caffeineEndOnBattery = defaults.bool(forKey: Keys.caffeineEndOnBattery)
         // Migrated once, not simply re-defaulted. Anyone who ran an earlier build has a
         // `false` on disk — written either by the old default or by trying the switch and

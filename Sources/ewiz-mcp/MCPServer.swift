@@ -22,7 +22,7 @@ final class MCPServer {
 
     static let accessOff = """
         The user has turned off agent access in eWiz (Settings › Automation › AI Agents), so \
-        this Mac can't be kept awake from here. Ask them to switch it on if the task needs it.
+        eWiz can't be used from here. Ask them to switch it on if the task needs it.
         """
 
     static let instructions = """
@@ -30,7 +30,11 @@ final class MCPServer {
         anything else that must not be cut short by sleep, call ewiz_keep_awake with a lease \
         a little longer than you expect to need, call it again to extend before it runs out, and \
         call ewiz_release_awake as soon as the work is done. Only ask for allow_lid_closed \
-        when the work has to survive the lid being shut. ewiz_status shows what is held.
+        when the work has to survive the lid being shut. ewiz_status shows what is held, plus \
+        the battery, charge limit, Low Power Mode, eWiz mode and sleep settings. When the user \
+        asks, you can also change those: ewiz_set_low_power_mode, ewiz_set_mode, \
+        ewiz_set_charge_limit, ewiz_pause_charging, ewiz_resume_charging and \
+        ewiz_set_sleep_setting. Don't change them on your own initiative.
         """
 
     // MARK: - Transport
@@ -112,17 +116,19 @@ final class MCPServer {
 
     // MARK: - Tools
 
-    private static let toolNames: Set<String> = ["ewiz_status", "ewiz_keep_awake",
-                                                 "ewiz_release_awake"]
+    private static let toolNames: Set<String> = Set(["ewiz_status", "ewiz_keep_awake",
+                                                     "ewiz_release_awake"]).union(PowerTools.names)
 
     static var tools: [[String: Any]] { [
         [
             "name": "ewiz_status",
             "title": "eWiz status",
             "description": """
-                Battery level and power source, and what is keeping this Mac awake: your own \
-                idle hold, and the lid-closed hold (yours, or the user's own Always Active). \
-                Check it before a long task to see whether you need ewiz_keep_awake at all.
+                Battery level and power source, what is keeping this Mac awake (your own idle \
+                hold, and the lid-closed hold: yours, or the user's own Always Active), and the \
+                power settings: charge limit, whether charging is held, eWiz mode, Low/High \
+                Power Mode, sleep settings and the hottest sensor. Check it before a long task \
+                to see whether you need ewiz_keep_awake at all.
                 """,
             "inputSchema": ["type": "object", "properties": [String: Any](), "additionalProperties": false],
             "annotations": ["readOnlyHint": true, "openWorldHint": false],
@@ -169,7 +175,7 @@ final class MCPServer {
             "annotations": ["readOnlyHint": false, "destructiveHint": false,
                             "idempotentHint": true, "openWorldHint": false],
         ],
-    ] }
+    ] + PowerTools.tools }
 
     private func call(_ name: String, _ args: [String: Any]) -> [String: Any] {
         let outcome: ToolResult
@@ -181,9 +187,12 @@ final class MCPServer {
         case "ewiz_keep_awake":
             // Read per call, so switching it off in eWiz applies at the agent's next ask.
             outcome = AgentAccess.isEnabled ? keepAwake(args) : ToolResult(text: Self.accessOff, isError: true)
-        default:
+        case "ewiz_release_awake":
             // Always allowed: letting go of a hold is never something to refuse.
             outcome = awake.release()
+        default:
+            outcome = AgentAccess.isEnabled ? PowerTools.call(name, args)
+                                            : ToolResult(text: Self.accessOff, isError: true)
         }
         var result: [String: Any] = ["content": [["type": "text", "text": outcome.text]],
                                      "isError": outcome.isError]

@@ -46,11 +46,14 @@ final class AgentAwake: @unchecked Sendable {
                      : "Idle hold (this agent): off.")
 
         do {
-            let cfg = try ControlClient.send(.getStatus).config
+            let response = try ControlClient.send(.getStatus)
             data["helper_reachable"] = true
-            let lid = lidData(cfg, now: now)
+            let lid = lidData(response.config, now: now)
             data["lid_hold"] = lid.data
             lines.append(lid.line)
+            let power = PowerTools.status(response)
+            data["power"] = power.data
+            lines += power.lines
         } catch {
             data["helper_reachable"] = false
             lines.append("Lid hold: unknown, the eWiz helper isn't answering (\(error)).")

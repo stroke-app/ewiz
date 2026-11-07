@@ -814,14 +814,18 @@ struct SettingsView: View {
     /// knew was in the bundle, reachable only by typing a path into a terminal.
     private var agentsCard: some View {
         card("AI Agents") {
-            toggleRow("Let AI agents keep this Mac awake",
-                      "Claude, Cursor and other MCP apps can hold it awake through a long build, test run or download, on a timer that ends by itself.",
+            toggleRow("Let AI agents use eWiz",
+                      "Claude, Cursor and other MCP apps can hold this Mac awake through a long build, test run or download, on a timer that ends by itself, and read its battery and power state.",
                       isOn: $settings.agentsEnabled)
             if settings.agentsEnabled {
                 divider
                 toggleRow("Allow it with the lid closed",
                           "Turns on Always Active until the agent's timer runs out.",
                           isOn: $settings.agentsAllowLidClosed)
+                divider
+                toggleRow("Allow it to change power settings",
+                          "Low Power Mode, the charge limit, pausing charging, the eWiz mode and the sleep features.",
+                          isOn: $settings.agentsAllowPowerControl)
                 divider
                 agentHoldsRows
                 divider
