@@ -170,6 +170,17 @@ final class ChargeLimitStore: ObservableObject {
     private var failedPolls = 0
     /// Whether the daemon's config has been read at least once. See `apply`.
     private var hasSynced = false
+    /// When this store came up, which for a login item is roughly when the Mac booted.
+    private let startedAt = Date()
+    /// How long an installed-but-silent helper is given to come up before it counts as
+    /// missing. At boot launchd starts the daemon alongside the login items, and the
+    /// daemon probes the SMC, evicts legacy jobs and re-seals sleep before it binds the
+    /// socket — six seconds on a quiet boot, longer on a busy one. Two misses three
+    /// seconds apart lost that race, and every restart put the admin prompt up to
+    /// "install" a helper that was installed and a moment from answering.
+    private static let bootGrace: TimeInterval = 120
+    /// The helper is installed but hasn't answered yet, inside `bootGrace`.
+    @Published private(set) var helperStarting = false
 
     /// Pull status from the daemon (skipped while a write is outstanding, or while a
     /// control is being dragged — see `editingControls`).
@@ -643,6 +654,15 @@ final class ChargeLimitStore: ObservableObject {
                 }
                 return
             }
+            if HelperService.installedOnDisk,
+               Date().timeIntervalSince(startedAt) < Self.bootGrace {
+                set(\.helperStarting, true)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 3) { [weak self] in
+                    Task { @MainActor in self?.refresh() }
+                }
+                return
+            }
+            set(\.helperStarting, false)
             set(\.daemonAvailable, false)
             // Nothing is listening. If this bundle carries the installer, put the helper in
             // place now rather than waiting to be asked from a settings pane.
@@ -651,6 +671,7 @@ final class ChargeLimitStore: ObservableObject {
         }
         failedPolls = 0
         hasSynced = true
+        set(\.helperStarting, false)
         set(\.daemonAvailable, true)
         set(\.daemonProtocolVersion, r.daemonProtocolVersion)
         set(\.daemonBuildVersion, r.daemonBuildVersion)

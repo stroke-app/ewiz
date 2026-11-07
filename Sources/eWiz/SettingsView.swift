@@ -1615,6 +1615,11 @@ struct SettingsView: View {
                     "Approve the administrator prompt to finish. This is asked once. After that the helper starts at boot and keeps itself current.",
                     "arrow.down.circle", false)
         }
+        if chargeLimit.helperStarting {
+            return ("Starting…",
+                    "The helper is installed and starting up with the Mac.",
+                    "hourglass", false)
+        }
         if !chargeLimit.daemonAvailable {
             return ("Not installed",
                     "The root helper enforces the charge limit, heat pause, and sleep settings. Install it once to enable them. It runs at boot on its own.",

@@ -61,6 +61,11 @@ enum HelperService {
             || FileManager.default.fileExists(atPath: "/usr/local/bin/ewiz-helper")
     }
 
+    /// Whether some helper is installed, by either route, whether or not it is answering.
+    static var installedOnDisk: Bool {
+        legacyInstallPresent || registrationStatus == .enabled
+    }
+
     // MARK: - SMAppService
 
     private static var service: SMAppService { SMAppService.daemon(plistName: daemonPlistName) }
