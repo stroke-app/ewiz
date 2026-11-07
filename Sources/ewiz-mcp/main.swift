@@ -10,10 +10,21 @@ import EWizKit
 
 setvbuf(stdout, nil, _IOLBF, 0)
 
+// `ewiz-mcp hook`: run as a Claude Code hook instead of a server. See BatteryHook.
+if CommandLine.arguments.dropFirst().first == "hook" {
+    if let output = BatteryHook.run(input: FileHandle.standardInput.readDataToEndOfFile()) {
+        print(output)
+    }
+    exit(0)
+}
+
 // Inside eWiz.app/Contents/MacOS, Bundle.main is the app, so this is the app's version.
 let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "dev"
 let awake = AgentAwake()
-let server = MCPServer(awake: awake, version: version)
+// Battery warnings for Claude Code channels. Decided at start because it picks the
+// protocol handshake; the switch is still re-read before every warning.
+let server = MCPServer(awake: awake, version: version,
+                       battery: BatteryAlerts.isEnabled ? BatteryChannel() : nil)
 
 // A lid hold outlives this process, so it's handed back however the session ends: the
 // client closing stdin (below) or a signal (here).
@@ -45,7 +56,7 @@ FileHandle.standardError.write(Data("ewiz-mcp \(version) ready on stdio\n".utf8)
 while let line = readLine(strippingNewline: true) {
     guard !line.trimmingCharacters(in: .whitespaces).isEmpty else { continue }
     if let reply = server.handle(line: line) {
-        print(reply)
+        Output.write(reply)
     }
 }
 awake.shutdown()

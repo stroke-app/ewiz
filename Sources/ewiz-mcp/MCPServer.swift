@@ -14,9 +14,13 @@ final class MCPServer {
 
     private let awake: AgentAwake
     private let serverInfo: [String: Any]
+    private let battery: BatteryChannel?
 
-    init(awake: AgentAwake, version: String) {
+    /// `battery` nil keeps the server off the channel path entirely (tests, or alerts
+    /// switched off when the server started).
+    init(awake: AgentAwake, version: String, battery: BatteryChannel? = nil) {
         self.awake = awake
+        self.battery = battery
         serverInfo = ["name": "ewiz", "title": "eWiz", "version": version]
     }
 
@@ -72,13 +76,26 @@ final class MCPServer {
         switch method {
         case "initialize":
             let asked = params["protocolVersion"] as? String
+            var capabilities: [String: Any] = ["tools": ["listChanged": false]]
+            var instructions = Self.instructions
+            if let battery {
+                // What makes Claude Code register this server as a channel.
+                capabilities["experimental"] = ["claude/channel": [String: Any]()]
+                instructions += "\n\n" + BatteryChannel.instructions
+                battery.start()
+            }
             result = [
                 "protocolVersion": asked.flatMap { Self.legacyVersions.contains($0) ? $0 : nil }
                     ?? Self.legacyVersions[0],
-                "capabilities": ["tools": ["listChanged": false]],
+                "capabilities": capabilities,
                 "serverInfo": serverInfo,
-                "instructions": Self.instructions,
+                "instructions": instructions,
             ]
+        case "server/discover" where battery != nil:
+            // Claude Code won't register a channel from a server that connects on the
+            // 2026-07-28 revision, which can't carry channel messages. Not answering
+            // discovery sends it to the initialize handshake above, which can.
+            return error(id: id, code: -32601, "Method not found: \(method)")
         case "server/discover":
             result = [
                 "supportedVersions": Self.modernVersions + Self.legacyVersions,

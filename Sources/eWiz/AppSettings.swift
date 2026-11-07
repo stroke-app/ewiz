@@ -62,6 +62,14 @@ final class AppSettings: ObservableObject {
     @Published var agentsAllowPowerControl: Bool {
         didSet { defaults.set(agentsAllowPowerControl, forKey: AgentAccess.powerControlKey) }
     }
+    /// Warn agents when the battery runs low (channel push and hook). See `BatteryAlerts`.
+    @Published var agentsBatteryAlerts: Bool {
+        didSet { defaults.set(agentsBatteryAlerts, forKey: BatteryAlerts.enabledKey) }
+    }
+    /// The percentage the first warning goes out at.
+    @Published var agentsBatteryAlertPercent: Int {
+        didSet { defaults.set(agentsBatteryAlertPercent, forKey: BatteryAlerts.thresholdKey) }
+    }
     /// Shake the menu-bar glyph as the battery runs out. See `LowBatteryAlarm`.
     @Published var shakeOnLowBattery: Bool {
         didSet { defaults.set(shakeOnLowBattery, forKey: Keys.shakeOnLow) }
@@ -197,6 +205,9 @@ final class AppSettings: ObservableObject {
         agentsEnabled = defaults.object(forKey: AgentAccess.enabledKey) as? Bool ?? true
         agentsAllowLidClosed = defaults.object(forKey: AgentAccess.lidClosedKey) as? Bool ?? true
         agentsAllowPowerControl = defaults.object(forKey: AgentAccess.powerControlKey) as? Bool ?? true
+        agentsBatteryAlerts = defaults.object(forKey: BatteryAlerts.enabledKey) as? Bool ?? true
+        agentsBatteryAlertPercent = defaults.object(forKey: BatteryAlerts.thresholdKey) as? Int
+            ?? BatteryAlerts.defaultThreshold
         caffeineEndOnBattery = defaults.bool(forKey: Keys.caffeineEndOnBattery)
         // Migrated once, not simply re-defaulted. Anyone who ran an earlier build has a
         // `false` on disk — written either by the old default or by trying the switch and

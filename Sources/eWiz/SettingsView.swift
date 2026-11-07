@@ -23,6 +23,8 @@ struct SettingsView: View {
     @StateObject private var agents = AgentStore()
     @State private var copiedAgentCommand = false
     @State private var copiedAgentConfig = false
+    @State private var copiedChannelCommand = false
+    @State private var copiedHookConfig = false
     @Environment(\.openWindow) private var openWindow
     @State private var installError: String?
     @State private var selection: Tab = .charging
@@ -827,6 +829,24 @@ struct SettingsView: View {
                           "Low Power Mode, the charge limit, pausing charging, the eWiz mode and the sleep features.",
                           isOn: $settings.agentsAllowPowerControl)
                 divider
+                toggleRow("Tell agents when the battery runs low",
+                          "Claude Code hears it when this Mac is unplugged and running low, so it can save its work and wrap up.",
+                          isOn: $settings.agentsBatteryAlerts)
+                if settings.agentsBatteryAlerts {
+                    divider
+                    batteryAlertThresholdRow
+                    divider
+                    agentCopyRow(title: "Live warnings",
+                                 caption: "Reaches Claude Code even while it waits. Start it with this command (channels are in preview).",
+                                 button: "Copy Command", copied: $copiedChannelCommand,
+                                 text: agents.channelCommand)
+                    divider
+                    agentCopyRow(title: "Warnings in every session",
+                                 caption: "Add this to ~/.claude/settings.json. Claude sees it at your next message or tool call.",
+                                 button: "Copy Hook", copied: $copiedHookConfig,
+                                 text: agents.hookSnippet)
+                }
+                divider
                 agentHoldsRows
                 divider
                 ForEach(AgentStore.Client.allCases) { client in
@@ -902,6 +922,27 @@ struct SettingsView: View {
             }
         }
         .padding(.horizontal, rowInset).padding(.vertical, DS.Space.s + 2)
+    }
+
+    private var batteryAlertThresholdRow: some View {
+        HStack(spacing: 10) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Warn at").font(.callout)
+                Text(settings.agentsBatteryAlertPercent > BatteryAlerts.criticalPercent
+                     ? "A second, last-call warning follows at \(BatteryAlerts.criticalPercent)%."
+                     : "One warning, as a last call.")
+                    .font(.caption).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            Picker("Warn at", selection: $settings.agentsBatteryAlertPercent) {
+                ForEach([10, 15, 20, 25, 30, 40, 50], id: \.self) { Text("\($0)%").tag($0) }
+            }
+            .labelsHidden()
+            .fixedSize()
+        }
+        .padding(.horizontal, rowInset).padding(.vertical, DS.Space.s + 2)
+        .frame(minHeight: 34)
     }
 
     private func agentCopyRow(title: String, caption: String, button: String,
