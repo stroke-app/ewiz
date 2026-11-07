@@ -592,7 +592,8 @@ struct MenuContentView: View {
     @ViewBuilder
     private var helperMissingView: some View {
         DSNote(icon: "alert", font: DS.Typo.rowTitle, iconSize: DS.Icon.row) {
-            Text(chargeLimit.helperInstalling ? "Installing helper…" : "Helper not installed")
+            Text(chargeLimit.helperInstalling ? "Installing helper…"
+                 : chargeLimit.helperStarting ? "Starting helper…" : "Helper not installed")
         }
         Text(chargeLimit.helperInstalling
              ? "Approve the administrator prompt to finish."
