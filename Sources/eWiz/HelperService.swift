@@ -45,6 +45,22 @@ enum HelperService {
 
     static var isSigned: Bool { teamIdentifier != nil }
 
+    /// Signed with a real certificate — Developer ID or the self-signed one — rather than
+    /// ad-hoc. Enough for the quiet self-update: the daemon pins the certificate it was
+    /// signed with, so it can verify a replacement either way.
+    static var hasSigningCertificate: Bool {
+        var me: SecCode?
+        guard SecCodeCopySelf([], &me) == errSecSuccess, let me else { return false }
+        var code: SecStaticCode?
+        guard SecCodeCopyStaticCode(me, [], &code) == errSecSuccess, let code else { return false }
+        var info: CFDictionary?
+        guard SecCodeCopySigningInformation(
+                code, SecCSFlags(rawValue: kSecCSSigningInformation), &info) == errSecSuccess,
+              let dict = info as? [String: Any],
+              let chain = dict[kSecCodeInfoCertificates as String] as? [Any] else { return false }
+        return !chain.isEmpty
+    }
+
     /// The helper binary shipped inside this bundle, if this is a packaged build.
     static var bundledHelperPath: String? {
         let path = Bundle.main.bundleURL
@@ -98,7 +114,7 @@ enum HelperService {
 
     /// Whether the installed daemon can swap its own binary on request.
     static func canSelfUpdate(daemonProtocolVersion: Int) -> Bool {
-        isSigned && bundledHelperPath != nil && daemonProtocolVersion >= 6
+        hasSigningCertificate && bundledHelperPath != nil && daemonProtocolVersion >= 6
     }
 
     /// Ask the running daemon to replace itself with the binary in this bundle.

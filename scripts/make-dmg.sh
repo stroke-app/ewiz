@@ -26,8 +26,9 @@ hdiutil create -volname "eWiz" \
     -srcfolder "$STAGE" -ov -format UDZO "$DMG" >/dev/null
 rm -rf "$STAGE"
 
-# Sign the DMG itself when a Developer ID identity is available.
-if [[ "${CODESIGN_IDENTITY:--}" != "-" ]]; then
+# Sign the DMG itself when a Developer ID identity is available. A self-signed one would
+# add nothing Gatekeeper trusts, and the app inside is already signed with it.
+if [[ "${CODESIGN_IDENTITY:-}" == Developer\ ID\ Application* ]]; then
     codesign --force --sign "$CODESIGN_IDENTITY" --timestamp "$DMG"
 fi
 

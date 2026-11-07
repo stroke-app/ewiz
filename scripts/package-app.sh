@@ -119,8 +119,9 @@ strip -x "$CONTENTS/MacOS/ewiz-mcp"
 # the SU* keys configure it: the feed, the release key every download has to verify
 # against (UpdateSignature.publicKeyBase64 — the same key signs appcast.json for the old
 # updater), a check on launch and every day without asking first, and verification of the
-# image before it's even opened. The app is ad-hoc signed, so SUPublicEDKey is the only
-# proof Sparkle has; it accepts that in place of a Developer ID match.
+# image before it's even opened. The app isn't Developer ID signed, so SUPublicEDKey is
+# the proof Sparkle relies on; with it valid, Sparkle also accepts a change of code-signing
+# identity, which is what carries ad-hoc installs over to the self-signed certificate.
 BUILD_NUMBER="$("$REPO_DIR/scripts/build-number.sh" "$VERSION")"
 SPARKLE_FEED="https://raw.githubusercontent.com/stroke-app/ewiz-releases/main/appcast.xml"
 # Read from the source so the key the app trusts and the key licensetool checks its
@@ -163,12 +164,28 @@ cat > "$CONTENTS/Info.plist" <<PLIST
 </plist>
 PLIST
 
-# Signing. Set CODESIGN_IDENTITY to a "Developer ID Application: …" identity for
-# a distributable, notarizable build; otherwise we ad-hoc sign for local use.
+# Signing. CODESIGN_IDENTITY picks one of three:
+#   - "Developer ID Application: …" — distributable and notarizable, hardened runtime.
+#   - "eWiz Code Signing" (the self-signed certificate; see DISTRIBUTION.md)
+#     — not notarizable, but every build carries the same certificate, so macOS keeps
+#     Bluetooth and other permissions across updates and the helper can verify its own
+#     replacement. Ad-hoc builds lose both on every update, because the only identity
+#     they have is the hash of that exact build.
+#   - unset — the self-signed certificate if it is in the keychain, else ad-hoc.
+SELF_SIGNED_NAME="eWiz Code Signing"
+if [[ -z "${CODESIGN_IDENTITY:-}" ]] && security find-identity -p codesigning 2>/dev/null | grep -q "\"$SELF_SIGNED_NAME\""; then
+    CODESIGN_IDENTITY="$SELF_SIGNED_NAME"
+fi
 IDENTITY="${CODESIGN_IDENTITY:--}"
 if [[ "$IDENTITY" == "-" ]]; then
     echo "==> Ad-hoc code signing (local use only — not notarizable)"
     SIGN_FLAGS=(--force --sign -)
+elif [[ "$IDENTITY" != Developer\ ID\ Application* ]]; then
+    # No hardened runtime: its library validation only admits frameworks from the same
+    # Team ID, and a self-signed certificate has none, so Sparkle would fail to load.
+    # No --timestamp either; that only matters for notarization.
+    echo "==> Self-signed code signing: $IDENTITY"
+    SIGN_FLAGS=(--force --sign "$IDENTITY")
 else
     echo "==> Developer ID signing with hardened runtime: $IDENTITY"
     SIGN_FLAGS=(--force --options runtime --timestamp --sign "$IDENTITY")

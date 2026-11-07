@@ -37,6 +37,31 @@ Add these in the repo → Settings → Secrets and variables → Actions:
 > repo this eats your included minutes fast — expect to pay for build minutes, or
 > build/notarize locally with the same scripts (see below).
 
+### Until then: the self-signed certificate
+
+Without a Developer ID, releases are signed with a self-signed certificate,
+`eWiz Code Signing`, rather than ad-hoc. It isn't notarizable and Gatekeeper treats
+it like an unsigned app, but every build carries the same identity, which fixes two
+things ad-hoc signing breaks on every update:
+
+- **Permissions stick.** macOS records Bluetooth and other grants against the
+  certificate instead of the hash of one build, so an update keeps them.
+- **The helper updates without a password.** The daemon pins the certificate it was
+  signed with and accepts a replacement only if it carries the same one
+  (`HelperUpdate.Identity.certificate`).
+
+| Secret | What it is |
+|--------|------------|
+| `SELF_SIGNED_CERT_P12_BASE64` | the certificate and key, `base64 -i ewiz-signing.p12` |
+| `SELF_SIGNED_CERT_PASSWORD` | the `.p12` password |
+
+The release workflow uses it only when `DEVELOPER_ID_CERT_P12_BASE64` is unset.
+`package-app.sh` picks it up from the login keychain for local builds too.
+
+The originals live in `~/.ewiz-signing/` on the machine that made them. **Back that
+folder up.** If the key is lost, a new certificate still works, but every install
+asks once more for its permissions and the helper password on the next update.
+
 ## 3. Cutting a release
 
 Tag and push:
