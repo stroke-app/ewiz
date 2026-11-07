@@ -27,6 +27,7 @@ jobs:
     env:
       HAS_SIGNING: ${{ secrets.DEVELOPER_ID_CERT_P12_BASE64 != '' }}
       HAS_NOTARY: ${{ secrets.NOTARY_KEY_ID != '' }}
+      HAS_SELF_SIGNED: ${{ secrets.SELF_SIGNED_CERT_P12_BASE64 != '' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -55,6 +56,30 @@ jobs:
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" build.keychain
           rm -f cert.p12
           IDENT=$(security find-identity -v -p codesigning build.keychain | grep "Developer ID Application" | head -1 | sed -E 's/.*"(.*)"/\1/')
+          echo "CODESIGN_IDENTITY=$IDENT" >> "$GITHUB_ENV"
+
+      # Without a Developer ID, sign with the self-signed certificate rather than ad-hoc.
+      # Every build then carries the same identity, so macOS keeps the app's permissions
+      # (Bluetooth) across updates and the helper can verify its own replacement instead
+      # of asking for a password. See DISTRIBUTION.md.
+      - name: Import self-signed certificate
+        if: ${{ env.HAS_SIGNING != 'true' && env.HAS_SELF_SIGNED == 'true' }}
+        env:
+          CERT_P12_BASE64: ${{ secrets.SELF_SIGNED_CERT_P12_BASE64 }}
+          CERT_PASSWORD: ${{ secrets.SELF_SIGNED_CERT_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          echo "$CERT_P12_BASE64" | base64 --decode > cert.p12
+          security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security set-keychain-settings -lut 21600 build.keychain
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security import cert.p12 -k build.keychain -P "$CERT_PASSWORD" -T /usr/bin/codesign
+          security list-keychains -d user -s build.keychain login.keychain
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" build.keychain
+          rm -f cert.p12
+          # Self-signed, so it is never "valid" (-v); name it by its hash instead.
+          IDENT=$(security find-identity -p codesigning build.keychain | grep '"eWiz Code Signing"' | head -1 | awk '{print $2}')
+          [ -n "$IDENT" ] || { echo "self-signed identity not found after import" >&2; exit 1; }
           echo "CODESIGN_IDENTITY=$IDENT" >> "$GITHUB_ENV"
 
       - name: Build, sign, package
