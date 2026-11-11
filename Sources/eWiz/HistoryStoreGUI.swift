@@ -16,6 +16,10 @@ final class HistoryViewModel: ObservableObject {
     @Published private(set) var dailySummaries: [DailySummary] = []
     /// 30-day wear attribution, independent of the chart's `range`.
     @Published private(set) var wearReport: WearReport = .empty
+    /// Headline totals for the range.
+    @Published private(set) var overview = HistoryOverview()
+    /// Start of the chart window, for clipping lid bands that began before it.
+    @Published private(set) var windowStart = Date()
     @Published var range: HistoryRange = .day
 
     let highChargeThreshold = SessionAnalysis.highChargeThreshold
@@ -75,7 +79,9 @@ final class HistoryViewModel: ObservableObject {
         all.sort { $0.t < $1.t }
 
         let merged = all.filter { $0.t >= since }   // the chart window
-        let sessions = LidSessionStore.recent(limit: 30).filter { $0.closedAt >= since }
+        // By the open, not the close: an overnight close that began before the window still
+        // ended inside it, and it's the one the morning's numbers come from.
+        let sessions = LidSessionStore.recent(limit: 500).filter { $0.openedAt >= since }
 
         let spans = SessionAnalysis.spans(from: merged)
         let charge = spans
@@ -84,11 +90,15 @@ final class HistoryViewModel: ObservableObject {
         let discharge = spans
             .filter { $0.kind == .discharging && $0.duration >= 600 && $0.deltaPct < 0 }
             .reversed().prefix(30).map { $0 }
-        let daily = SessionAnalysis.dailySummaries(from: merged)
+        let daily = SessionAnalysis.attachingLidSessions(
+            SessionAnalysis.dailySummaries(from: merged), sessions)
+        let overview = HistoryOverview.make(spans: spans, lidSessions: sessions)
 
         let report = WearAnalysis.analyze(samples: all, now: Date())
 
         await MainActor.run {
+            self.windowStart = since
+            self.overview = overview
             self.samples = merged
             self.lidSessions = sessions
             self.chargeSessions = charge
