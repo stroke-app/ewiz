@@ -300,13 +300,24 @@ struct MenuBarLabel: View {
         // A real plug or unplug changes what the helper is doing (hold, drain, pause), and
         // its state otherwise waits for the 30 s poll — the icon lagged up to ~45 s behind
         // the cable. Ask now, and again once the helper has reacted.
-        .onChange(of: snap.isExternalConnected) { _, _ in
-            chargeLimit.refresh()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2) { chargeLimit.refresh() }
-        }
+        //
+        // Re-asked at intervals reaching past the helper's own reaction, and on the charging
+        // flag as well as the cable: current starts several seconds after the plug, and the
+        // helper's hold/limit reading only changes once it has seen that. Asking only at
+        // 0 s and 2 s landed both reads before the helper had moved.
+        .onChange(of: snap.isExternalConnected) { _, _ in refreshChargeStatusSoon() }
+        .onChange(of: snap.isPluggedIn) { _, _ in refreshChargeStatusSoon() }
+        .onChange(of: snap.isCharging) { _, _ in refreshChargeStatusSoon() }
         // The status item exists from launch, so this is where the automation
         // rules start watching — they must run whether or not the menu is opened.
         .onAppear { triggers.attach(chargeLimit: chargeLimit, battery: battery) }
+    }
+
+    private func refreshChargeStatusSoon() {
+        chargeLimit.refresh()
+        for delay in [1.5, 4.0, 10.0] {
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) { chargeLimit.refresh() }
+        }
     }
 
     /// One state gave way to another: decide what the glyph does about it.
