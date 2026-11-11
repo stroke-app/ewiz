@@ -10,6 +10,7 @@ public enum AgentAccess {
     public static let domain = "com.ewiz.app"
     public static let enabledKey = "agents.enabled"
     public static let lidClosedKey = "agents.allowLidClosed"
+    public static let powerControlKey = "agents.allowPowerControl"
 
     /// The idle-sleep assertion `ewiz-mcp` holds is named this plus the agent's reason,
     /// which is how the app finds it to say who is keeping the Mac awake.
@@ -20,6 +21,10 @@ public enum AgentAccess {
     public static var isEnabled: Bool { read(enabledKey) ?? true }
     /// The lid-closed hold changes how the Mac sleeps, so it has a switch of its own.
     public static var allowsLidClosed: Bool { read(lidClosedKey) ?? true }
+    /// Changing power settings — Low Power Mode, the charge limit, pausing charging, the
+    /// eWiz mode, the sleep features — outlasts the agent's session, unlike a keep-awake
+    /// lease, so it has a switch of its own too.
+    public static var allowsPowerControl: Bool { read(powerControlKey) ?? true }
 
     private static func read(_ key: String) -> Bool? {
         // Another process wrote it; without the sync this can read a cached value.

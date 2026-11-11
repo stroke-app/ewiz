@@ -77,6 +77,21 @@ final class AgentStore: ObservableObject {
 
     var configSnippet: String { MCPClientConfig.snippet(command: serverPath) }
 
+    /// Starts Claude Code with eWiz's battery channel registered. Custom channels need the
+    /// development flag while channels are in research preview.
+    var channelCommand: String {
+        "claude --dangerously-load-development-channels server:\(MCPClientConfig.serverName)"
+    }
+
+    /// The `hooks` block for ~/.claude/settings.json that runs `ewiz-mcp hook`.
+    var hookSnippet: String {
+        let entry: [[String: Any]] = [["hooks": [["type": "command", "command": "\"\(serverPath)\" hook"]]]]
+        let root: [String: Any] = ["hooks": ["UserPromptSubmit": entry, "PostToolBatch": entry]]
+        let data = (try? JSONSerialization.data(withJSONObject: root,
+                                                options: [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes])) ?? Data()
+        return String(decoding: data, as: UTF8.self)
+    }
+
     // MARK: - Holds
 
     /// Agents holding the Mac awake, from the power assertions `ewiz-mcp` takes. Each one is
