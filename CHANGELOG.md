@@ -1,5 +1,16 @@
 # ewiz
 
+## 0.19.5
+
+### Patch Changes
+
+- 7c64183: **AI agents hear about a low battery.** When this Mac is unplugged and running low, eWiz tells Claude Code so it can save its work and wrap up: live, through a Claude Code channel, or at the next message or tool call through a hook. Settings › AI Agents has the switch, the warning level, and the command and hook to copy.
+- 94640fb: **The menu bar switches to charging promptly.** After a plug-in, eWiz asked the helper for its status only twice, both before the helper had reacted, and never again once current actually started flowing, so "Plugged in" or "Held" could stay up for most of a minute. It now asks again over the next ten seconds, and also when the charger takes over and when charging starts or stops.
+- 930e73e: **The helper reacts the moment you plug in.** It used to notice a plug or unplug only on its next check, up to 10 seconds later, or a full minute after the lid had been closed on battery. Until then the charge limit, the hold and the status the menu shows all trailed the cable. The helper now wakes on every power-source change. This updates the helper, which installs itself without a password.
+- 7ded544: **History shows when the lid was closed and what it cost.** A row of tiles at the top sums up the range: time on battery and drain while awake, how long the lid was closed and how often, drain while asleep, and charge gained. The chart shades lid-closed spells, so a night no longer reads as one unexplained straight line. Lid rows show the full close-to-open time and whether the Mac was on the charger, plus roughly what a night would cost. On Battery rows say when the lid was closed during them, and the Daily Summary adds lid-closed time and its drain, including days the Mac slept straight through.
+- 3cf5a3d: **A close on the charger no longer reads as a perfect night.** eWiz now records whether the Mac was plugged in when the lid closed and opened. A close that charged shows the gain instead of "no drop", and the Sealed Sleep result only counts closes on battery, so "51% → 80%, no drop" can't pass for zero drain. The "Never" hibernate option now says what it costs: about 3% a day.
+- 7c64183: **AI agents can now change power settings when you ask.** Through eWiz's MCP server, Claude and other agents can turn Low Power Mode on or off, switch the eWiz mode, set the charge limit, pause or resume charging, and change sleep settings like Power Nap. `ewiz_status` now also reports the charge limit, mode, sleep settings and temperature. A new switch in Settings › AI Agents turns this off.
+
 ## 0.19.4
 
 ### Patch Changes
