@@ -1952,7 +1952,12 @@ struct SettingsView: View {
         let f = RelativeDateTimeFormatter()
         f.unitsStyle = .abbreviated
         let ago = f.localizedString(for: s.openedAt, relativeTo: Date())
-        let drop = s.dropPercent == 0 ? "no drop" : "−\(s.dropPercent)%"
+        let drop: String
+        if s.onCharger {
+            drop = s.gainPercent > 0 ? "charged +\(s.gainPercent)%" : "on charger"
+        } else {
+            drop = s.dropPercent == 0 ? "no drop" : "−\(s.dropPercent)%"
+        }
         return "\(ago) · \(drop)"
     }
 }
