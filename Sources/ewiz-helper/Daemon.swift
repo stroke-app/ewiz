@@ -1,6 +1,8 @@
 import Foundation
 import IOKit
 import IOKit.pwr_mgt
+import IOKit.ps
+import notify
 import EWizKit
 
 /// Enforcement loop plus control server: holds the configured charge limit.
@@ -206,6 +208,7 @@ final class Daemon: @unchecked Sendable {
         sleepWatcher.onWillSleep = { [weak self] in self?.cutChargingForSleep() }
         sleepWatcher.onDidWake = { [weak self] in self?.reevaluateAfterWake() }
         sleepWatcher.start()
+        watchPowerSource()
 
         // A deferral that never finished — the daemon was killed, or the Mac was restarted
         // while hibernating was set — would otherwise leave every close taking 30 seconds
@@ -253,8 +256,26 @@ final class Daemon: @unchecked Sendable {
                     exit(6)
                 }
             }
-            Thread.sleep(forTimeInterval: wait)
+            // Wait out the interval, or less: a power-source change (plug, unplug, charging
+            // starting) signals `tickWake` and the next tick runs now. Sleeping the whole
+            // interval left a plug-in unanswered for up to 10 s — 60 s after a closed-lid
+            // spell on battery — while the app showed whatever the last tick had said.
+            _ = tickWake.wait(timeout: .now() + wait)
         }
+    }
+
+    /// Signalled by `watchPowerSource` to cut the tick loop's wait short.
+    private let tickWake = DispatchSemaphore(value: 0)
+    private var powerSourceToken: Int32 = 0
+
+    /// notify(3) rather than an IOPS run-loop source: the main thread is the tick loop and
+    /// has no run loop to attach one to. Only the source switching (AC ⇄ battery) — not
+    /// `kIOPSNotifyAnyPowerSource`, which fires on every percentage change and would turn
+    /// an idle daemon into a busy one.
+    private func watchPowerSource() {
+        let wake = tickWake
+        notify_register_dispatch(kIOPSNotifyPowerSource, &powerSourceToken,
+                                 DispatchQueue.global(qos: .utility)) { _ in wake.signal() }
     }
 
     /// Every two minutes, check that something is still accepting on the socket. The probe

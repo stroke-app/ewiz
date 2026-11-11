@@ -389,7 +389,11 @@ public enum HelperBuild {
     ///        reported a helper that "isn't responding". v28 ignores SIGPIPE, sets
     ///        SO_NOSIGPIPE on every connection, finishes partial writes, and keeps the
     ///        hold anchor on disk across restarts.
-    public static let version = 28
+    ///   v29: a plug-in is answered at once. The tick loop slept its full interval — 10 s,
+    ///        or 60 s after a closed-lid spell on battery — so the charge limit, the hold
+    ///        and the status the app draws from all trailed the cable by that long. v29
+    ///        wakes the loop on every power-source change.
+    public static let version = 29
 }
 
 public enum ControlError: Error, CustomStringConvertible {
