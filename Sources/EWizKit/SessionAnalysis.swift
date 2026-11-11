@@ -42,6 +42,10 @@ public struct DailySummary: Codable, Sendable, Identifiable {
     public var peakTemp: Double?
     /// Time spent at or above the high-charge threshold (a wear driver).
     public var highChargeTime: TimeInterval
+    /// Time the lid was shut this day, from recorded lid sessions (split across midnight).
+    public var lidClosedTime: TimeInterval = 0
+    /// Points lost with the lid shut on battery, attributed to the day most of the close fell in.
+    public var lidDropPct: Int = 0
 
     public var id: Date { day }
 
@@ -137,5 +141,97 @@ public enum SessionAnalysis {
                 highChargeTime: highChargeTime[day] ?? 0)
         }
         .sorted { $0.day > $1.day }
+    }
+
+    /// How long `sessions` had the lid shut inside `start...end`.
+    public static func lidClosedTime(from start: Date, to end: Date,
+                                     sessions: [LidSession]) -> TimeInterval {
+        sessions.reduce(0) { total, s in
+            total + max(0, min(end, s.openedAt).timeIntervalSince(max(start, s.closedAt)))
+        }
+    }
+
+    /// Fold lid sessions into the daily rollups: closed time split across the days it
+    /// covers, battery drain credited to the day holding most of the close. A day with no
+    /// samples at all — asleep from close to open — still gets a row, from the charge read
+    /// at either end, because "shut all day" is exactly the day someone asks about.
+    public static func attachingLidSessions(
+        _ days: [DailySummary], _ sessions: [LidSession], calendar: Calendar = .current
+    ) -> [DailySummary] {
+        var byDay = Dictionary(days.map { ($0.day, $0) }, uniquingKeysWith: { a, _ in a })
+        for s in sessions where s.duration > 0 {
+            var bestDay = calendar.startOfDay(for: s.closedAt)
+            var bestOverlap: TimeInterval = -1
+            var day = bestDay
+            while day < s.openedAt {
+                guard let next = calendar.date(byAdding: .day, value: 1, to: day) else { break }
+                let overlap = lidClosedTime(from: day, to: next, sessions: [s])
+                if overlap > 0 {
+                    var d = byDay[day] ?? DailySummary(
+                        day: day, minPct: min(s.closeCharge, s.openCharge),
+                        maxPct: max(s.closeCharge, s.openCharge),
+                        chargingTime: 0, batteryTime: 0,
+                        avgTemp: nil, peakTemp: nil, highChargeTime: 0)
+                    d.lidClosedTime += overlap
+                    byDay[day] = d
+                    if overlap > bestOverlap { bestOverlap = overlap; bestDay = day }
+                }
+                day = next
+            }
+            if !s.onCharger, s.dropPercent > 0 { byDay[bestDay]?.lidDropPct += s.dropPercent }
+        }
+        return byDay.values.sorted { $0.day > $1.day }
+    }
+}
+
+/// The headline numbers for a history range.
+public struct HistoryOverview: Sendable, Equatable {
+    public var batteryTime: TimeInterval = 0
+    public var batteryDropPct = 0
+    public var chargingTime: TimeInterval = 0
+    public var chargeGainPct = 0
+    public var lidCloses = 0
+    public var lidClosedTime: TimeInterval = 0
+    /// Closed on battery only: the closes that say anything about sleep drain.
+    public var lidBatteryTime: TimeInterval = 0
+    public var lidBatteryDropPct = 0
+
+    public init() {}
+
+    /// Awake, on-battery drain in %/hour (nil with under 15 minutes to go on).
+    public var drainPerHour: Double? {
+        batteryTime >= 900 ? Double(batteryDropPct) / (batteryTime / 3600) : nil
+    }
+    /// Lid-shut drain on battery in %/hour (nil with under 15 minutes to go on).
+    public var lidDrainPerHour: Double? {
+        lidBatteryTime >= 900 ? Double(lidBatteryDropPct) / (lidBatteryTime / 3600) : nil
+    }
+
+    /// Totals for `spans` and `sessions` that fall in the range. The awake battery figure
+    /// leaves out time the lid was shut, so a drain rate means the same thing as the row
+    /// it summarises.
+    public static func make(spans: [ChargeSpan], lidSessions: [LidSession]) -> HistoryOverview {
+        var o = HistoryOverview()
+        for s in spans {
+            switch s.kind {
+            case .discharging:
+                let shut = SessionAnalysis.lidClosedTime(from: s.startAt, to: s.endAt,
+                                                         sessions: lidSessions)
+                o.batteryTime += max(0, s.duration - shut)
+                o.batteryDropPct += max(0, -s.deltaPct)
+            case .charging:
+                o.chargingTime += s.duration
+                o.chargeGainPct += max(0, s.deltaPct)
+            }
+        }
+        for s in lidSessions {
+            o.lidCloses += 1
+            o.lidClosedTime += s.duration
+            if !s.onCharger {
+                o.lidBatteryTime += s.duration
+                o.lidBatteryDropPct += s.dropPercent
+            }
+        }
+        return o
     }
 }

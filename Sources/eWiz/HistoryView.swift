@@ -58,6 +58,8 @@ struct HistoryView: View {
                     clearMenu
                 }
 
+                if hasAnyHistory { overviewTiles }
+
                 if model.samples.isEmpty {
                     ContentUnavailableView(
                         "No history yet",
@@ -231,13 +233,57 @@ struct HistoryView: View {
         }
     }
 
+    // MARK: - Overview
+
+    private var overviewTiles: some View {
+        let o = model.overview
+        return HStack(spacing: 10) {
+            statTile("On battery",
+                     value: o.batteryTime > 0 ? durationText(o.batteryTime) : "–",
+                     detail: o.drainPerHour.map { String(format: "%.1f%%/h awake", $0) }
+                        ?? (o.batteryDropPct > 0 ? "−\(o.batteryDropPct)%" : "no use yet"))
+            statTile("Lid closed",
+                     value: o.lidCloses > 0 ? durationText(o.lidClosedTime) : "–",
+                     detail: o.lidCloses == 0 ? "no closes"
+                        : "\(o.lidCloses) close\(o.lidCloses == 1 ? "" : "s")")
+            statTile("Asleep drain",
+                     value: o.lidDrainPerHour.map { String(format: "%.1f%%/h", $0) } ?? "–",
+                     detail: o.lidBatteryTime > 0
+                        ? "−\(o.lidBatteryDropPct)% over \(durationText(o.lidBatteryTime))"
+                        : "no closes on battery")
+            statTile("Charged",
+                     value: o.chargeGainPct > 0 ? "+\(o.chargeGainPct)%" : "–",
+                     detail: o.chargingTime > 0 ? "in \(durationText(o.chargingTime))" : "not plugged in")
+        }
+    }
+
+    private func statTile(_ title: String, value: String, detail: String) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(title).font(.caption).foregroundStyle(.secondary)
+            Text(value).font(.title3.weight(.semibold)).monospacedDigit()
+                .lineLimit(1).minimumScaleFactor(0.7)
+            Text(detail).font(.caption2).foregroundStyle(.secondary)
+                .lineLimit(1).minimumScaleFactor(0.8)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 12).padding(.vertical, 10)
+        .background(.quaternary.opacity(0.4), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+
     // MARK: - Lid-closed sessions
 
     @ViewBuilder
     private var lidSessionsSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("While Lid Was Closed")
-                .font(.title3.weight(.semibold))
+            HStack(alignment: .firstTextBaseline) {
+                Text("While Lid Was Closed")
+                    .font(.title3.weight(.semibold))
+                Spacer()
+                if !model.lidSessions.isEmpty {
+                    Text("drain is measured on battery only")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+            }
 
             if model.lidSessions.isEmpty {
                 Text("No closed-lid sessions in this period yet. Close the lid and reopen it to see how much the battery drained.")
@@ -257,19 +303,22 @@ struct HistoryView: View {
 
     private func lidSessionRow(_ s: LidSession) -> some View {
         HStack(spacing: 10) {
+            Image(systemName: s.onCharger ? "powerplug.fill" : "moon.zzz.fill")
+                .foregroundStyle(s.onCharger ? Color(ChargePalette.accent) : .secondary)
+                .frame(width: 20)
             VStack(alignment: .leading, spacing: 2) {
                 Text(closedRangeText(s)).font(.callout)
-                Text("\(s.closeCharge)% → \(s.openCharge)% · \(durationText(s.duration))")
+                Text("\(s.closeCharge)% → \(s.openCharge)% · \(durationText(s.duration)) · \(s.onCharger ? "on charger" : "on battery")")
                     .font(.caption).foregroundStyle(.secondary)
             }
             Spacer()
             VStack(alignment: .trailing, spacing: 2) {
-                Text(s.dropPercent == 0 ? "no drop" : "−\(s.dropPercent)%")
+                Text(lidHeadline(s))
                     .font(.callout.weight(.semibold))
-                    .foregroundStyle(dropColor(s.dropPercent))
+                    .foregroundStyle(lidColor(s))
                     .monospacedDigit()
-                if let rate = s.dropPerHour {
-                    Text(String(format: "%.1f%%/h", rate))
+                if let detail = lidDetail(s) {
+                    Text(detail)
                         .font(.caption2).foregroundStyle(.secondary).monospacedDigit()
                 }
             }
@@ -277,14 +326,31 @@ struct HistoryView: View {
         .padding(.horizontal, 12).padding(.vertical, 8)
     }
 
-    private func dropColor(_ drop: Int) -> Color {
-        drop == 0 ? .secondary : .primary
+    private func lidHeadline(_ s: LidSession) -> String {
+        if s.onCharger { return s.gainPercent > 0 ? "+\(s.gainPercent)%" : "held" }
+        return s.dropPercent == 0 ? "no drop" : "−\(s.dropPercent)%"
     }
 
+    private func lidDetail(_ s: LidSession) -> String? {
+        if s.onCharger {
+            return s.gainPerHour.map { String(format: "charged %.1f%%/h", $0) } ?? "charger in"
+        }
+        return s.dropPerHour.map { String(format: "%.1f%%/h · ~%.0f%%/night", $0, $0 * 8) }
+    }
+
+    private func lidColor(_ s: LidSession) -> Color {
+        if s.onCharger { return s.gainPercent > 0 ? Color(ChargePalette.accent) : .secondary }
+        return s.dropPercent == 0 ? .secondary : .primary
+    }
+
+    /// "Nov 11, 10:24 PM – 7:02 AM", with the open's date only when it differs.
     private func closedRangeText(_ s: LidSession) -> String {
-        let f = DateFormatter()
-        f.dateFormat = "MMM d, h:mm a"
-        return "Closed \(f.string(from: s.closedAt))"
+        let start = DateFormatter()
+        start.dateFormat = "MMM d, h:mm a"
+        let end = DateFormatter()
+        end.dateFormat = Calendar.current.isDate(s.closedAt, inSameDayAs: s.openedAt)
+            ? "h:mm a" : "MMM d, h:mm a"
+        return "\(start.string(from: s.closedAt)) – \(end.string(from: s.openedAt))"
     }
 
     private func durationText(_ t: TimeInterval) -> String {
@@ -340,7 +406,7 @@ struct HistoryView: View {
                 .frame(width: 20)
             VStack(alignment: .leading, spacing: 2) {
                 Text(timeText(s.startAt)).font(.callout)
-                Text("\(s.startPct)% → \(s.endPct)% · \(durationText(s.duration))")
+                Text(spanDetail(s))
                     .font(.caption).foregroundStyle(.secondary)
             }
             Spacer()
@@ -356,6 +422,14 @@ struct HistoryView: View {
             }
         }
         .padding(.horizontal, 12).padding(.vertical, 8)
+    }
+
+    private func spanDetail(_ s: ChargeSpan) -> String {
+        var text = "\(s.startPct)% → \(s.endPct)% · \(durationText(s.duration))"
+        let shut = SessionAnalysis.lidClosedTime(from: s.startAt, to: s.endAt,
+                                                 sessions: model.lidSessions)
+        if shut >= 60 { text += " · lid closed \(durationText(shut))" }
+        return text
     }
 
     private func deltaText(_ s: ChargeSpan) -> String {
@@ -445,6 +519,10 @@ struct HistoryView: View {
         var parts: [String] = []
         if d.chargingTime > 0 { parts.append("charged \(durationText(d.chargingTime))") }
         if d.batteryTime > 0 { parts.append("on battery \(durationText(d.batteryTime))") }
+        if d.lidClosedTime >= 60 {
+            parts.append("lid closed \(durationText(d.lidClosedTime))"
+                         + (d.lidDropPct > 0 ? " (−\(d.lidDropPct)%)" : ""))
+        }
         return parts.isEmpty ? "–" : parts.joined(separator: " · ")
     }
 
@@ -471,7 +549,32 @@ struct HistoryView: View {
     }
 
     private var chargeChart: some View {
-        Chart(model.samples) { s in
+        Chart {
+            // Lid-closed spells behind the line. The Mac records nothing while asleep, so
+            // without these a night reads as one straight segment with no explanation.
+            ForEach(model.lidSessions) { s in
+                RectangleMark(
+                    xStart: .value("Closed", max(s.closedAt, model.windowStart)),
+                    xEnd: .value("Opened", s.openedAt),
+                    yStart: .value("min", 0),
+                    yEnd: .value("max", 100))
+                .foregroundStyle(by: .value("Period", "Lid closed"))
+                .opacity(0.12)
+            }
+            ForEach(model.samples) { s in
+                chargeMarks(s)
+            }
+        }
+        .chartForegroundStyleScale(["Lid closed": Color.indigo])
+        .chartLegend(model.lidSessions.isEmpty ? .hidden : .visible)
+        .chartLegend(position: .top, alignment: .trailing)
+        .chartYScale(domain: 0...100)
+        .chartYAxisLabel("Charge %")
+        .frame(minHeight: 200)
+    }
+
+    @ChartContentBuilder
+    private func chargeMarks(_ s: BatterySample) -> some ChartContent {
             if s.charging {
                 AreaMark(
                     x: .value("Time", s.t),
@@ -486,10 +589,6 @@ struct HistoryView: View {
             )
             .foregroundStyle(.primary)
             .interpolationMethod(.monotone)
-        }
-        .chartYScale(domain: 0...100)
-        .chartYAxisLabel("Charge %")
-        .frame(minHeight: 200)
     }
 
     private var temperatureChart: some View {
