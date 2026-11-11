@@ -6,12 +6,24 @@ public struct LidSession: Codable, Sendable, Equatable, Identifiable {
     public var closeCharge: Int
     public var openedAt: Date
     public var openCharge: Int
+    /// On the charger at the close / at the open. nil in sessions recorded before these
+    /// were kept; `onCharger` falls back to the charge rising.
+    public var pluggedInAtClose: Bool?
+    public var pluggedInAtOpen: Bool?
 
     public var id: Date { closedAt }
 
     /// Percentage points lost while closed (never negative; charging shows 0).
     public var dropPercent: Int { max(0, closeCharge - openCharge) }
+    /// Percentage points gained while closed (never negative).
+    public var gainPercent: Int { max(0, openCharge - closeCharge) }
     public var duration: TimeInterval { max(0, openedAt.timeIntervalSince(closedAt)) }
+
+    /// Whether the charger was in for any of the close. A close spent on the charger says
+    /// nothing about sleep drain: "51% → 80%, no drop" is a charge, not a perfect night.
+    public var onCharger: Bool {
+        pluggedInAtClose == true || pluggedInAtOpen == true || openCharge > closeCharge
+    }
 
     /// Average drain rate in %/hour while closed (nil if duration too small).
     public var dropPerHour: Double? {
@@ -20,11 +32,21 @@ public struct LidSession: Codable, Sendable, Equatable, Identifiable {
         return Double(dropPercent) / hours
     }
 
-    public init(closedAt: Date, closeCharge: Int, openedAt: Date, openCharge: Int) {
+    /// Average gain in %/hour while closed on the charger (nil if too short or no gain).
+    public var gainPerHour: Double? {
+        let hours = duration / 3600
+        guard hours >= 0.05, gainPercent > 0 else { return nil }
+        return Double(gainPercent) / hours
+    }
+
+    public init(closedAt: Date, closeCharge: Int, openedAt: Date, openCharge: Int,
+                pluggedInAtClose: Bool? = nil, pluggedInAtOpen: Bool? = nil) {
         self.closedAt = closedAt
         self.closeCharge = closeCharge
         self.openedAt = openedAt
         self.openCharge = openCharge
+        self.pluggedInAtClose = pluggedInAtClose
+        self.pluggedInAtOpen = pluggedInAtOpen
     }
 }
 

@@ -307,7 +307,10 @@ public struct SealedSleepResult: Sendable, Equatable {
     public let session: LidSession
 
     public init?(_ session: LidSession) {
-        guard let rate = session.dropPerHour else { return nil }
+        // A close on the charger measures the charger, not the sleep. Reporting it as a
+        // flat line — which is what a rising charge used to read as — claims a perfect
+        // night for a Mac that was simply plugged in.
+        guard !session.onCharger, let rate = session.dropPerHour else { return nil }
         self.perHour = rate
         self.session = session
     }

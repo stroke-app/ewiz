@@ -35,7 +35,7 @@ struct SealedSleepPanel: View {
         return state.leaks.filter { $0 != .keptAwakeOnBattery }
     }
     private var result: SealedSleepResult? {
-        automation.lastLidSession.flatMap(SealedSleepResult.init)
+        automation.lastBatteryLidSession.flatMap(SealedSleepResult.init)
     }
 
     var body: some View {
@@ -184,7 +184,8 @@ struct SealedSleepPanel: View {
                 get: { chargeLimit.sealedSleepHibernateAfter },
                 set: { chargeLimit.sealedSleepHibernateAfter = $0; chargeLimit.apply() }
             )) {
-                Text("Never").tag(0)
+                // Measured on instant-wake closes: memory kept powered costs 2–5% a day.
+                Text("Never · ~3%/day").tag(0)
                 Text("5 min").tag(5)
                 Text("20 min").tag(20)
                 Text("1 hour").tag(60)

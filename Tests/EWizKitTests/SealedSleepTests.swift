@@ -172,14 +172,33 @@ struct SealedSleepTests {
         #expect(SealedSleepResult(session) == nil)
     }
 
-    @Test func chargingWhileClosedIsNotNegativeDrain() {
+    @Test func chargingWhileClosedIsNotAMeasurement() {
+        // Charged while shut: neither a negative drain nor a "perfect" zero.
         let closed = Date()
         let session = LidSession(closedAt: closed, closeCharge: 60,
                                  openedAt: closed.addingTimeInterval(3600),
                                  openCharge: 80)
-        let result = try! #require(SealedSleepResult(session))
-        #expect(result.perHour == 0)
-        #expect(result.isEssentiallyZero)
+        #expect(session.onCharger)
+        #expect(session.gainPercent == 20)
+        #expect(SealedSleepResult(session) == nil)
+    }
+
+    @Test func aFlatCloseOnTheChargerIsNotAMeasurement() {
+        // Held at the limit on the charger: flat, but not because the sleep was sealed.
+        let closed = Date()
+        let session = LidSession(closedAt: closed, closeCharge: 80,
+                                 openedAt: closed.addingTimeInterval(8 * 3600),
+                                 openCharge: 80, pluggedInAtClose: true, pluggedInAtOpen: true)
+        #expect(SealedSleepResult(session) == nil)
+    }
+
+    @Test func oldSessionsWithoutPowerFlagsStillDecode() throws {
+        let json = #"{"closedAt":"2026-11-11T10:24:00Z","closeCharge":80,"openedAt":"2026-11-11T18:46:00Z","openCharge":78}"#
+        let d = JSONDecoder(); d.dateDecodingStrategy = .iso8601
+        let s = try d.decode(LidSession.self, from: Data(json.utf8))
+        #expect(s.pluggedInAtClose == nil)
+        #expect(!s.onCharger)
+        #expect(s.dropPercent == 2)
     }
 
     // MARK: - Standby timing

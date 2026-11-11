@@ -48,6 +48,9 @@ final class AutomationStore: ObservableObject {
     var isClamshellMode: Bool { isLidClosed }
 
     @Published private(set) var lastLidSession: LidSession?
+    /// The last close spent on battery: the only kind that measures sleep drain, so the
+    /// one the Sealed Sleep receipt reports. A close on the charger doesn't replace it.
+    @Published private(set) var lastBatteryLidSession: LidSession?
 
     /// Read to know whether "Always Active" is actually holding the Mac awake.
     weak var chargeLimit: ChargeLimitStore?
@@ -79,6 +82,7 @@ final class AutomationStore: ObservableObject {
         // Pending lid session (persisted so it survives the sleep).
         static let pendingCloseAt = "lidsession.closedAt"
         static let pendingCloseCharge = "lidsession.closeCharge"
+        static let pendingClosePlugged = "lidsession.closePluggedIn"
     }
 
     init() {
@@ -86,12 +90,15 @@ final class AutomationStore: ObservableObject {
         bluetoothOffOnLidClose = defaults.bool(forKey: Keys.bt)
         restoreOnWake = defaults.object(forKey: Keys.restore) as? Bool ?? true
         radioOffDelay = defaults.integer(forKey: Keys.radioDelay)
-        lastLidSession = LidSessionStore.recent(limit: 1).first
+        let recentLid = LidSessionStore.recent(limit: 30)
+        lastLidSession = recentLid.first
+        lastBatteryLidSession = recentLid.first { !$0.onCharger }
         // A close still pending with the lid open is one whose opening this app never saw
         // (it wasn't running). A session closed only when the next one starts would span both.
         if !LidMonitor.isClamshellClosed() {
             defaults.removeObject(forKey: Keys.pendingCloseAt)
             defaults.removeObject(forKey: Keys.pendingCloseCharge)
+            defaults.removeObject(forKey: Keys.pendingClosePlugged)
         }
 
         lid.onWillSleep = { [weak self] clamshellClosed, done in
@@ -221,8 +228,10 @@ final class AutomationStore: ObservableObject {
         // sleep of a close: the Mac goes back down after every wake inside it, and those
         // aren't new closes.
         if defaults.object(forKey: Keys.pendingCloseAt) == nil {
+            let snap = BatteryMonitor.read()
             defaults.set(Date(), forKey: Keys.pendingCloseAt)
-            defaults.set(BatteryMonitor.read().percentage, forKey: Keys.pendingCloseCharge)
+            defaults.set(snap.percentage, forKey: Keys.pendingCloseCharge)
+            defaults.set(snap.onExternalPower, forKey: Keys.pendingClosePlugged)
         }
 
         let wantWifi = wifiOffOnLidClose && RadioControl.isWiFiOn
@@ -334,16 +343,21 @@ final class AutomationStore: ObservableObject {
     private func completeLidSession() {
         guard let closedAt = defaults.object(forKey: Keys.pendingCloseAt) as? Date else { return }
         let closeCharge = defaults.integer(forKey: Keys.pendingCloseCharge)
+        let closePlugged = defaults.object(forKey: Keys.pendingClosePlugged) as? Bool
         defaults.removeObject(forKey: Keys.pendingCloseAt)
         defaults.removeObject(forKey: Keys.pendingCloseCharge)
+        defaults.removeObject(forKey: Keys.pendingClosePlugged)
 
-        let openCharge = BatteryMonitor.read().percentage
+        let snap = BatteryMonitor.read()
         let session = LidSession(closedAt: closedAt, closeCharge: closeCharge,
-                                 openedAt: Date(), openCharge: openCharge)
+                                 openedAt: Date(), openCharge: snap.percentage,
+                                 pluggedInAtClose: closePlugged,
+                                 pluggedInAtOpen: snap.onExternalPower)
         // Skip blips shorter than a minute.
         guard session.duration >= 60 else { return }
         LidSessionStore.append(session)
         lastLidSession = session
+        if !session.onCharger { lastBatteryLidSession = session }
     }
 
     /// Switch the radios back on after a wake. Asks the system at most twice.
