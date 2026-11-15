@@ -224,7 +224,13 @@ public struct ChargeDisplay: Equatable, Sendable {
         case .onBattery, .full: return .none
         case .charging: return .bolt
         case .calibrating(let charging): return charging ? .bolt : .pause
-        case .heldAtLimit, .holding, .draining, .paused, .pluggedIn:
+        // Passing moments, not holds: the charger negotiating, the helper's few seconds of
+        // settling after wake, the cut on the way into sleep. The pause mark said "eWiz is
+        // keeping charge off this battery", and on the bars style its two solid bars over
+        // a dimmed 32% read as a full battery. The level alone is the truth until the bolt.
+        case .pluggedIn, .paused(.settling), .paused(.sleep):
+            return .none
+        case .heldAtLimit, .holding, .draining, .paused:
             return percentage < 100 ? .pause : .none
         }
     }
@@ -262,7 +268,9 @@ public struct ChargeDisplay: Equatable, Sendable {
             return "Charging paused"
         case .paused(.heat):
             return "Charging paused, battery is warm"
-        case .paused(.settling), .paused(.sleep), .paused(.schedule):
+        case .paused(.settling):
+            return "Charging starts in a moment"
+        case .paused(.sleep), .paused(.schedule):
             return nil
         case .calibrating:
             return "Charging to 100% once"

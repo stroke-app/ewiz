@@ -393,7 +393,10 @@ public enum HelperBuild {
     ///        or 60 s after a closed-lid spell on battery — so the charge limit, the hold
     ///        and the status the app draws from all trailed the cable by that long. v29
     ///        wakes the loop on every power-source change.
-    public static let version = 29
+    ///   v30: charging starting or stopping wakes the loop too. The source doesn't switch
+    ///        when current starts after a resume or a plug-in, so the helper went on
+    ///        reporting "held" until its next tick.
+    public static let version = 30
 }
 
 public enum ControlError: Error, CustomStringConvertible {

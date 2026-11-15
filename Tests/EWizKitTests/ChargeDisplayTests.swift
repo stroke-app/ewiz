@@ -226,6 +226,11 @@ struct ChargeDisplayTests {
                                            limitEnabled: true, effectiveLimit: 80, pauseReason: "settling"))
         #expect(settling.state == .paused(.settling))
         #expect(settling.hint == "Charging resumes shortly after wake")
+        #expect(settling.mark == .none, "a few seconds of settling is not a hold")
+        #expect(settling.headerNote == "Charging starts in a moment")
+        let negotiating = ChargeDisplay(.init(percentage: 32, isCharging: false, isPluggedIn: true))
+        #expect(negotiating.state == .pluggedIn)
+        #expect(negotiating.mark == .none, "the pause bars over 32% read as a full battery")
         let schedule = ChargeDisplay(.init(percentage: 60, isCharging: false, isPluggedIn: true,
                                            pauseReason: "schedule"))
         #expect(schedule.state == .paused(.schedule))
@@ -272,7 +277,7 @@ struct ChargeDisplayTests {
     func pluggedIn() {
         let d = ChargeDisplay(.init(percentage: 60, isCharging: false, isPluggedIn: true))
         #expect(d.state == .pluggedIn)
-        #expect(d.mark == .pause)
+        #expect(d.mark == .none, "nothing is being held; the bolt follows once current flows")
         #expect(!d.holdsLevel)
         #expect(d.statusLine == "Plugged in, not charging")
         #expect(d.tooltip == "Plugged in · 60%")
