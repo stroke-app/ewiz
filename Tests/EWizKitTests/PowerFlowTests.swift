@@ -54,3 +54,27 @@ struct PowerFlowTests {
         #expect(f.systemWatts == 18)
     }
 }
+
+@Suite("Charging from current, not only the flag")
+struct ChargingFromCurrentTests {
+    @Test("current flowing in counts before macOS's flag turns over")
+    func currentBeatsALaggingFlag() {
+        #expect(BatteryMonitor.isCharging(flag: false, amperage: 1063, cableIn: true, full: false))
+    }
+
+    @Test("a trickle on the adapter is not charging")
+    func trickleIsNot() {
+        #expect(!BatteryMonitor.isCharging(flag: false, amperage: 120, cableIn: true, full: false))
+    }
+
+    @Test("no cable, or a full battery, is never charging from current alone")
+    func needsCableAndRoom() {
+        #expect(!BatteryMonitor.isCharging(flag: false, amperage: 2000, cableIn: false, full: false))
+        #expect(!BatteryMonitor.isCharging(flag: false, amperage: 2000, cableIn: true, full: true))
+    }
+
+    @Test("the flag saying yes is kept")
+    func flagWins() {
+        #expect(BatteryMonitor.isCharging(flag: true, amperage: -500, cableIn: true, full: false))
+    }
+}

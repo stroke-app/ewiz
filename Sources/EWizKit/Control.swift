@@ -396,7 +396,9 @@ public enum HelperBuild {
     ///   v30: charging starting or stopping wakes the loop too. The source doesn't switch
     ///        when current starts after a resume or a plug-in, so the helper went on
     ///        reporting "held" until its next tick.
-    public static let version = 30
+    ///   v31: charging is read from current flowing in, not only macOS's `IsCharging`, which
+    ///        trailed a plug-in by 23 s and had the MagSafe light go amber, green, amber.
+    public static let version = 31
 }
 
 public enum ControlError: Error, CustomStringConvertible {
