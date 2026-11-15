@@ -1,4 +1,5 @@
 import Foundation
+import IOKit
 import IOKit.ps
 import Combine
 import AppKit
@@ -21,11 +22,14 @@ final class BatteryStore: ObservableObject {
     private var powerTimer: Timer?
     private var powerViewers = 0
     private var runLoopSource: CFRunLoopSource?
+    private var batteryNotifyPort: IONotificationPortRef?
+    private var batteryInterest: io_object_t = 0
 
     init() {
         refresh()
         startPolling()
         startPowerSourceNotifications()
+        startBatteryInterestNotifications()
         // Refresh right after the Mac wakes so the menu isn't stale.
         NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.didWakeNotification, object: nil, queue: .main) { [weak self] _ in
@@ -47,7 +51,7 @@ final class BatteryStore: ObservableObject {
     /// kept it until the 30 s poll.
     func refreshSoon() {
         refresh()
-        for delay in [0.5, 2.0, 5.0, 10.0] {
+        for delay in [0.5, 2.0, 5.0, 10.0, 20.0] {
             DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
                 self?.refresh()
             }
@@ -91,7 +95,13 @@ final class BatteryStore: ObservableObject {
         guard powerTimer == nil else { return }
         powerFlow = PowerMonitor.read()
         let t = Timer(timeInterval: 5, repeats: true) { [weak self] _ in
-            Task { @MainActor in self?.powerFlow = PowerMonitor.read() }
+            Task { @MainActor in
+                // Only on change: an identical publish re-renders the whole open panel
+                // and the menu-bar label every five seconds for nothing.
+                guard let self else { return }
+                let flow = PowerMonitor.read()
+                if flow != self.powerFlow { self.powerFlow = flow }
+            }
         }
         t.tolerance = 1
         RunLoop.main.add(t, forMode: .common)
@@ -122,5 +132,35 @@ final class BatteryStore: ObservableObject {
         // someone is looking at the numbers.
         CFRunLoopAddSource(CFRunLoopGetMain(), source, .commonModes)
         runLoopSource = source
+    }
+
+    /// The battery's own "something changed" message, straight from its IORegistry entry.
+    ///
+    /// IOPS only speaks up when the power *source* switches, and two of the changes people
+    /// watch for don't switch it. Current starting after a resume or a plug-in (the charger
+    /// negotiates first) flips `IsCharging` with the source already AC; and pulling the
+    /// cable while the helper has the adapter cut flips `ExternalConnected` with the source
+    /// already "battery". Both left the panel and the icon on the old reading until the 30 s
+    /// poll. The battery driver posts this on every status update it makes, so it covers
+    /// both without polling. One plain read per message: it already publishes only on change.
+    private func startBatteryInterestNotifications() {
+        let service = IOServiceGetMatchingService(
+            kIOMainPortDefault, IOServiceMatching("AppleSmartBattery"))
+        guard service != 0 else { return }
+        defer { IOObjectRelease(service) }
+        guard let port = IONotificationPortCreate(kIOMainPortDefault) else { return }
+        IONotificationPortSetDispatchQueue(port, .main)
+        let context = Unmanaged.passUnretained(self).toOpaque()
+        let result = IOServiceAddInterestNotification(
+            port, service, kIOGeneralInterest, { ctx, _, _, _ in
+                guard let ctx else { return }
+                let store = Unmanaged<BatteryStore>.fromOpaque(ctx).takeUnretainedValue()
+                MainActor.assumeIsolated { store.refresh() }
+            }, context, &batteryInterest)
+        guard result == KERN_SUCCESS else {
+            IONotificationPortDestroy(port)
+            return
+        }
+        batteryNotifyPort = port
     }
 }

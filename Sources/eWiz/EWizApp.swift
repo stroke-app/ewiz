@@ -53,7 +53,10 @@ struct EWizApp: App {
                                      settings: settings, notifier: notifier, triggers: triggers,
                                      hotkeys: hotkeys, caffeine: caffeine, actions: actions,
                                      license: license, restReminder: restReminder,
-                                     overlay: overlay, idleSaver: idleSaver))
+                                     overlay: overlay, idleSaver: idleSaver,
+                                     describe: { [weak menuBar = appDelegate.menuBar] in
+                                         menuBar?.describe($0)
+                                     }))
             },
             panel: { [self] in
                 AnyView(MenuContentView()
@@ -156,7 +159,14 @@ struct MenuBarLabel: View {
     let restReminder: RestReminder
     let overlay: ChargeOverlayController
     let idleSaver: IdleSaverStore
+    /// Hands the status item its accessibility label and tooltip. The SwiftUI `.help` below
+    /// sits in a hosting view that passes every hit through, so VoiceOver found an
+    /// unlabelled button and the tooltip depended on SwiftUI's hover tracking.
+    let describe: (String) -> Void
     @Environment(\.openWindow) private var openWindow
+    /// The pending burst of helper re-reads after a cable or charging change. See
+    /// `refreshChargeStatusSoon`.
+    @State private var chargeRefresh: Task<Void, Never>?
 
     /// The completion flash is on. Set and cleared only by `celebrate`/`endCelebration`,
     /// which own its clock — see `celebration`.
@@ -204,7 +214,7 @@ struct MenuBarLabel: View {
         let tint: MenuBarTint =
             celebratingNow && settings.colorMenuBarIcon
             ? .colored(NSColor(ChargePalette.legible(1)))
-            : settings.colorMenuBarIcon ? tint(for: snap) : .neutral
+            : settings.colorMenuBarIcon ? tint(for: snap, onAdapter: display.onAdapter) : .neutral
         // Each tick re-renders the status item, and that relayout measured ~10% of a
         // core sustained — the entire time the Mac was plugged in. So the charging
         // animation is opt-in. The completion flash doesn't need the tick: the check
@@ -234,12 +244,27 @@ struct MenuBarLabel: View {
         // asked to keep running, every time it engaged.
         // Before `applyPolicy`, so a restored hold is reconciled to the real power
         // source on this same pass rather than sitting at the assumed-AC default.
-        caffeine.restoreSessionIfNeeded()
-        caffeine.applyPolicy(keepDisplayOnBattery: settings.caffeineKeepDisplayOnBattery,
-                             endOnBattery: settings.caffeineEndOnBattery,
-                             onExternalPower: snap.onExternalPower || chargeLimit.discharging)
+        //
+        // Deferred a turn: each of these can publish (a restored session sets `active`,
+        // reconciling a hold on unplug swaps it, the idle saver's first tick clears its
+        // reason), and publishing from inside a view update is undefined — the open panel's
+        // Awake tile could miss the change. The order inside the block is the order that
+        // matters; all of it is idempotent, so a render that queues it twice costs nothing.
+        let onExternalPower = snap.onExternalPower || chargeLimit.discharging
+        let keepDisplayOnBattery = settings.caffeineKeepDisplayOnBattery
+        let endOnBattery = settings.caffeineEndOnBattery
+        let percentage = snap.percentage
+        DispatchQueue.main.async { [caffeine, idleSaver] in
+            caffeine.restoreSessionIfNeeded()
+            caffeine.applyPolicy(keepDisplayOnBattery: keepDisplayOnBattery,
+                                 endOnBattery: endOnBattery,
+                                 onExternalPower: onExternalPower)
+            caffeine.endIfBatteryLow(percentage: percentage, onExternalPower: onExternalPower)
+            idleSaver.startIfNeeded(caffeine: caffeine)
+        }
         restReminder.startIfNeeded(settings: settings, battery: battery)
-        idleSaver.startIfNeeded(caffeine: caffeine)
+        // Here, not in `onAppear`: see the shortcuts above. Idempotent.
+        triggers.attach(chargeLimit: chargeLimit, battery: battery)
         return HStack(spacing: 2) {
             // Its own view, and that is the whole point: the animation ticks four times a
             // second, and when the frame lived in this body every tick re-evaluated the
@@ -262,7 +287,7 @@ struct MenuBarLabel: View {
                 Text(text).monospacedDigit()
             }
         }
-        .help(display.tooltip)
+        .onChange(of: display.tooltip, initial: true) { _, text in describe(text) }
         // Every reaction to the charge state hangs off this one change. It replaced four
         // handlers on four different flags that each fired in modifier order and shared
         // state through `@State` scratch variables: one recorded when charging stopped for
@@ -277,11 +302,13 @@ struct MenuBarLabel: View {
         // Plug and unplug feedback. Driven off the snapshot rather than a power-source
         // callback of its own: this view already re-renders on every snapshot change, and
         // `onChange` fires once per real transition rather than on every poll.
-        .onChange(of: snap.isPluggedIn) { was, isNow in
+        //
+        // The physical cable, not macOS's power source. The helper cutting the adapter to
+        // hold or drain flips `isPluggedIn` with the cable still in, and restoring it flips
+        // it back — so every hold cycle chimed "disconnected" then "connected", and the old
+        // guard only caught one direction (and only once the 30 s poll had seen the cut).
+        .onChange(of: snap.isExternalConnected) { was, isNow in
             guard was != isNow else { return }
-            // The helper cutting the adapter to drain or hold flips this too, with the
-            // cable still in. That isn't an unplug and shouldn't sound like one.
-            guard isNow || !(chargeLimit.discharging && snap.isExternalConnected) else { return }
             if settings.hapticsEnabled {
                 isNow ? HapticFeedback.chargeConnected() : HapticFeedback.chargeDisconnected()
             }
@@ -308,15 +335,23 @@ struct MenuBarLabel: View {
         .onChange(of: snap.isExternalConnected) { _, _ in refreshChargeStatusSoon() }
         .onChange(of: snap.isPluggedIn) { _, _ in refreshChargeStatusSoon() }
         .onChange(of: snap.isCharging) { _, _ in refreshChargeStatusSoon() }
-        // The status item exists from launch, so this is where the automation
-        // rules start watching — they must run whether or not the menu is opened.
-        .onAppear { triggers.attach(chargeLimit: chargeLimit, battery: battery) }
     }
 
+    /// One burst of helper re-reads, restarted rather than stacked: a single plug flips the
+    /// cable, the source and the charging flag a moment apart, and each used to start its
+    /// own burst — a dozen status calls in ten seconds. 15 s is past the helper's own
+    /// 10 s tick, so the last read lands after it has reacted.
     private func refreshChargeStatusSoon() {
         chargeLimit.refresh()
-        for delay in [1.5, 4.0, 10.0] {
-            DispatchQueue.main.asyncAfter(deadline: .now() + delay) { chargeLimit.refresh() }
+        chargeRefresh?.cancel()
+        chargeRefresh = Task { @MainActor in
+            var elapsed = 0.0
+            for at in [1.5, 4.0, 10.0, 15.0] {
+                try? await Task.sleep(nanoseconds: UInt64((at - elapsed) * 1_000_000_000))
+                guard !Task.isCancelled else { return }
+                elapsed = at
+                chargeLimit.refresh()
+            }
         }
     }
 
@@ -402,10 +437,14 @@ struct MenuBarLabel: View {
     /// the same green would be claiming everything is fine about a number that is only
     /// going down, which is why an unplugged Mac at 80% draws in the menu bar's own
     /// colour and says nothing until it drops far enough to be worth a red.
-    private func tint(for snap: BatterySnapshot) -> MenuBarTint {
+    ///
+    /// "On power" is the display's reading, not macOS's `isPluggedIn`: a hold that cuts the
+    /// adapter makes macOS say battery with the cable still in, and the glyph then wore the
+    /// pause mark of a held battery in the colour of an unplugged one.
+    private func tint(for snap: BatterySnapshot, onAdapter: Bool) -> MenuBarTint {
         if isWarm(snap) { return .colored(.systemRed) }
-        if snap.percentage <= 20 && !snap.isPluggedIn { return .colored(.systemRed) }
-        guard snap.isPluggedIn else { return .neutral }
+        if snap.percentage <= 20 && !onAdapter { return .colored(.systemRed) }
+        guard onAdapter else { return .neutral }
         return .colored(NSColor(ChargePalette.legible(Double(snap.percentage) / 100)))
     }
 

@@ -132,7 +132,16 @@ public final class CaffeineManager: ObservableObject {
     /// default of `.standard` would have them reading and writing the real app's session.
     private let sessionStore: UserDefaults?
     private static let sessionKey = "caffeine.session"
+    /// The boot a stored session was started in. See `restoreSessionIfNeeded`.
+    private static let sessionBootKey = "caffeine.sessionBoot"
     private var didRestore = false
+    /// Identifies the current boot (`SystemUptime.bootTimestamp`); injectable for tests.
+    private let currentBoot: @Sendable () -> TimeInterval?
+    /// The charge at the last low-battery check, so the cut fires on the way down through
+    /// the cutoff and not again over a session someone switched back on below it.
+    private var lastCheckedPercentage: Int?
+    /// At or under this on battery, a running session lets go. See `endIfBatteryLow`.
+    public static let lowBatteryCutoff = 15
     /// Injectable delay so timed-expiry can be driven deterministically in tests.
     private let sleepFor: @Sendable (TimeInterval) async -> Void
     private var token: UInt32 = 0
@@ -146,6 +155,7 @@ public final class CaffeineManager: ObservableObject {
                 reason: String = "eWiz: Caffeine (keep awake)",
                 sessionStore: UserDefaults? = nil,
                 userActivityInterval: TimeInterval = 30,
+                currentBoot: @escaping @Sendable () -> TimeInterval? = { SystemUptime.bootTimestamp() },
                 sleepFor: @escaping @Sendable (TimeInterval) async -> Void = { seconds in
                     try? await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
                 }) {
@@ -153,6 +163,7 @@ public final class CaffeineManager: ObservableObject {
         self.reason = reason
         self.sessionStore = sessionStore
         self.userActivityInterval = userActivityInterval
+        self.currentBoot = currentBoot
         self.sleepFor = sleepFor
     }
 
@@ -206,6 +217,17 @@ public final class CaffeineManager: ObservableObject {
         didRestore = true
         guard let sessionStore,
               let stored = sessionStore.object(forKey: Self.sessionKey) as? Double else { return }
+        // Same boot only. What this restore is for (an update relaunch, a crash) happens
+        // inside one boot. Carrying "until I turn it off" across restarts is how one tap of
+        // Awake held the screen on for 82 hours straight, on battery, through every reboot.
+        // A session with no boot stamp predates this and can't prove it's from this boot, so
+        // it's dropped too; that is the 82-hour one. Only an unreadable clock restores blind.
+        let storedBoot = sessionStore.object(forKey: Self.sessionBootKey) as? Double
+        if let boot = currentBoot(), storedBoot.map({ abs($0 - boot) > 1 }) ?? true {
+            sessionStore.removeObject(forKey: Self.sessionKey)
+            sessionStore.removeObject(forKey: Self.sessionBootKey)
+            return
+        }
         // 0 is the indefinite session; anything else is a deadline.
         guard stored != 0 else { engage(holdingFor: nil); return }
         let remaining = Date(timeIntervalSince1970: stored).timeIntervalSinceNow
@@ -244,9 +266,26 @@ public final class CaffeineManager: ObservableObject {
         guard let sessionStore else { return }
         guard active else {
             sessionStore.removeObject(forKey: Self.sessionKey)
+            sessionStore.removeObject(forKey: Self.sessionBootKey)
             return
         }
         sessionStore.set(expiresAt?.timeIntervalSince1970 ?? 0, forKey: Self.sessionKey)
+        if let boot = currentBoot() { sessionStore.set(boot, forKey: Self.sessionBootKey) }
+    }
+
+    /// Let go when the battery runs low on battery power.
+    ///
+    /// A held screen is the biggest load a session adds, and an indefinite one has no clock
+    /// of its own to end it: left on, it runs the battery to empty, which is a worse end for
+    /// whatever it was keeping alive than ordinary sleep. Fires only on the way down through
+    /// the cutoff, so switching Awake back on below it is respected.
+    public func endIfBatteryLow(percentage: Int, onExternalPower: Bool) {
+        let previous = lastCheckedPercentage
+        lastCheckedPercentage = percentage
+        guard active, !onExternalPower,
+              percentage <= Self.lowBatteryCutoff,
+              let previous, previous > Self.lowBatteryCutoff else { return }
+        deactivate()
     }
 
     /// Release keep-awake and let the Mac sleep/dim normally again. No-op if inactive.

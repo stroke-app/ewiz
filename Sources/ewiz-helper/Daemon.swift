@@ -276,7 +276,22 @@ final class Daemon: @unchecked Sendable {
         let wake = tickWake
         notify_register_dispatch(kIOPSNotifyPowerSource, &powerSourceToken,
                                  DispatchQueue.global(qos: .utility)) { _ in wake.signal() }
+        // Charging starting or stopping doesn't switch the source, so the line above never
+        // hears it: after a resume or a plug-in, current started seconds later and the
+        // helper went on reporting "held" until its next tick. The any-change channel also
+        // fires on every percent, so it only wakes the loop when the charging/cable pair
+        // actually moved — one extra tick per transition, not per percent.
+        let queue = DispatchQueue(label: "ewiz.helper.power-change", qos: .utility)
+        var last: (charging: Bool, external: Bool)?
+        notify_register_dispatch(kIOPSNotifyAnyPowerSource, &anyPowerSourceToken, queue) { _ in
+            let snap = BatteryMonitor.read()
+            let now = (snap.isCharging, snap.isExternalConnected)
+            defer { last = now }
+            guard let last, last != now else { return }
+            wake.signal()
+        }
     }
+    private var anyPowerSourceToken: Int32 = 0
 
     /// Every two minutes, check that something is still accepting on the socket. The probe
     /// is answered on the accept thread without the daemon's lock, so a slow request can't

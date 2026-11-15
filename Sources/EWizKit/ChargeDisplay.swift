@@ -156,6 +156,12 @@ public struct ChargeDisplay: Equatable, Sendable {
 
     public var stop: Int { Self.stop(input) }
 
+    /// On the adapter as far as the user is concerned: the cable is in, whether or not the
+    /// helper has the adapter cut to hold or drain. Every "plugged in" decision a surface
+    /// makes (colour, estimate, marker) asks this rather than `isPluggedIn`, which turns
+    /// false during a hold and drew a held battery in the on-battery colour.
+    public var onAdapter: Bool { state != .onBattery }
+
     static func resolve(_ i: ChargeDisplayInput) -> ChargeDisplayState {
         // `|| discharging`: holding on a Mac with no charge key means cutting the adapter,
         // and macOS then says "Battery Power" with the cable still in. That's the hold
