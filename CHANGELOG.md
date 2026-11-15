@@ -1,5 +1,13 @@
 # ewiz
 
+## 0.19.6
+
+### Patch Changes
+
+- 09c7849: **Awake no longer outlives a restart or a nearly empty battery.** An "until I turn it off" session was restored on every launch, including after a reboot, so a single tap could keep the screen on for days, on battery too. It now comes back only within the same boot (an update relaunch or a crash), and on battery it ends when the charge falls to 15%.
+- 09c7849: **The menu bar and panel follow the cable and charging as they change.** eWiz now listens to the battery itself, so current starting after a resume or a plug-in, and pulling the cable while a hold has the adapter cut, both show up in a second instead of on the next poll. A timed pause leaves "Charging paused" the moment it runs out. A slider closed mid-drag can no longer freeze the panel's status until relaunch, and an older status reply can no longer overwrite a newer one. The helper also reacts when charging starts or stops, not only when the power source switches.
+- 09c7849: **Menu bar and panel fixes.** A hold that cuts the adapter no longer plays the unplug and plug-in sounds or the overlay, and the icon and gauge keep their on-power colour while it holds. The gauge's marker shows where charging actually stops (macOS's step, or the hold's level), the "Resumes in" and Awake countdowns tick while the panel is open, and the panel no longer redraws every five seconds when nothing changed. The status item has a VoiceOver label and tooltip, and turning on Reduce Motion takes effect at once, including the gauge's pulse.
+
 ## 0.19.5
 
 ### Patch Changes
