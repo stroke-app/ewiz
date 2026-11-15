@@ -141,6 +141,10 @@ public struct ControlResponse: Codable, Sendable {
     /// so without one it can do nothing. An older daemon omits it and reads as true, which
     /// is what it would have claimed anyway.
     public var chargeControlSupported: Bool
+    /// The adapter is physically there, from the SMC (`AC-W`), nil where the key is missing
+    /// or the daemon predates it. Unlike IORegistry's `ExternalConnected` it survives the
+    /// helper cutting the adapter, which on some Macs reads exactly like an unplug.
+    public var adapterPresent: Bool? = nil
     public var message: String?
     /// Protocol version of the responding daemon. Older daemons omit it → decode to 0 → outdated.
     public var daemonProtocolVersion: Int
@@ -214,6 +218,7 @@ public struct ControlResponse: Codable, Sendable {
         nativeLimitSteps = try c.decodeIfPresent([Int].self, forKey: .nativeLimitSteps) ?? []
         nativeLimitApplied = try c.decodeIfPresent(Int.self, forKey: .nativeLimitApplied)
         chargeControlSupported = try c.decodeIfPresent(Bool.self, forKey: .chargeControlSupported) ?? true
+        adapterPresent = try c.decodeIfPresent(Bool.self, forKey: .adapterPresent)
         message = try c.decodeIfPresent(String.self, forKey: .message)
         daemonProtocolVersion = try c.decodeIfPresent(Int.self, forKey: .daemonProtocolVersion) ?? 0
         daemonBuildVersion = try c.decodeIfPresent(Int.self, forKey: .daemonBuildVersion) ?? 0
@@ -398,7 +403,11 @@ public enum HelperBuild {
     ///        reporting "held" until its next tick.
     ///   v31: charging is read from current flowing in, not only macOS's `IsCharging`, which
     ///        trailed a plug-in by 23 s and had the MagSafe light go amber, green, amber.
-    public static let version = 31
+    ///   v32: switching a limit on stops the charge within a second. macOS takes ~40 s to act
+    ///        on its own limit; the adapter stands in for up to 90 s until it has.
+    ///   v33: the cable reads as in through an adapter cut (ExternalChargeCapable), where
+    ///        ExternalConnected alone said unplugged.
+    public static let version = 33
 }
 
 public enum ControlError: Error, CustomStringConvertible {

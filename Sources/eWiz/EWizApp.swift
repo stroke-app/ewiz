@@ -309,20 +309,17 @@ struct MenuBarLabel: View {
         // guard only caught one direction (and only once the 30 s poll had seen the cut).
         .onChange(of: snap.isExternalConnected) { was, isNow in
             guard was != isNow else { return }
-            if settings.hapticsEnabled {
-                isNow ? HapticFeedback.chargeConnected() : HapticFeedback.chargeDisconnected()
+            // On some Macs the helper cutting or restoring the adapter flips this exactly as
+            // a pull would, so ask the helper's SMC reading before saying anything. Present
+            // before and after means the cable never moved. No reading (an older helper, a
+            // Mac without the key) keeps the old behaviour.
+            let before = chargeLimit.adapterPresent
+            let percentage = snap.percentage
+            Task { @MainActor in
+                await chargeLimit.refreshNow()
+                if before == true, chargeLimit.adapterPresent == true { return }
+                cableFeedback(isNow, percentage: percentage)
             }
-            if settings.soundAllowed {
-                ChargeSound.play(isNow ? .connect : .disconnect, volume: settings.soundVolume,
-                                 theme: settings.soundTheme)
-            }
-            guard ChargeOverlayFeature.shipped, settings.chargeOverlayEnabled,
-                  isNow || settings.chargeOverlayOnUnplug else { return }
-            overlay.show(style: settings.chargeOverlayStyle,
-                         duration: settings.chargeOverlayDuration,
-                         percentage: snap.percentage,
-                         plugging: isNow,
-                         allowMotion: settings.motionAllowed)
         }
         // A real plug or unplug changes what the helper is doing (hold, drain, pause), and
         // its state otherwise waits for the 30 s poll — the icon lagged up to ~45 s behind
@@ -335,6 +332,24 @@ struct MenuBarLabel: View {
         .onChange(of: snap.isExternalConnected) { _, _ in refreshChargeStatusSoon() }
         .onChange(of: snap.isPluggedIn) { _, _ in refreshChargeStatusSoon() }
         .onChange(of: snap.isCharging) { _, _ in refreshChargeStatusSoon() }
+    }
+
+    /// The plug / unplug cue: haptic, sound and overlay.
+    private func cableFeedback(_ isNow: Bool, percentage: Int) {
+        if settings.hapticsEnabled {
+            isNow ? HapticFeedback.chargeConnected() : HapticFeedback.chargeDisconnected()
+        }
+        if settings.soundAllowed {
+            ChargeSound.play(isNow ? .connect : .disconnect, volume: settings.soundVolume,
+                             theme: settings.soundTheme)
+        }
+        guard ChargeOverlayFeature.shipped, settings.chargeOverlayEnabled,
+              isNow || settings.chargeOverlayOnUnplug else { return }
+        overlay.show(style: settings.chargeOverlayStyle,
+                     duration: settings.chargeOverlayDuration,
+                     percentage: percentage,
+                     plugging: isNow,
+                     allowMotion: settings.motionAllowed)
     }
 
     /// One burst of helper re-reads, restarted rather than stacked: a single plug flips the

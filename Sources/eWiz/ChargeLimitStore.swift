@@ -88,6 +88,8 @@ final class ChargeLimitStore: ObservableObject {
     @Published private(set) var sensors: [SensorReading] = []
     @Published private(set) var dischargeSupported = false
     @Published private(set) var discharging = false
+    /// The helper's SMC reading of the adapter. See `ControlResponse.adapterPresent`.
+    @Published private(set) var adapterPresent: Bool?
     @Published var disableChargingBeforeSleep = false
     @Published var preventIdleSleep = false
     /// "Always Active": keep the Mac awake with the lid closed (on AC power).
@@ -195,6 +197,16 @@ final class ChargeLimitStore: ObservableObject {
             let result = try? ControlClient.send(.getStatus)
             await self.ingestFromRefresh(result, sequence: sequence)
         }
+    }
+
+    /// Read the helper's status now and wait for it, for a decision that needs it fresh.
+    /// Skipped, like `refresh`, while a write or a drag is in progress.
+    func refreshNow() async {
+        guard pendingWrites == 0, !isEditing else { return }
+        refreshSequence += 1
+        let sequence = refreshSequence
+        let result = await Task.detached { try? ControlClient.send(.getStatus) }.value
+        ingestFromRefresh(result, sequence: sequence)
     }
 
     /// Issue order of status reads. Each runs on its own detached task, and with the
@@ -522,7 +534,11 @@ final class ChargeLimitStore: ObservableObject {
             // The daemon's flag is only as fresh as the last 30 s poll. With the cable
             // physically out it can't be a cut adapter, so a stale `true` mustn't hold the
             // icon on "plugged in" after a real unplug.
-            discharging: discharging && snap.isExternalConnected,
+            //
+            // The cable test asks the SMC too, through the helper: on some Macs cutting the
+            // adapter clears `ExternalConnected` as if it were pulled, and the panel then
+            // said "On battery" over a cable that was in, mid-drain to the limit.
+            discharging: discharging && (snap.isExternalConnected || adapterPresent == true),
             isPaused: isPaused,
             calibrating: calibrating,
             chargePower: chargePower))
@@ -664,6 +680,25 @@ final class ChargeLimitStore: ObservableObject {
         command(.setPowerToggle(toggle, on))
     }
 
+    private var adapterCutFollow: Task<Void, Never>?
+
+    /// Re-read every few seconds while the helper has the adapter cut.
+    ///
+    /// Through a cut the battery store has nothing to go on: the cable already reads as
+    /// out, so pulling it for real changes nothing IOKit reports, and only the helper (from
+    /// the SMC) can say when the cut ends or the cable went. The cut lasts a minute or two
+    /// at most, so the extra socket calls are bounded.
+    private func followWhileAdapterCut() {
+        guard discharging else { adapterCutFollow?.cancel(); adapterCutFollow = nil; return }
+        guard adapterCutFollow == nil else { return }
+        adapterCutFollow = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: 3_000_000_000)
+            guard !Task.isCancelled, let self else { return }
+            self.adapterCutFollow = nil
+            self.refresh()
+        }
+    }
+
     private var resumeRefresh: Task<Void, Never>?
 
     /// Re-read just after a timed pause runs out, so the panel and the icon leave "paused"
@@ -761,6 +796,8 @@ final class ChargeLimitStore: ObservableObject {
         set(\.sensors, r.sensors)
         set(\.dischargeSupported, r.dischargeSupported)
         set(\.discharging, r.discharging)
+        set(\.adapterPresent, r.adapterPresent)
+        followWhileAdapterCut()
         set(\.disableChargingBeforeSleep, r.config.disableChargingBeforeSleep)
         set(\.preventIdleSleep, r.config.preventIdleSleep)
         set(\.keepAwake, r.config.keepAwake)

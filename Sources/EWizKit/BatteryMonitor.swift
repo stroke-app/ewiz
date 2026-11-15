@@ -104,6 +104,18 @@ public enum BatteryMonitor {
         flag || (cableIn && !full && amperage >= chargingCurrentFloor)
     }
 
+    /// Whether the cable is physically in.
+    ///
+    /// `ExternalConnected` alone isn't it. On Macs that limit through macOS's own charge
+    /// limit, an adapter cut (macOS running the battery down to its limit, or eWiz standing
+    /// in for it) clears `ExternalConnected` exactly as a pull does, and the app said "On
+    /// battery" over a cable that was in. Traced on such a Mac: through a cut
+    /// `ExternalChargeCapable` stays Yes; on a real unplug both go No in the same sample.
+    /// The adapter's details are no help here, as they linger for a second after a pull.
+    public static func cablePresent(externalConnected: Bool, chargeCapable: Bool?) -> Bool {
+        externalConnected || chargeCapable == true
+    }
+
     // MARK: - AppleSmartBattery (hardware detail)
 
     private static func readSmartBattery(into snap: inout BatterySnapshot) {
@@ -121,7 +133,8 @@ public enum BatteryMonitor {
         // Physical adapter presence — true even while force-discharging, unlike the
         // providing-source flag. Overrides the baseline.
         if let ext = props["ExternalConnected"] as? Bool {
-            snap.isExternalConnected = ext
+            snap.isExternalConnected = Self.cablePresent(
+                externalConnected: ext, chargeCapable: props["ExternalChargeCapable"] as? Bool)
         }
 
         // Signed mA, positive into the battery. CFNumber keeps the sign; the ioreg text
