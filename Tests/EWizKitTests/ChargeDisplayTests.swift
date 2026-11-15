@@ -358,4 +358,15 @@ struct ChargeCompletionTests {
         #expect(!ChargeDisplayState.holding(at: 80).sameKind(as: .heldAtLimit(80)))
         #expect(!ChargeDisplayState.charging(to: 80).sameKind(as: .pluggedIn))
     }
+
+    @Test("A hold that cuts the adapter still reads as on the adapter")
+    func adapterCutHoldIsOnAdapter() {
+        let held = ChargeDisplay(ChargeDisplayInput(
+            percentage: 85, isCharging: false, isPluggedIn: false,
+            limitEnabled: true, effectiveLimit: 80, discharging: true))
+        #expect(held.onAdapter, "colour and estimate must follow the cable, not macOS's source")
+        let unplugged = ChargeDisplay(ChargeDisplayInput(
+            percentage: 85, isCharging: false, isPluggedIn: false))
+        #expect(!unplugged.onAdapter)
+    }
 }

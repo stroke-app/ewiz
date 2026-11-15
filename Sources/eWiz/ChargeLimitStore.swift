@@ -132,7 +132,10 @@ final class ChargeLimitStore: ObservableObject {
     @Published private(set) var calibrating = false
     /// When charging is scheduled to resume (nil = not paused).
     @Published private(set) var pauseUntil: Date?
-    var isPaused: Bool { pauseUntil != nil }
+    /// Past its deadline a timed pause is over, whatever the last poll said. Reading the
+    /// flag alone kept "Charging paused" up for as long as half a minute after the timer ran
+    /// out and the helper had already resumed. See also `scheduleResumeRefresh`.
+    var isPaused: Bool { pauseUntil.map { $0 > Date() } ?? false }
     var isPausedIndefinitely: Bool { (pauseUntil ?? .distantPast) > Date().addingTimeInterval(3600 * 24 * 365) }
 
     /// Full config last seen from the daemon, so edits preserve unrelated fields.
@@ -185,17 +188,27 @@ final class ChargeLimitStore: ObservableObject {
     /// Pull status from the daemon (skipped while a write is outstanding, or while a
     /// control is being dragged — see `editingControls`).
     func refresh() {
-        guard pendingWrites == 0, editingControls == 0 else { return }
+        guard pendingWrites == 0, !isEditing else { return }
+        refreshSequence += 1
+        let sequence = refreshSequence
         Task.detached {
             let result = try? ControlClient.send(.getStatus)
-            await self.ingestFromRefresh(result)
+            await self.ingestFromRefresh(result, sequence: sequence)
         }
     }
 
-    /// Ingest a getStatus response only if no config write started meanwhile, and nothing
-    /// is being dragged — a refresh in flight when the drag began still lands here.
-    private func ingestFromRefresh(_ response: ControlResponse?) {
-        guard pendingWrites == 0, editingControls == 0 else { return }
+    /// Issue order of status reads. Each runs on its own detached task, and with the
+    /// helper's lock held for a pmset call a slow early answer could land after a quick
+    /// later one and put the older state back until the next poll.
+    private var refreshSequence = 0
+    private var ingestedSequence = 0
+
+    /// Ingest a getStatus response only if no config write started meanwhile, nothing is
+    /// being dragged (a refresh in flight when the drag began still lands here), and no
+    /// newer read has already been taken in.
+    private func ingestFromRefresh(_ response: ControlResponse?, sequence: Int) {
+        guard pendingWrites == 0, !isEditing, sequence > ingestedSequence else { return }
+        ingestedSequence = sequence
         ingest(response)
     }
 
@@ -209,6 +222,8 @@ final class ChargeLimitStore: ObservableObject {
     }
 
     private func finishCommand(_ response: ControlResponse?) {
+        // A command's answer is newer than any read issued before it.
+        ingestedSequence = refreshSequence
         ingest(response)
         pendingWrites = max(0, pendingWrites - 1)
     }
@@ -522,13 +537,29 @@ final class ChargeLimitStore: ObservableObject {
     /// straight over the one under the user's finger and the knob jumped back. Counted
     /// rather than a flag, because two controls can be live at once in Settings.
     private var editingControls = 0
+    private var editingSince: Date?
 
-    func beginEditing() { editingControls += 1 }
+    /// A drag in progress. Bounded, because only `endEditing` ever lowers the count and a
+    /// slider torn down mid-drag (the panel closing under the pointer, Settings closing)
+    /// never sends it: the count then stuck above zero and every refresh after it was
+    /// skipped until relaunch — the panel frozen on whatever it last showed. No real drag
+    /// lasts a minute.
+    private var isEditing: Bool {
+        guard editingControls > 0, let since = editingSince else { return false }
+        return Date().timeIntervalSince(since) < 60
+    }
+
+    func beginEditing() {
+        if !isEditing { editingControls = 0 }
+        editingControls += 1
+        editingSince = Date()
+    }
 
     /// Ends the hold *and* commits — the two always happened together, and splitting them
     /// is how a slider ends up silently not saving.
     func endEditing() {
         editingControls = max(0, editingControls - 1)
+        if editingControls == 0 { editingSince = nil }
         apply()
     }
 
@@ -633,6 +664,27 @@ final class ChargeLimitStore: ObservableObject {
         command(.setPowerToggle(toggle, on))
     }
 
+    private var resumeRefresh: Task<Void, Never>?
+
+    /// Re-read just after a timed pause runs out, so the panel and the icon leave "paused"
+    /// when the helper does instead of on the next poll.
+    private func scheduleResumeRefresh() {
+        resumeRefresh?.cancel()
+        resumeRefresh = nil
+        guard let until = pauseUntil, !isPausedIndefinitely else { return }
+        let wait = until.timeIntervalSinceNow + 1
+        guard wait > 0 else { return }
+        resumeRefresh = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: UInt64(wait * 1_000_000_000))
+            guard !Task.isCancelled, let self else { return }
+            // The helper ends the pause on its own tick; the battery's charging flag turns
+            // over a few seconds after that.
+            self.objectWillChange.send()
+            self.refresh()
+            NotificationCenter.default.post(name: .ewizChargeStateChanged, object: nil)
+        }
+    }
+
     /// Assign only when the value actually changed, so a status poll that returns
     /// identical state doesn't fire a burst of objectWillChange (and needless redraws).
     private func set<T: Equatable>(_ keyPath: ReferenceWritableKeyPath<ChargeLimitStore, T>, _ newValue: T) {
@@ -732,6 +784,7 @@ final class ChargeLimitStore: ObservableObject {
         set(\.chargePower, r.config.chargePower)
         set(\.calibrating, r.config.calibrateToFull)
         set(\.pauseUntil, r.config.pauseUntil)
+        scheduleResumeRefresh()
 
         // The helper changed what the battery is doing → nudge the battery store so the
         // panel and the menu-bar icon catch up now, not on the next slow poll.

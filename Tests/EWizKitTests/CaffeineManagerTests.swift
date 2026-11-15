@@ -423,6 +423,39 @@ struct CaffeineManagerTests {
 /// screen went dark half an hour later.
 @Suite("Caffeine session survives a restart")
 @MainActor
+struct CaffeineLowBatteryTests {
+    @Test("crossing the cutoff on battery ends the session")
+    func crossingTheCutoffEnds() {
+        let backend = FakeKeepAwake()
+        let m = CaffeineManager(backend: backend)
+        m.activate(.indefinite)
+        m.endIfBatteryLow(percentage: 16, onExternalPower: false)
+        #expect(m.active)
+        m.endIfBatteryLow(percentage: 15, onExternalPower: false)
+        #expect(!m.active)
+        #expect(backend.heldCount == 0)
+    }
+
+    @Test("switched back on below the cutoff, it stays on")
+    func reEnablingBelowTheCutoffIsRespected() {
+        let m = CaffeineManager(backend: FakeKeepAwake())
+        m.endIfBatteryLow(percentage: 12, onExternalPower: false)
+        m.activate(.indefinite)
+        m.endIfBatteryLow(percentage: 11, onExternalPower: false)
+        #expect(m.active)
+    }
+
+    @Test("on the charger nothing ends")
+    func chargerKeepsIt() {
+        let m = CaffeineManager(backend: FakeKeepAwake())
+        m.activate(.indefinite)
+        m.endIfBatteryLow(percentage: 20, onExternalPower: true)
+        m.endIfBatteryLow(percentage: 10, onExternalPower: true)
+        #expect(m.active)
+    }
+}
+
+@MainActor
 struct CaffeineSessionRestoreTests {
 
     /// A throwaway defaults suite, so a test never reads or writes the real app's session.
@@ -503,6 +536,31 @@ struct CaffeineSessionRestoreTests {
         // The only reliable launch hook is the status-item label's body, which runs often.
         for _ in 0..<5 { relaunched.restoreSessionIfNeeded() }
         #expect(backend.heldCount == 1)
+    }
+
+    @Test("a session from an earlier boot stays off")
+    func sessionFromAnotherBootIsNotRestored() {
+        let defaults = store()
+        CaffeineManager(backend: FakeKeepAwake(), sessionStore: defaults,
+                        currentBoot: { 1_000 }).activate(.indefinite)
+
+        let backend = FakeKeepAwake()
+        let rebooted = CaffeineManager(backend: backend, sessionStore: defaults,
+                                       currentBoot: { 2_000 })
+        rebooted.restoreSessionIfNeeded()
+        #expect(!rebooted.active)
+        #expect(backend.heldCount == 0)
+        #expect(defaults.object(forKey: "caffeine.session") == nil, "and it is forgotten")
+    }
+
+    @Test("a stored session with no boot stamp is dropped")
+    func unstampedSessionIsNotRestored() {
+        let defaults = store()
+        defaults.set(0.0, forKey: "caffeine.session")   // what older builds wrote
+        let relaunched = CaffeineManager(backend: FakeKeepAwake(), sessionStore: defaults,
+                                         currentBoot: { 1_000 })
+        relaunched.restoreSessionIfNeeded()
+        #expect(!relaunched.active)
     }
 
     @Test("no store means no persistence")

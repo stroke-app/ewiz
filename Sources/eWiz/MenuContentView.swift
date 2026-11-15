@@ -23,6 +23,10 @@ struct MenuContentView: View {
     // the content — which is exactly what a too-generous starting guess produced. Growing
     // into the measured height on the first layout pass is invisible; shrinking is not.
     @State private var contentHeight: CGFloat = Self.lastContentHeight
+    /// Ticks while the panel is open, so the relative captions ("Resumes in 4 min", "1h
+    /// 20m left") count down. They read `Date()` and had no clock of their own: they only
+    /// moved when an unrelated publish happened to redraw the panel.
+    @State private var clock = Date()
     /// The height the panel last measured. The panel is rebuilt on every open, so without
     /// this each one would start at the under-estimate above and visibly grow into place.
     private static var lastContentHeight: CGFloat = 320
@@ -43,6 +47,7 @@ struct MenuContentView: View {
         // Read unconditionally so SwiftUI reliably re-renders the popover when it flips
         // (a read only inside the `if` below doesn't, under MenuBarExtra).
         let restDue = restReminder.isDue
+        let _ = clock
 
         // As tall as the content, but never taller than the screen.
         ScrollView {
@@ -122,6 +127,9 @@ struct MenuContentView: View {
             }
         }
         .onDisappear { battery.endPowerFlowObserving() }
+        .onReceive(Timer.publish(every: 20, tolerance: 5, on: .main, in: .common).autoconnect()) {
+            clock = $0
+        }
     }
 
     private var maxPopoverHeight: CGFloat {
@@ -244,11 +252,15 @@ struct MenuContentView: View {
     }
 
     private func chargeGauge(_ snap: BatterySnapshot) -> some View {
-        ChargeGauge(percentage: snap.percentage,
-                    color: chargeColor(snap),
-                    limitEnabled: chargeLimit.limitEnabled,
-                    limit: chargeLimit.limit,
-                    charging: snap.isCharging)
+        // The marker is where charging actually stops — macOS's step, or the hold's level —
+        // not the slider's raw value, so it can't sit at 82 under "Holding at 85%".
+        let stop = chargeLimit.display(for: snap).stop
+        return ChargeGauge(percentage: snap.percentage,
+                           color: chargeColor(snap),
+                           limitEnabled: stop < 100,
+                           limit: stop,
+                           charging: snap.isCharging,
+                           motion: settings.motionAllowed)
     }
 
     /// Source, estimate and draw on one line, joined by middots and dropping whatever
@@ -271,8 +283,9 @@ struct MenuContentView: View {
     /// level reads, and it would otherwise be drawn in the green of a healthy one.
     private func chargeColor(_ snap: BatterySnapshot) -> Color {
         if isWarm(snap) { return .red }
-        if snap.percentage <= 20 && !snap.isPluggedIn { return .red }
-        guard snap.isPluggedIn else { return .primary }
+        let onAdapter = chargeLimit.display(for: snap).onAdapter
+        if snap.percentage <= 20 && !onAdapter { return .red }
+        guard onAdapter else { return .primary }
         return Color(ChargePalette.legible(Double(snap.percentage) / 100))
     }
 
@@ -943,7 +956,11 @@ struct MenuContentView: View {
     /// number is going — repeating it is the sort of padding that makes one line into two.
     private func etaLine(_ snap: BatterySnapshot) -> String? {
         if snap.isCharging, let m = snap.timeToFull { return formatMinutes(m) }
-        if !snap.isPluggedIn, let m = snap.timeToEmpty { return formatMinutes(m) }
+        // Not while a hold has the adapter cut: macOS's time-to-empty is real but it isn't
+        // going to empty, and "Plugged in, not charging · 3h 10m" reads as nonsense.
+        if !chargeLimit.display(for: snap).onAdapter, let m = snap.timeToEmpty {
+            return formatMinutes(m)
+        }
         return nil
     }
 
@@ -969,6 +986,8 @@ private struct ChargeGauge: View {
     let limitEnabled: Bool
     let limit: Int
     let charging: Bool
+    /// Reduce Motion (or the app's own override): no breathing pulse, no springs.
+    let motion: Bool
 
     @State private var pulsing = false
 
@@ -981,11 +1000,13 @@ private struct ChargeGauge: View {
                 Capsule().fill(color)
                     .frame(width: max(8, w * frac), height: 8)
                     // Gentle breathing glow while charging (GPU-only opacity anim).
-                    .opacity(charging && pulsing ? 0.55 : 1.0)
-                    .animation(.spring(response: 0.5, dampingFraction: 0.85), value: percentage)
-                    .animation(.easeInOut(duration: 0.35), value: charging)
-                    .animation(charging ? .easeInOut(duration: 1.15).repeatForever(autoreverses: true)
-                                        : .default,
+                    .opacity(motion && charging && pulsing ? 0.55 : 1.0)
+                    .animation(motion ? .spring(response: 0.5, dampingFraction: 0.85) : nil,
+                               value: percentage)
+                    .animation(motion ? .easeInOut(duration: 0.35) : nil, value: charging)
+                    .animation(motion && charging
+                               ? .easeInOut(duration: 1.15).repeatForever(autoreverses: true)
+                               : .default,
                                value: pulsing)
                 if limitEnabled {
                     let x = w * CGFloat(limit) / 100
@@ -993,7 +1014,8 @@ private struct ChargeGauge: View {
                         .fill(Color.primary.opacity(0.65))
                         .frame(width: 2, height: 12)
                         .position(x: min(max(1, x), w - 1), y: 6)
-                        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: limit)
+                        .animation(motion ? .spring(response: 0.4, dampingFraction: 0.85) : nil,
+                                   value: limit)
                         .transition(.opacity)
                 }
             }
@@ -1006,7 +1028,7 @@ private struct ChargeGauge: View {
         .onAppear { pulsing = charging }
         .onChange(of: charging) { _, now in pulsing = now }
         .help(limitEnabled
-              ? "Charge \(percentage)%. The marker shows your \(limit)% limit."
+              ? "Charge \(percentage)%. The marker shows where charging stops, \(limit)%."
               : "Charge \(percentage)%.")
     }
 }

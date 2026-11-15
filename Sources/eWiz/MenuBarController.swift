@@ -50,6 +50,13 @@ final class MenuBarController: NSObject {
         fitStatusItem()
     }
 
+    /// The status item's spoken label and hover text, from the label's charge reading.
+    func describe(_ text: String) {
+        guard let button = statusItem?.button else { return }
+        button.toolTip = text
+        button.setAccessibilityLabel("eWiz, \(text)")
+    }
+
     /// The status item is as wide as the label plus the menu bar's usual side padding.
     private func fitStatusItem() {
         guard let item = statusItem, let host = labelHost else { return }

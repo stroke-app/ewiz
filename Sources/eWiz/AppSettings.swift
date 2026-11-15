@@ -237,5 +237,13 @@ final class AppSettings: ObservableObject {
         soundTheme = defaults.string(forKey: Keys.soundTheme)
             .flatMap(ChargeSound.Theme.init(rawValue:)) ?? ChargeSound.defaultTheme
         animateWithReduceMotion = defaults.bool(forKey: Keys.animateAnyway)
+        // `motionAllowed` reads the system flag on demand, and nothing re-read it when the
+        // flag changed: turning Reduce Motion on left the charging sweep running until some
+        // unrelated publish redrew the label, which could be minutes. Republish on the flip.
+        NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.accessibilityDisplayOptionsDidChangeNotification,
+            object: nil, queue: .main) { [weak self] _ in
+            Task { @MainActor in self?.objectWillChange.send() }
+        }
     }
 }
