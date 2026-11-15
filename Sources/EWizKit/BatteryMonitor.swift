@@ -88,6 +88,22 @@ public enum BatteryMonitor {
         snap.isExternalConnected = snap.isPluggedIn
     }
 
+    /// Current into the battery that counts as charging whatever the flag says. Well above
+    /// the trickle a full or held battery shows on the adapter, well below a real charge.
+    public static let chargingCurrentFloor = 300
+
+    /// Whether the battery is charging: macOS's flag, or current actually flowing in.
+    ///
+    /// `IsCharging` can trail the current by a long way. Traced on a plug-in: +1063 mA into
+    /// the battery one second after the cable, and the flag still "No" 23 seconds later. Every
+    /// surface waited on the flag, so the panel said "Plugged in, not charging", the icon had
+    /// no bolt, and the helper set the MagSafe light green over a battery taking 4 A (macOS
+    /// had lit it amber, so it went amber, green, amber). Current is the fact; the flag is a
+    /// report of it. Never the other way: a flag saying yes is kept.
+    public static func isCharging(flag: Bool, amperage: Int, cableIn: Bool, full: Bool) -> Bool {
+        flag || (cableIn && !full && amperage >= chargingCurrentFloor)
+    }
+
     // MARK: - AppleSmartBattery (hardware detail)
 
     private static func readSmartBattery(into snap: inout BatterySnapshot) {
@@ -106,6 +122,14 @@ public enum BatteryMonitor {
         // providing-source flag. Overrides the baseline.
         if let ext = props["ExternalConnected"] as? Bool {
             snap.isExternalConnected = ext
+        }
+
+        // Signed mA, positive into the battery. CFNumber keeps the sign; the ioreg text
+        // prints negatives as huge unsigned values, the number itself doesn't.
+        if let amps = (props["Amperage"] as? NSNumber)?.intValue {
+            snap.isCharging = Self.isCharging(flag: snap.isCharging, amperage: amps,
+                                              cableIn: snap.isExternalConnected,
+                                              full: snap.isFullyCharged)
         }
 
         if let cycles = props["CycleCount"] as? Int {
