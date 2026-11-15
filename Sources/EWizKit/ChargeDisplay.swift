@@ -253,6 +253,9 @@ public struct ChargeDisplay: Equatable, Sendable {
         // The cable is in and the helper has cut it; "Plugged in" would argue with the
         // menu bar's own battery icon, which says battery power.
         case .draining where !input.isPluggedIn: return "On battery"
+        // About to charge (after wake, or macOS picking up after a limit is released):
+        // "not charging" read as the switch having failed.
+        case .paused(.settling): return "Plugged in"
         default: return "Plugged in, not charging"
         }
     }
@@ -303,7 +306,7 @@ public struct ChargeDisplay: Equatable, Sendable {
         case .paused(.heat):
             return "Charging paused, battery is warm"
         case .paused(.settling):
-            return "Charging resumes shortly after wake"
+            return "Charging resumes in a moment"
         case .paused(.schedule):
             return "A schedule is holding charging"
         // A user pause has its own row with a Resume button; a drain is the header's
@@ -335,7 +338,7 @@ public struct ChargeDisplay: Equatable, Sendable {
         case .draining(let to): return "Draining to \(to)% · \(pct)%"
         case .paused(.user): return "Charging paused"
         case .paused(.heat): return "Charging paused, battery warm"
-        case .paused(.settling): return "Settling after wake"
+        case .paused(.settling): return "Charging starts in a moment"
         case .paused(.schedule): return "A schedule is holding charging"
         case .paused(.sleep): return "Charging cut for sleep"
         case .full: return "Fully charged"

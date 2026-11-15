@@ -225,7 +225,9 @@ struct ChargeDisplayTests {
         let settling = ChargeDisplay(.init(percentage: 60, isCharging: false, isPluggedIn: true,
                                            limitEnabled: true, effectiveLimit: 80, pauseReason: "settling"))
         #expect(settling.state == .paused(.settling))
-        #expect(settling.hint == "Charging resumes shortly after wake")
+        #expect(settling.hint == "Charging resumes in a moment")
+        #expect(settling.statusLine == "Plugged in")
+        #expect(settling.tooltip == "Charging starts in a moment")
         #expect(settling.mark == .none, "a few seconds of settling is not a hold")
         #expect(settling.headerNote == "Charging starts in a moment")
         let negotiating = ChargeDisplay(.init(percentage: 32, isCharging: false, isPluggedIn: true))

@@ -106,6 +106,10 @@ final class Daemon: @unchecked Sendable {
     /// How long macOS gets to act on its own limit before the stand-in steps back. Traced at
     /// 42 s from the limit being set to current stopping; 90 covers a slow PowerUIAgent.
     private let nativeBridgeWindow: TimeInterval = 90
+    /// When eWiz last released macOS's limit, for the "charging starts in a moment" spell.
+    private var nativeReleasedAt: Date?
+    /// How long after a release a battery not yet charging counts as about to.
+    private let nativeResumeWindow: TimeInterval = 120
     /// On the cable but running off the battery, because the battery is above the step
     /// macOS is holding and macOS brings it down. `pmset` says "AC attached; not charging"
     /// throughout, so without this the app would show a draining battery as "held".
@@ -672,8 +676,15 @@ final class Daemon: @unchecked Sendable {
         nativeHolding = nativeApplied != nil && snap.onExternalPower && !adapterCut && !snap.isCharging
         nativeDraining = nativeHolding && PowerMonitor.read().dischargeWatts > 2
         if !chargeControlSupported {
+            // Just after eWiz lets go of macOS's limit, macOS takes its time starting the
+            // charge again: traced at up to a minute at 93%. "Settling" is the word the app
+            // already has for "charging starts in a moment", and it beats "Plugged in, not
+            // charging", which read as the switch having done nothing.
+            let resuming = nativeReleasedAt.map { now.timeIntervalSince($0) < nativeResumeWindow } ?? false
+                && snap.onExternalPower && !snap.isCharging && !snap.isFullyCharged && level < 100
             lastPauseReason = adapterHolding ? "hold"
-                : nativeHolding ? (paused ? "paused" : cfg.holdCharge ? "hold" : "limit") : nil
+                : nativeHolding ? (paused ? "paused" : cfg.holdCharge ? "hold" : "limit")
+                : resuming ? "settling" : nil
         }
         updateMagSafeLED(cfg, snap, takingCharge: takingCharge(cfg, snap, desired: desired, enable: enable),
                          settling: settling)
@@ -1288,6 +1299,7 @@ final class Daemon: @unchecked Sendable {
             if current?.limit == owned {
                 guard native.disable() else { err("could not release the macOS charge limit"); return }
                 log("macOS charge limit released")
+                nativeReleasedAt = now
             }
             nativeApplied = nil
             NativeChargeLimitOwnership.save(nil)
