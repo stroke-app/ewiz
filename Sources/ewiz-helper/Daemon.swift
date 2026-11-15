@@ -100,6 +100,12 @@ final class Daemon: @unchecked Sendable {
     /// Plugged in, not taking charge, because the native limit says so. What the app is
     /// told as "held", since there's no SMC flag on this Mac to report instead.
     private var nativeHolding = false
+    /// Until when the adapter stands in for a macOS limit that was just set. See
+    /// `nativeBridgeWanted`.
+    private var nativeBridgeUntil: Date?
+    /// How long macOS gets to act on its own limit before the stand-in steps back. Traced at
+    /// 42 s from the limit being set to current stopping; 90 covers a slow PowerUIAgent.
+    private let nativeBridgeWindow: TimeInterval = 90
     /// On the cable but running off the battery, because the battery is above the step
     /// macOS is holding and macOS brings it down. `pmset` says "AC attached; not charging"
     /// throughout, so without this the app would show a draining battery as "held".
@@ -501,7 +507,7 @@ final class Daemon: @unchecked Sendable {
     private func status(ok: Bool, message: String? = nil) -> ControlResponse {
         let snap = BatteryMonitor.read()
         let pmset = pmsetState()
-        return ControlResponse(
+        var response = ControlResponse(
             ok: ok,
             config: ConfigStore.load(),
             batteryPercent: snap.percentage,
@@ -525,6 +531,8 @@ final class Daemon: @unchecked Sendable {
             chargeControlSupported: chargeControlSupported,
             message: message
         )
+        response.adapterPresent = charge.isACPresent()
+        return response
     }
 
     private static func failureResponse() -> ControlResponse {
@@ -1155,15 +1163,18 @@ final class Daemon: @unchecked Sendable {
         // Gate on onExternalPower, NOT isPluggedIn: cutting the adapter makes macOS report
         // "Battery Power", so isPluggedIn would flip false next tick and we'd restore the
         // adapter — oscillating instead of draining. onExternalPower stays true while the cable is in.
+        let bridge = nativeBridgeWanted(cfg, snap)
         let shouldDischarge = snap.onExternalPower
-            && (limitDischarge || scheduleDischarge || adapterHold)
+            && (limitDischarge || scheduleDischarge || adapterHold || bridge)
 
         let adapterOn = (try? charge.isAdapterEnabled()) ?? true
         var cut = !adapterOn
         if shouldDischarge {
             if adapterOn {
                 if (try? charge.disableAdapter()) != nil { cut = true }
-                log(adapterHold && !limitDischarge && !scheduleDischarge
+                log(bridge && !limitDischarge && !scheduleDischarge
+                    ? "macOS limit set; adapter off until macOS stops the charge itself"
+                    : adapterHold && !limitDischarge && !scheduleDischarge
                     ? "hold: on the battery at \(snap.percentage)%, adapter back at \((holdAnchor ?? cfg.chargeLimit) - adapterHoldBand)%"
                     : "discharging to limit")
             }
@@ -1175,6 +1186,28 @@ final class Daemon: @unchecked Sendable {
             adapterCut = cut
             bookLedFollowUps()
         }
+    }
+
+    /// Whether the adapter should stand in for a macOS limit that hasn't bitten yet.
+    ///
+    /// macOS acts on its own limit in its own time: traced at 42 s from setting 80% at 89%
+    /// to current stopping. Through that gap the battery kept charging past the limit the
+    /// user had just switched on, and the panel truthfully said "Charging", which read as
+    /// the switch not working. Cutting the adapter stops the charge within a second, and
+    /// it is the same state macOS's limit arrives at above its mark (running down to it
+    /// with the cable in). Once macOS has had `nativeBridgeWindow` to take over, the
+    /// adapter comes back and its limit holds from there.
+    ///
+    /// Only above the mark, only while charging would otherwise run, and never for
+    /// calibration, which means to charge past it. Caller holds `lock`.
+    private func nativeBridgeWanted(_ cfg: EWizConfig, _ snap: BatterySnapshot) -> Bool {
+        guard let until = nativeBridgeUntil else { return false }
+        guard Date() < until, let mark = nativeApplied, !cfg.calibrateToFull,
+              snap.percentage >= mark else {
+            nativeBridgeUntil = nil
+            return false
+        }
+        return true
     }
 
     /// The level "don't charge" was thrown at, on a Mac with no charge-inhibit key.
@@ -1246,6 +1279,7 @@ final class Daemon: @unchecked Sendable {
             if native.set(want) {
                 nativeApplied = want
                 NativeChargeLimitOwnership.save(want)
+                nativeBridgeUntil = now.addingTimeInterval(nativeBridgeWindow)
                 log("macOS charge limit set to \(want)%")
             } else {
                 err("macOS refused a charge limit of \(want)%")

@@ -78,3 +78,22 @@ struct ChargingFromCurrentTests {
         #expect(BatteryMonitor.isCharging(flag: true, amperage: -500, cableIn: true, full: false))
     }
 }
+
+@Suite("Cable presence through an adapter cut")
+struct CablePresenceTests {
+    @Test("a cut that clears ExternalConnected is still a cable in")
+    func cutIsNotAnUnplug() {
+        #expect(BatteryMonitor.cablePresent(externalConnected: false, chargeCapable: true))
+    }
+
+    @Test("a real unplug clears both")
+    func unplug() {
+        #expect(!BatteryMonitor.cablePresent(externalConnected: false, chargeCapable: false))
+        #expect(!BatteryMonitor.cablePresent(externalConnected: false, chargeCapable: nil))
+    }
+
+    @Test("connected is connected")
+    func connected() {
+        #expect(BatteryMonitor.cablePresent(externalConnected: true, chargeCapable: false))
+    }
+}
