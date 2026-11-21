@@ -1,5 +1,5 @@
 // The repository's LICENSE file, so /legal/license can never drift from it.
-import raw from "../../../LICENSE?raw";
+import raw from "../../LICENSE?raw";
 
 export interface LicenseItem {
   text: string;

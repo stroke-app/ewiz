@@ -12,3 +12,4 @@ package-lock.json
 *.p12
 *.p8
 AuthKey_*.p8
+.turbo/

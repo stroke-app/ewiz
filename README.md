@@ -238,12 +238,34 @@ your neck.
 with **Apple Pay** in a couple of taps, in-app or
 [on ewiz.app](https://ewiz.app/buy).
 
+## Repository layout
+
+This is a monorepo ([Bun](https://bun.sh) workspaces + [Turborepo](https://turbo.build)):
+
+| Path | What |
+| --- | --- |
+| [`apps/macos`](apps/macos) | The menu-bar app, helper daemon, MCP server and release scripts (Swift) |
+| [`apps/web`](apps/web) | [ewiz.app](https://ewiz.app): website, checkout and licensing (TanStack Start on Cloudflare) |
+| `packages/` | Shared code (empty for now) |
+
+The in-app update feed (`appcast.xml` / `appcast.json`) and the Homebrew cask still
+live in [`stroke-app/ewiz-releases`](https://github.com/stroke-app/ewiz-releases):
+installed copies read the feed from that URL, and the release workflow publishes to it.
+
+```bash
+bun install
+bun run dev:web        # the website
+bun run build          # build everything (turbo)
+bun run test           # Swift tests
+```
+
 ## Build from source
 
 Requires the Swift toolchain (Xcode or the Command Line Tools), macOS 14+, and an
-Apple Silicon Mac.
+Apple Silicon Mac. From `apps/macos`:
 
 ```bash
+cd apps/macos
 swift build
 swift run eWiz                 # run the menu-bar app
 sudo ./scripts/install-helper.sh   # install the root helper daemon
@@ -258,7 +280,7 @@ sudo ./scripts/install-helper.sh   # install the root helper daemon
 it adds the swift-testing framework search paths automatically. CI runs it on every
 push and pull request.
 
-See [`DISTRIBUTION.md`](DISTRIBUTION.md) for signing, notarization, the GitHub
+See [`DISTRIBUTION.md`](apps/macos/DISTRIBUTION.md) for signing, notarization, the GitHub
 Actions release pipeline, licensing on ewiz.app, and the auto-update feed.
 
 ## Contributing & releases
@@ -266,12 +288,12 @@ Actions release pipeline, licensing on ewiz.app, and the auto-update feed.
 This repo uses [Changesets](https://github.com/changesets/changesets):
 
 ```bash
-npm install
-npm run changeset      # describe your change (patch / minor / major)
+bun install
+bun run changeset      # describe your change (patch / minor / major)
 ```
 
 Commit the generated `.changeset/*.md`. Merging the auto-opened "Version Packages"
-PR bumps the version and `CHANGELOG.md`; pushing that version tag triggers the
+PR bumps the version in `apps/macos/package.json` and [`CHANGELOG.md`](apps/macos/CHANGELOG.md); pushing that version tag triggers the
 release build.
 
 The app and helper speak a small versioned protocol over their socket. When you

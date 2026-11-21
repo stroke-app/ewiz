@@ -23,6 +23,9 @@ jobs:
     # (SDK 15) build silently fails to launch (exit 1) on macOS 26 — the Swift
     # concurrency runtime mismatch — so the release must be built on 26.
     runs-on: macos-26
+    defaults:
+      run:
+        working-directory: apps/macos
     # secrets can't be used in step `if:` directly, so surface them as env flags.
     env:
       HAS_SIGNING: ${{ secrets.DEVELOPER_ID_CERT_P12_BASE64 != '' }}
@@ -135,7 +138,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: eWiz-${{ steps.ver.outputs.version }}
-          path: dist/eWiz-${{ steps.ver.outputs.version }}.dmg
+          path: apps/macos/dist/eWiz-${{ steps.ver.outputs.version }}.dmg
 
       # The release notes are this version's CHANGELOG.md section, which the
       # Version PR wrote. ewiz.app's changelog and download pages read them from
@@ -168,11 +171,11 @@ jobs:
         with:
           name: "eWiz ${{ steps.ver.outputs.version }}"
           tag_name: ${{ github.ref_name }}
-          body_path: dist/release-notes.md
+          body_path: apps/macos/dist/release-notes.md
           files: |
-            dist/eWiz-${{ steps.ver.outputs.version }}.dmg
-            dist/appcast.xml
-            dist/appcast.json
+            apps/macos/dist/eWiz-${{ steps.ver.outputs.version }}.dmg
+            apps/macos/dist/appcast.xml
+            apps/macos/dist/appcast.json
           draft: false
           make_latest: true
 

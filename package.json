@@ -1,13 +1,25 @@
 {
-  "name": "ewiz",
-  "version": "0.19.10",
+  "name": "ewiz-monorepo",
   "private": true,
-  "description": "Menu bar battery saver and charge limiter for Apple Silicon Macs",
+  "packageManager": "bun@1.2.2",
+  "workspaces": ["apps/*", "packages/*"],
   "scripts": {
+    "dev": "turbo run dev",
+    "dev:web": "turbo run dev --filter=@ewiz/web",
+    "build": "turbo run build",
+    "build:macos": "turbo run build --filter=ewiz",
+    "build:web": "turbo run build --filter=@ewiz/web",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "format": "turbo run format",
     "changeset": "changeset",
-    "version": "changeset version"
+    "version": "changeset version",
+    "prepare": "husky"
   },
   "devDependencies": {
-    "@changesets/cli": "^2.27.9"
+    "@changesets/cli": "^2.27.9",
+    "husky": "9.1.7",
+    "lint-staged": "17.0.8",
+    "turbo": "^2.5.0"
   }
 }

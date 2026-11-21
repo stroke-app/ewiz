@@ -10,8 +10,33 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build-and-test:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      macos: ${{ steps.filter.outputs.macos }}
+      web: ${{ steps.filter.outputs.web }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            macos:
+              - 'apps/macos/**'
+              - '.github/workflows/ci.yml'
+            web:
+              - 'apps/web/**'
+              - 'package.json'
+              - 'bun.lock'
+              - '.github/workflows/ci.yml'
+
+  macos:
+    needs: changes
+    if: needs.changes.outputs.macos == 'true'
     runs-on: macos-15
+    defaults:
+      run:
+        working-directory: apps/macos
     steps:
       - uses: actions/checkout@v4
 
@@ -24,3 +49,18 @@ jobs:
       - name: Test (unit + benchmarks)
         # GitHub's runners ship full Xcode, so scripts/test.sh runs plain `swift test`.
         run: ./scripts/test.sh
+
+  web:
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - name: Format check
+        run: bun run --filter @ewiz/web format:check
+      - name: Lint
+        run: bun run --filter @ewiz/web lint
+      - name: Build
+        run: bun run --filter @ewiz/web build
