@@ -244,6 +244,19 @@ public struct ChargeDisplay: Equatable, Sendable {
         }
     }
 
+    /// macOS is charging past the limit eWiz set.
+    ///
+    /// On a Mac without an SMC charge key, macOS's own charge limit is the only way to
+    /// stop charging, and macOS sometimes sets it aside: while it recalibrates the battery
+    /// gauge ("battery mitigations are in place, MCL will be ignored", seen from 23% to
+    /// 99% on an 80% limit), it charges to full whatever the limit says. eWiz can't
+    /// prevent that, but it must not let it look like the limit failed silently.
+    public var macOSOverridingLimit: Bool {
+        guard case .charging(let to) = state else { return false }
+        return input.usesNativeLimit && (input.limitEnabled || input.holdCharge)
+            && to < 100 && input.percentage > to
+    }
+
     /// First segment of the header's detail line.
     public var statusLine: String {
         switch state {
@@ -286,6 +299,7 @@ public struct ChargeDisplay: Equatable, Sendable {
             if pct < at { return "Paused under the \(at)% limit" }
             return "Holding at \(at)%"
         case .charging(let to):
+            if macOSOverridingLimit { return "macOS is charging past the \(to)% limit" }
             guard pct < to else {
                 return input.limitEnabled ? "Above the \(input.effectiveLimit)% limit" : nil
             }
@@ -296,6 +310,9 @@ public struct ChargeDisplay: Equatable, Sendable {
     /// The live-state row under the charge controls, for whatever the header hasn't said.
     public var hint: String? {
         switch state {
+        case .charging where macOSOverridingLimit:
+            return "macOS has paused its own charge limit, usually to recalibrate the battery. "
+                + "On this Mac that's the only way to stop charging, so it charges to full until macOS turns the limit back on."
         case .charging where input.pauseReason == "slow":
             return "Charging gently, at \(input.chargePower)% power"
         case .heldAtLimit:
