@@ -49,6 +49,8 @@ interface Feature {
 interface Group {
   /** The small uppercase heading above the rows in the Settings window. */
   title: string;
+  /** Shown in the app only with Settings › Advanced settings switched on. */
+  advanced?: boolean;
   features: Feature[];
 }
 
@@ -70,7 +72,7 @@ const SECTIONS: Section[] = [
       "How and when your battery charges, so it spends less time full and hot, the two things that wear it out fastest.",
     groups: [
       {
-        title: "Long-term care",
+        title: "Battery health",
         features: [
           {
             name: "Park the battery near 60%",
@@ -83,7 +85,7 @@ const SECTIONS: Section[] = [
         ],
       },
       {
-        title: "Hold",
+        title: "Pause charging",
         features: [
           {
             name: "Don't charge while plugged in",
@@ -96,7 +98,8 @@ const SECTIONS: Section[] = [
         ],
       },
       {
-        title: "Enforcement",
+        title: "While asleep or idle",
+        advanced: true,
         features: [
           {
             name: "Stop charging before sleep",
@@ -150,7 +153,7 @@ const SECTIONS: Section[] = [
         ],
       },
       {
-        title: "Heat",
+        title: "Heat protection",
         features: [
           {
             name: "Pause charging when hot",
@@ -161,6 +164,7 @@ const SECTIONS: Section[] = [
       },
       {
         title: "Discharge",
+        advanced: true,
         features: [
           {
             name: "Discharge to limit",
@@ -170,6 +174,7 @@ const SECTIONS: Section[] = [
       },
       {
         title: "MagSafe LED",
+        advanced: true,
         features: [
           {
             name: "MagSafe LED behaviour",
@@ -204,6 +209,7 @@ const SECTIONS: Section[] = [
       },
       {
         title: "Always Active hours",
+        advanced: true,
         features: [
           {
             name: "Add Hours",
@@ -226,6 +232,7 @@ const SECTIONS: Section[] = [
       },
       {
         title: "Charge power",
+        advanced: true,
         features: [
           {
             name: "Power to the battery",
@@ -247,7 +254,7 @@ const SECTIONS: Section[] = [
       "Rules that change a setting while something is true, and put it back when it stops being true.",
     groups: [
       {
-        title: "Rules",
+        title: "Your rules",
         features: [
           {
             name: "Add Rule",
@@ -277,7 +284,7 @@ const SECTIONS: Section[] = [
         ],
       },
       {
-        title: "Right now",
+        title: "Current conditions",
         features: [
           {
             name: "Live readout",
@@ -287,6 +294,7 @@ const SECTIONS: Section[] = [
       },
       {
         title: "AI Agents",
+        advanced: true,
         features: [
           {
             name: "Let AI agents use eWiz",
@@ -385,6 +393,7 @@ const SECTIONS: Section[] = [
       },
       {
         title: "Rest without closing the lid",
+        advanced: true,
         features: [
           {
             name: "Rest Now",
@@ -413,7 +422,7 @@ const SECTIONS: Section[] = [
         ],
       },
       {
-        title: "Caffeine (keep awake now)",
+        title: "Keep awake now",
         features: [
           {
             name: "Caffeine",
@@ -466,6 +475,7 @@ const SECTIONS: Section[] = [
       },
       {
         title: "Power",
+        advanced: true,
         features: [
           {
             name: "Low Power Mode",
@@ -475,6 +485,7 @@ const SECTIONS: Section[] = [
       },
       {
         title: "Network profiles",
+        advanced: true,
         features: [
           {
             name: "Switch mode by Wi-Fi network",
@@ -610,6 +621,7 @@ const SECTIONS: Section[] = [
       },
       {
         title: "Plug-in feedback (experimental)",
+        advanced: true,
         features: [
           {
             name: "Tap the trackpad when you plug in",
@@ -637,6 +649,7 @@ const SECTIONS: Section[] = [
       },
       {
         title: "System",
+        advanced: true,
         features: [
           {
             name: "Lid / Last closed",
@@ -723,7 +736,11 @@ function FeaturesPage() {
           <p className="mt-3 text-lg leading-relaxed text-pretty text-muted-foreground">
             The everyday controls, like the charge limit, save modes and Caffeine, live in the menu
             bar. This page walks through the Settings window tab by tab, so you know what each
-            switch does and which ones are worth turning on.
+            switch does and which ones are worth turning on. Groups marked{" "}
+            <span className="rounded-full border border-border px-2 py-0.5 text-sm">Advanced</span>{" "}
+            appear once you switch on{" "}
+            <strong className="font-medium text-foreground">Advanced settings</strong> at the bottom
+            of the Settings sidebar; most people never need them.
           </p>
         </div>
 
@@ -807,7 +824,14 @@ function FeatureSection({ section }: { section: Section }) {
 
       {groups.map((g) => (
         <div key={g.title} className="mt-8">
-          <h3 className="text-sm font-medium text-muted-foreground uppercase">{g.title}</h3>
+          <h3 className="flex items-center gap-2 text-sm font-medium text-muted-foreground uppercase">
+            {g.title}
+            {g.advanced ? (
+              <span className="rounded-full border border-border px-2 py-0.5 text-[11px] font-normal tracking-normal normal-case">
+                Advanced
+              </span>
+            ) : null}
+          </h3>
           <dl className="mt-2 divide-y divide-border border-y border-border">
             {g.features.map((f) => (
               <div key={f.name} className="py-3">
