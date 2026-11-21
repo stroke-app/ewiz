@@ -1,0 +1,69 @@
+# eWiz License
+
+Copyright (c) 2026 Nischal Dahal
+
+You may do whatever you want with the eWiz source code and other source files
+in this repository, which holds the eWiz website and the eWiz update feed (from
+here on referred to as the "eWiz Source"), with the following restrictions:
+
+- If you publish any work derived from the eWiz Source, you must make it apparent
+  in some way that it is derived from the eWiz Source.
+
+- If you have created an executable program, website or online service (from
+  here on called "Your Program") built or compiled from some source code and/or
+  other source files (from here on called "Your Source"), and if Your Source
+  includes files or source code copied or derived from the eWiz Source, then you
+  may only publish Your Program under the following conditions. For a website or
+  online service, publishing means making it available to anyone other than
+  yourself.
+
+    - Your Program does not contain any malware or hidden malicious content.
+
+    - You may not charge users money for Your Program, and Your Source must
+      contain the monetization systems present in the eWiz Source, including the
+      license key, checkout and payment systems, without any alterations, and all
+      of these systems must be active and working as intended in Your Program,
+      paying the original author. That is unless Your Source features substantial
+      improvements or additions to the eWiz Source, such that Your Source should
+      be considered its own, derivative work, separate from the eWiz Source.
+
+    - You may not publish Your Program under the name "eWiz", or under a name or
+      with an icon so similar that users could mistake it for eWiz.
+
+THE EWIZ SOURCE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN
+AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE EWIZ SOURCE OR THE USE OR OTHER DEALINGS IN THE EWIZ SOURCE.
+
+---
+
+# Notes on the eWiz License
+
+The eWiz License has two goals:
+
+1. To stop people with bad intentions, or people out for a quick buck, from
+   publishing sites or apps based on eWiz: a copy of the eWiz website that hands
+   out malware in place of the real download, or one that sells eWiz licenses
+   while someone other than the author gets paid.
+
+2. To let everyone else do anything they like with the eWiz source code: reuse it
+   in their own free or paid projects, write bug fixes and improvements to eWiz and
+   publish them, or make a substantial improvement to eWiz and charge for that
+   improved version or release it for free.
+
+The license is meant to be open source in spirit, with protections against bad
+actors now that eWiz is a paid app. Note that there are no restrictions at all on
+how you use the source code, only on publishing programs, websites or services
+built from it.
+
+eWiz is "source-available", not open source by the OSI definition, because of the
+publishing restrictions above.
+
+Buying eWiz buys a license key for the eWiz app; it does not change these terms,
+which govern the source code.
+
+The eWiz app's own repository carries the same license, worded for the Mac app.
+Files in this repository that carry their own license notice, such as the
+generated Cloudflare type definitions, stay under that notice.

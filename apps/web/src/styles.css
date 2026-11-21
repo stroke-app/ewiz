@@ -1,0 +1,282 @@
+@import "tailwindcss" source("./");
+
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/inter";
+@import "@fontsource-variable/geist-mono";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  /* One family site-wide; `font-display` stays as an alias so headings can opt in. */
+  --font-display: var(--font-sans);
+  --font-heading: var(--font-sans);
+  --font-mono: "Geist Mono Variable", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Status colors. Green = supported / holding, amber = charging / caution. */
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-rose: var(--rose);
+  --color-brand: var(--primary);
+  /* Neutral surface ramp, lightest to darkest step above the page ground. */
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-surface-4: var(--surface-4);
+
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: 1rem;
+  --radius-3xl: 1.375rem;
+  --radius-4xl: 1.75rem;
+}
+
+/* ==========================================================================
+   ewiz design system. Flat neutral grounds, quiet gray cards, one sky-blue
+   accent. `:root` is light, `.dark` is the near-black theme. Style through
+   tokens so both themes stay in sync.
+   ========================================================================== */
+:root {
+  --radius: 0.625rem;
+
+  --background: #f7f7f7;
+  --foreground: #0a0a0a;
+  --surface-1: #ffffff;
+  --surface-2: #ebebeb;
+  --surface-3: #e1e1e1;
+  --surface-4: #dfdfdf;
+
+  --card: var(--surface-1);
+  --card-foreground: var(--foreground);
+  --popover: #ffffff;
+  --popover-foreground: var(--foreground);
+  --primary: #0084d1;
+  --primary-foreground: #ffffff;
+  --secondary: var(--surface-2);
+  --secondary-foreground: var(--foreground);
+  --muted: var(--surface-2);
+  --muted-foreground: #6b6b6b;
+  --accent: var(--surface-2);
+  --accent-foreground: var(--foreground);
+  --destructive: #fb2c36;
+  --border: var(--surface-3);
+  --input: var(--surface-4);
+  --ring: #0084d1;
+
+  --success: #009966;
+  --warning: #e17100;
+  --rose: #ff2056;
+
+  --chart-1: #0084d1;
+  --chart-2: #00a6f4;
+  --chart-3: #009966;
+  --chart-4: #e17100;
+  --chart-5: #ff2056;
+  --sidebar: var(--surface-1);
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: #0084d1;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: var(--surface-2);
+  --sidebar-accent-foreground: var(--foreground);
+  --sidebar-border: var(--surface-3);
+  --sidebar-ring: #0084d1;
+}
+
+.dark {
+  --background: #161616;
+  --foreground: #fafafa;
+  --surface-1: #1d1d1d;
+  --surface-2: #222222;
+  --surface-3: #2b2b2b;
+  --surface-4: #333333;
+
+  --popover: #222222;
+  --muted-foreground: #8a8a8a;
+  --destructive: #ff6467;
+
+  --success: #00bc7d;
+  --warning: #fe9a00;
+  --rose: #ff2056;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
+/* ==========================================================================
+   Wallpaper: the blue backdrop the app window sits on in product shots.
+   Pure CSS (no image request), tuned per theme.
+   ========================================================================== */
+.wallpaper {
+  background:
+    radial-gradient(120% 90% at 85% 110%, #00307a 0%, transparent 55%),
+    radial-gradient(90% 70% at 0% 0%, #4cc4ff 0%, transparent 60%),
+    radial-gradient(70% 60% at 100% 0%, #1a8cff 0%, transparent 65%),
+    linear-gradient(160deg, #1aa3ff 0%, #0a6ee8 45%, #0040b8 100%);
+}
+.dark .wallpaper {
+  background:
+    radial-gradient(120% 90% at 85% 110%, #000a24 0%, transparent 55%),
+    radial-gradient(90% 70% at 0% 0%, #0c62c9 0%, transparent 60%),
+    radial-gradient(70% 60% at 100% 0%, #0a3f94 0%, transparent 65%),
+    linear-gradient(160deg, #0b4fb0 0%, #062e75 45%, #02153d 100%);
+}
+
+/* ==========================================================================
+   Motion: CSS-only and SSR-safe. `.animate-enter` is a staggered fade-up on
+   load; both helpers respect prefers-reduced-motion.
+   ========================================================================== */
+@keyframes ewizEnter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.animate-enter {
+  animation: ewizEnter 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: var(--enter-delay, 0ms);
+}
+@keyframes ewizFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.animate-fade {
+  animation: ewizFade 0.25s ease-out both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-enter,
+  .animate-fade {
+    animation: none;
+  }
+}
+
+/* ==========================================================================
+   macOS replicas of the eWiz app (landing page product shots). Always the
+   app's dark appearance, sampled from real eWiz windows.
+   ========================================================================== */
+.mac-ui {
+  --m-window: #282828;
+  --m-chrome: #2f2f2f;
+  --m-card: #303030;
+  --m-card-2: #3a3a3a;
+  --m-popover: #1c1c1f;
+  --m-sep: rgb(255 255 255 / 0.07);
+  --m-line: rgb(255 255 255 / 0.1);
+  --m-text: rgb(255 255 255 / 0.9);
+  --m-text-2: rgb(255 255 255 / 0.56);
+  --m-text-3: rgb(255 255 255 / 0.36);
+  --m-blue: #3478f6;
+  --m-blue-text: #4b93ff;
+  --m-green: #3fc24b;
+  --m-good: #84c38d;
+  --m-amber: #e7b369;
+  --m-track: rgb(255 255 255 / 0.1);
+  font-family:
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter Variable", system-ui, sans-serif;
+  color: var(--m-text);
+  font-size: 13px;
+  line-height: 1.3;
+  -webkit-font-smoothing: antialiased;
+  cursor: default;
+  user-select: none;
+}
+.mac-ui .num {
+  font-family:
+    ui-rounded,
+    -apple-system,
+    BlinkMacSystemFont,
+    "SF Pro Rounded",
+    "Inter Variable",
+    sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The menu bar panel drops from its icon like the real popover. */
+@keyframes macDrop {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.mac-drop {
+  animation: macDrop 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: var(--drop-delay, 0ms);
+  transform-origin: top center;
+}
+/* Feature list auto-advance progress bar. */
+@keyframes featureProgress {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+.feature-progress {
+  transform-origin: top;
+  animation: featureProgress var(--feature-ms, 7000ms) linear both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .mac-drop,
+  .feature-progress {
+    animation: none;
+  }
+}

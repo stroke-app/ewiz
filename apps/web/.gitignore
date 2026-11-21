@@ -1,0 +1,28 @@
+node_modules
+
+# Ignore lockfiles we don't use
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+# bun.lock
+
+.DS_Store
+.cache
+.env
+.env.*
+
+.data
+.vercel
+.output
+.wrangler
+.netlify
+dist
+/build/
+/api/
+/server/build
+/public/build
+
+.tanstack
+# Local Claude Code tool state
+.claude/phobos-state.md
+.claude/phobos-activity.log

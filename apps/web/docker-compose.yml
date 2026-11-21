@@ -1,0 +1,16 @@
+services:
+  db:
+    image: postgres:alpine
+    ports:
+      # Host 5433 -> container 5432, to avoid clashing with a native
+      # postgres already listening on the host's 5432.
+      - 5433:5432
+    volumes:
+      - postgres_data_tanstarter:/var/lib/postgresql
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=tanstarter
+
+volumes:
+  postgres_data_tanstarter:

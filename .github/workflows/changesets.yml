@@ -17,15 +17,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-      - run: npm install
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
       - name: Create Version PR
         id: changesets
         uses: changesets/action@v1
         with:
-          version: npm run version
+          version: bun run version
           commit: "chore: version packages"
           title: "chore: version packages"
         env:
@@ -56,7 +54,7 @@ jobs:
             exit 0
           fi
 
-          version=$(node -p "require('./package.json').version")
+          version=$(node -p "require('./apps/macos/package.json').version")
           if git ls-remote --exit-code --tags origin "refs/tags/v$version" >/dev/null 2>&1; then
             echo "v$version is already tagged — nothing to do."
             exit 0
