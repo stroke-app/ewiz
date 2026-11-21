@@ -1,9 +1,15 @@
 export const LINKS = {
   github: "https://github.com/stroke-app/ewiz",
   /** This website's source. */
-  siteSource: "https://github.com/stroke-app/ewiz-releases",
+  siteSource: "https://github.com/stroke-app/ewiz/tree/main/apps/web",
   releases: "https://github.com/stroke-app/ewiz/releases",
   feedback: "https://github.com/stroke-app/ewiz/issues",
+  /**
+   * Pay-what-you-want donation checkout (Dodo). Every Donate button goes through
+   * /donate/checkout, which redirects here, so the target can change without an
+   * app release.
+   */
+  donateCheckout: "https://checkout.dodopayments.com/session/cks_0NsOth7ruTtl42VyOoxxM",
   x: "https://x.com/broisnischal",
   stroke: "https://stroke.click",
   site: "https://nischal-dahal.com.np",
