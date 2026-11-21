@@ -123,7 +123,7 @@ strip -x "$CONTENTS/MacOS/ewiz-mcp"
 # the proof Sparkle relies on; with it valid, Sparkle also accepts a change of code-signing
 # identity, which is what carries ad-hoc installs over to the self-signed certificate.
 BUILD_NUMBER="$("$REPO_DIR/scripts/build-number.sh" "$VERSION")"
-SPARKLE_FEED="https://raw.githubusercontent.com/stroke-app/ewiz-releases/main/appcast.xml"
+SPARKLE_FEED="https://ewiz.app/appcast.xml"
 # Read from the source so the key the app trusts and the key licensetool checks its
 # signatures against are one constant.
 SPARKLE_PUBLIC_KEY="$(sed -n 's/.*publicKeyBase64 = "\([A-Za-z0-9+\/=]*\)".*/\1/p' "$REPO_DIR/Sources/EWizKit/UpdateSignature.swift")"
