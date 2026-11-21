@@ -82,6 +82,7 @@ type FooterLink = { label: string } & (
         | "/pricing"
         | "/download"
         | "/changelog"
+        | "/roadmap"
         | "/blog"
         | "/donate"
         | "/legal/privacy"
@@ -100,6 +101,7 @@ const FOOTER_COLUMNS: Array<{ title: string; links: FooterLink[] }> = [
       { label: "Pricing", to: "/pricing" },
       { label: "Download", to: "/download" },
       { label: "Changelog", to: "/changelog" },
+      { label: "Roadmap", to: "/roadmap" },
       { label: "Blog", to: "/blog" },
       { label: "Donate", href: "/donate/checkout" },
     ],
