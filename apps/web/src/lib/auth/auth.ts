@@ -6,6 +6,7 @@ import { tanstackStartCookies } from "better-auth/tanstack-start";
 import { eq } from "drizzle-orm";
 
 import { env } from "#/env/server";
+import { appleClientSecret, appleConfigured } from "#/lib/auth/apple";
 import { db } from "#/lib/db";
 import * as schema from "#/lib/db/schema";
 import { issueLicenseForUser } from "#/lib/license/service";
@@ -22,18 +23,20 @@ export const auth = betterAuth({
   baseURL: env.VITE_BASE_URL,
   // The old host stays attached for already-installed apps; accept auth
   // requests from it too so sign-in doesn't fail on origin checks there.
-  trustedOrigins: [env.VITE_BASE_URL, "https://battlify.discerns.app"],
+  // Apple posts the OAuth callback from appleid.apple.com (form_post).
+  trustedOrigins: [env.VITE_BASE_URL, "https://battlify.discerns.app", "https://appleid.apple.com"],
   // https://better-auth.com/docs/concepts/users-accounts#account-linking
-  // One person, one account: GitHub, Google and email sign-ins with the same
-  // address resolve to the same user (and the same license). Both providers
-  // verify the email they return, so they are trusted to link.
+  // One person, one account: Google and Apple sign-ins with the same address
+  // resolve to the same user (and the same license). Both verify the email they
+  // return, so they are trusted to link. Accounts made with the old email/password
+  // sign-in are reached the same way: sign in with Google or Apple on that address.
   account: {
     accountLinking: {
       enabled: true,
-      trustedProviders: ["google", "github"],
-      // Email/password sign-ups are never verified here (no verification
-      // mail is sent), so the default `true` makes every Google/GitHub
-      // sign-in for an existing account fail with "account_not_linked".
+      trustedProviders: ["google", "apple"],
+      // Old email/password accounts were never verified (no verification
+      // mail was sent), so the default `true` would make every Google/Apple
+      // sign-in for one of them fail with "account_not_linked".
       // Linking marks the email verified, since the provider vouched for it.
       requireLocalEmailVerified: false,
     },
@@ -121,17 +124,9 @@ export const auth = betterAuth({
   },
 
   // https://better-auth.com/docs/concepts/oauth
-  // Only register a provider when its credentials are actually configured,
-  // so the worker still boots when GitHub/Google aren't set up yet.
+  // Google and Apple are the only ways in. A provider is registered only when its
+  // credentials are configured, so the worker still boots without them.
   socialProviders: {
-    ...(env.GITHUB_CLIENT_ID && env.GITHUB_CLIENT_SECRET
-      ? {
-          github: {
-            clientId: env.GITHUB_CLIENT_ID,
-            clientSecret: env.GITHUB_CLIENT_SECRET,
-          },
-        }
-      : {}),
     ...(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET
       ? {
           google: {
@@ -140,11 +135,16 @@ export const auth = betterAuth({
           },
         }
       : {}),
-  },
-
-  // https://better-auth.com/docs/authentication/email-password
-  emailAndPassword: {
-    enabled: true,
+    ...(appleConfigured
+      ? {
+          // Async so the client-secret JWT is signed when auth initialises.
+          apple: async () => ({
+            clientId: env.APPLE_CLIENT_ID!,
+            clientSecret: await appleClientSecret(),
+            appBundleIdentifier: env.APPLE_APP_BUNDLE_IDENTIFIER,
+          }),
+        }
+      : {}),
   },
 
   experimental: {
