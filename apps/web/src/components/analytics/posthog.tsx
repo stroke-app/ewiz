@@ -8,24 +8,26 @@ import { useAuth } from "#/lib/auth/hooks";
 
 const POSTHOG_KEY = env.VITE_PUBLIC_POSTHOG_KEY;
 
-/**
- * Wraps the app in PostHog. We init inside an effect so it only ever runs in
- * the browser (posthog-js touches window/localStorage and would blow up during
- * SSR). If there's no key configured, we just render children untouched.
- */
-export function Analytics({ children }: { children: ReactNode }) {
-  useEffect(() => {
-    if (!POSTHOG_KEY || posthog.__loaded) return;
-    posthog.init(POSTHOG_KEY, {
-      api_host: env.VITE_PUBLIC_POSTHOG_HOST,
-      // We fire pageviews ourselves off the router (see PageViewTracker), since
-      // a client-side router doesn't do full page loads for PostHog to catch.
-      capture_pageview: false,
-      capture_pageleave: true,
-      person_profiles: "identified_only",
-    });
-  }, []);
+// Initialise as soon as this module loads in the browser, before any component's
+// effects run. React runs a child's effects before its parent's, so initialising in
+// <Analytics>'s own effect let <PageViewTracker> capture the landing page's $pageview
+// first, and posthog-js drops anything captured before init: every visitor's first
+// page, and so every one-page visit, went uncounted. (Never runs during SSR.)
+if (typeof window !== "undefined" && POSTHOG_KEY && !posthog.__loaded) {
+  posthog.init(POSTHOG_KEY, {
+    // Through our own domain (routes/ingest.$.ts) so ad blockers don't drop events.
+    api_host: "/ingest",
+    ui_host: "https://us.posthog.com",
+    // We fire pageviews ourselves off the router (see PageViewTracker), since
+    // a client-side router doesn't do full page loads for PostHog to catch.
+    capture_pageview: false,
+    capture_pageleave: true,
+    person_profiles: "identified_only",
+  });
+}
 
+/** Wraps the app in PostHog; renders children untouched when no key is configured. */
+export function Analytics({ children }: { children: ReactNode }) {
   if (!POSTHOG_KEY) return <>{children}</>;
 
   return (

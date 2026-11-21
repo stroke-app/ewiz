@@ -33,6 +33,7 @@ import { Route as BlogIndexRouteImport } from './routes/blog/index'
 import { Route as LegalTermsRouteImport } from './routes/legal/terms'
 import { Route as LegalPrivacyRouteImport } from './routes/legal/privacy'
 import { Route as LegalLicenseRouteImport } from './routes/legal/license'
+import { Route as IngestSplatRouteImport } from './routes/ingest.$'
 import { Route as DonateCheckoutRouteImport } from './routes/donate_.checkout'
 import { Route as BlogSlugRouteImport } from './routes/blog/$slug'
 import { Route as GuestLoginRouteImport } from './routes/_guest/login'
@@ -158,6 +159,11 @@ const LegalLicenseRoute = LegalLicenseRouteImport.update({
   path: '/license',
   getParentRoute: () => LegalRouteRoute,
 } as any)
+const IngestSplatRoute = IngestSplatRouteImport.update({
+  id: '/ingest/$',
+  path: '/ingest/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DonateCheckoutRoute = DonateCheckoutRouteImport.update({
   id: '/donate_/checkout',
   path: '/donate/checkout',
@@ -212,6 +218,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof GuestLoginRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/donate/checkout': typeof DonateCheckoutRoute
+  '/ingest/$': typeof IngestSplatRoute
   '/legal/license': typeof LegalLicenseRoute
   '/legal/privacy': typeof LegalPrivacyRoute
   '/legal/terms': typeof LegalTermsRoute
@@ -240,6 +247,7 @@ export interface FileRoutesByTo {
   '/login': typeof GuestLoginRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/donate/checkout': typeof DonateCheckoutRoute
+  '/ingest/$': typeof IngestSplatRoute
   '/legal/license': typeof LegalLicenseRoute
   '/legal/privacy': typeof LegalPrivacyRoute
   '/legal/terms': typeof LegalTermsRoute
@@ -273,6 +281,7 @@ export interface FileRoutesById {
   '/_guest/login': typeof GuestLoginRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/donate_/checkout': typeof DonateCheckoutRoute
+  '/ingest/$': typeof IngestSplatRoute
   '/legal/license': typeof LegalLicenseRoute
   '/legal/privacy': typeof LegalPrivacyRoute
   '/legal/terms': typeof LegalTermsRoute
@@ -305,6 +314,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/blog/$slug'
     | '/donate/checkout'
+    | '/ingest/$'
     | '/legal/license'
     | '/legal/privacy'
     | '/legal/terms'
@@ -333,6 +343,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/blog/$slug'
     | '/donate/checkout'
+    | '/ingest/$'
     | '/legal/license'
     | '/legal/privacy'
     | '/legal/terms'
@@ -365,6 +376,7 @@ export interface FileRouteTypes {
     | '/_guest/login'
     | '/blog/$slug'
     | '/donate_/checkout'
+    | '/ingest/$'
     | '/legal/license'
     | '/legal/privacy'
     | '/legal/terms'
@@ -395,6 +407,7 @@ export interface RootRouteChildren {
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   TermsRoute: typeof TermsRoute
   DonateCheckoutRoute: typeof DonateCheckoutRoute
+  IngestSplatRoute: typeof IngestSplatRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
 
@@ -568,6 +581,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LegalLicenseRouteImport
       parentRoute: typeof LegalRouteRoute
     }
+    '/ingest/$': {
+      id: '/ingest/$'
+      path: '/ingest/$'
+      fullPath: '/ingest/$'
+      preLoaderRoute: typeof IngestSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/donate_/checkout': {
       id: '/donate_/checkout'
       path: '/donate/checkout'
@@ -701,6 +721,7 @@ const rootRouteChildren: RootRouteChildren = {
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   TermsRoute: TermsRoute,
   DonateCheckoutRoute: DonateCheckoutRoute,
+  IngestSplatRoute: IngestSplatRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
 }
 export const routeTree = rootRouteImport
