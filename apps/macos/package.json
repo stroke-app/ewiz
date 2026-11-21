@@ -1,6 +1,6 @@
 {
   "name": "ewiz",
-  "version": "0.20.1",
+  "version": "0.20.2",
   "private": true,
   "description": "Menu bar battery saver and charge limiter for Apple Silicon Macs",
   "scripts": {
