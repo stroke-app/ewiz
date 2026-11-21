@@ -44,10 +44,13 @@ export function SiteHeader() {
           <AppIcon className="size-8" />
         </Link>
         <nav className="flex items-center gap-3 text-sm text-muted-foreground sm:gap-6 sm:text-[15px]">
+          <Link to="/features" className={NAV_LINK}>
+            Features
+          </Link>
           <Link to="/pricing" className={NAV_LINK}>
             Pricing
           </Link>
-          <Link to="/changelog" className={NAV_LINK}>
+          <Link to="/changelog" className={cn(NAV_LINK, "hidden sm:inline")}>
             Changelog
           </Link>
           <Link to="/blog" className={cn(NAV_LINK, "hidden sm:inline")}>
@@ -72,6 +75,7 @@ type FooterLink = { label: string } & (
   | {
       to:
         | "/"
+        | "/features"
         | "/pricing"
         | "/download"
         | "/changelog"
@@ -89,6 +93,7 @@ const FOOTER_COLUMNS: Array<{ title: string; links: FooterLink[] }> = [
   {
     title: "Product",
     links: [
+      { label: "Features", to: "/features" },
       { label: "Pricing", to: "/pricing" },
       { label: "Download", to: "/download" },
       { label: "Changelog", to: "/changelog" },
