@@ -148,7 +148,11 @@ for Updates…" and the menu's Update banner. Sparkle's window shows the check, 
 the download's progress and the install, then relaunches the new version.
 
 - The app reads `SUFeedURL` from Info.plist (written by `scripts/package-app.sh`):
-  `raw.githubusercontent.com/stroke-app/ewiz-releases/main/appcast.xml`.
+  `https://ewiz.app/appcast.xml`. The website (`apps/web/src/routes/appcast[.]xml.ts`)
+  proxies the `appcast.xml` attached to the latest GitHub release, so publishing the
+  release is all it takes. Copies up to 0.19.10 still read
+  `raw.githubusercontent.com/stroke-app/ewiz-releases/main/appcast.xml`, which the
+  release workflow keeps updating until those copies have moved on.
 - **Trust** is the EdDSA key, not a Developer ID: `SUPublicEDKey` in Info.plist is
   `UpdateSignature.publicKeyBase64`, and every DMG in the feed carries that key's
   `sparkle:edSignature`, made by `licensetool sign-update` from the

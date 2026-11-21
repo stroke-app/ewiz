@@ -21,6 +21,8 @@ import { Route as DownloadRouteImport } from './routes/download'
 import { Route as DonateRouteImport } from './routes/donate'
 import { Route as ChangelogRouteImport } from './routes/changelog'
 import { Route as BuyRouteImport } from './routes/buy'
+import { Route as AppcastDotxmlRouteImport } from './routes/appcast[.]xml'
+import { Route as AppcastDotjsonRouteImport } from './routes/appcast[.]json'
 import { Route as LegalRouteRouteImport } from './routes/legal/route'
 import { Route as BlogRouteRouteImport } from './routes/blog/route'
 import { Route as GuestRouteRouteImport } from './routes/_guest/route'
@@ -96,6 +98,16 @@ const BuyRoute = BuyRouteImport.update({
   path: '/buy',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppcastDotxmlRoute = AppcastDotxmlRouteImport.update({
+  id: '/appcast.xml',
+  path: '/appcast.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppcastDotjsonRoute = AppcastDotjsonRouteImport.update({
+  id: '/appcast.json',
+  path: '/appcast.json',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LegalRouteRoute = LegalRouteRouteImport.update({
   id: '/legal',
   path: '/legal',
@@ -169,6 +181,8 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/blog': typeof BlogRouteRouteWithChildren
   '/legal': typeof LegalRouteRouteWithChildren
+  '/appcast.json': typeof AppcastDotjsonRoute
+  '/appcast.xml': typeof AppcastDotxmlRoute
   '/buy': typeof BuyRoute
   '/changelog': typeof ChangelogRoute
   '/donate': typeof DonateRoute
@@ -194,6 +208,8 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/legal': typeof LegalRouteRouteWithChildren
+  '/appcast.json': typeof AppcastDotjsonRoute
+  '/appcast.xml': typeof AppcastDotxmlRoute
   '/buy': typeof BuyRoute
   '/changelog': typeof ChangelogRoute
   '/donate': typeof DonateRoute
@@ -222,6 +238,8 @@ export interface FileRoutesById {
   '/_guest': typeof GuestRouteRouteWithChildren
   '/blog': typeof BlogRouteRouteWithChildren
   '/legal': typeof LegalRouteRouteWithChildren
+  '/appcast.json': typeof AppcastDotjsonRoute
+  '/appcast.xml': typeof AppcastDotxmlRoute
   '/buy': typeof BuyRoute
   '/changelog': typeof ChangelogRoute
   '/donate': typeof DonateRoute
@@ -250,6 +268,8 @@ export interface FileRouteTypes {
     | '/'
     | '/blog'
     | '/legal'
+    | '/appcast.json'
+    | '/appcast.xml'
     | '/buy'
     | '/changelog'
     | '/donate'
@@ -275,6 +295,8 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/legal'
+    | '/appcast.json'
+    | '/appcast.xml'
     | '/buy'
     | '/changelog'
     | '/donate'
@@ -302,6 +324,8 @@ export interface FileRouteTypes {
     | '/_guest'
     | '/blog'
     | '/legal'
+    | '/appcast.json'
+    | '/appcast.xml'
     | '/buy'
     | '/changelog'
     | '/donate'
@@ -331,6 +355,8 @@ export interface RootRouteChildren {
   GuestRouteRoute: typeof GuestRouteRouteWithChildren
   BlogRouteRoute: typeof BlogRouteRouteWithChildren
   LegalRouteRoute: typeof LegalRouteRouteWithChildren
+  AppcastDotjsonRoute: typeof AppcastDotjsonRoute
+  AppcastDotxmlRoute: typeof AppcastDotxmlRoute
   BuyRoute: typeof BuyRoute
   ChangelogRoute: typeof ChangelogRoute
   DonateRoute: typeof DonateRoute
@@ -430,6 +456,20 @@ declare module '@tanstack/react-router' {
       path: '/buy'
       fullPath: '/buy'
       preLoaderRoute: typeof BuyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/appcast.xml': {
+      id: '/appcast.xml'
+      path: '/appcast.xml'
+      fullPath: '/appcast.xml'
+      preLoaderRoute: typeof AppcastDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/appcast.json': {
+      id: '/appcast.json'
+      path: '/appcast.json'
+      fullPath: '/appcast.json'
+      preLoaderRoute: typeof AppcastDotjsonRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/legal': {
@@ -605,6 +645,8 @@ const rootRouteChildren: RootRouteChildren = {
   GuestRouteRoute: GuestRouteRouteWithChildren,
   BlogRouteRoute: BlogRouteRouteWithChildren,
   LegalRouteRoute: LegalRouteRouteWithChildren,
+  AppcastDotjsonRoute: AppcastDotjsonRoute,
+  AppcastDotxmlRoute: AppcastDotxmlRoute,
   BuyRoute: BuyRoute,
   ChangelogRoute: ChangelogRoute,
   DonateRoute: DonateRoute,
