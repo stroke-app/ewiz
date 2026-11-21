@@ -5,14 +5,14 @@ Snapshot after the SEO pass. URLs are environment-driven via `VITE_BASE_URL`
 
 ## 1. Title & meta optimization
 
-| Area | Status | Notes |
-|---|---|---|
-| Titles | ✅ | Central `seo()` helper. Home: brand title; inner pages: `Page \| Battlify`. |
-| Descriptions | ✅ | Unique, human, ~150 chars per page. |
-| Open Graph | ✅ | `og:type/site_name/title/description/url/image(+w/h)/locale` on every page. |
-| Twitter card | ✅ | `summary_large_image` with title/description/image + `@broisnischal`. |
-| Canonical | ✅ | One per page from `seo()`; root emits none (avoids duplicates). |
-| Keywords | ✅ | Targeted keywords on home + blog posts. |
+| Area         | Status | Notes                                                                       |
+| ------------ | ------ | --------------------------------------------------------------------------- |
+| Titles       | ✅     | Central `seo()` helper. Home: brand title; inner pages: `Page \| Battlify`. |
+| Descriptions | ✅     | Unique, human, ~150 chars per page.                                         |
+| Open Graph   | ✅     | `og:type/site_name/title/description/url/image(+w/h)/locale` on every page. |
+| Twitter card | ✅     | `summary_large_image` with title/description/image + `@broisnischal`.       |
+| Canonical    | ✅     | One per page from `seo()`; root emits none (avoids duplicates).             |
+| Keywords     | ✅     | Targeted keywords on home + blog posts.                                     |
 
 ## 2. Heading structure
 
@@ -40,14 +40,14 @@ Snapshot after the SEO pass. URLs are environment-driven via `VITE_BASE_URL`
 
 ## 7. Structured data (JSON-LD)
 
-| Schema | Where | Rich result |
-|---|---|---|
-| Organization | Home | Brand/knowledge panel |
-| WebSite | Home | Site name |
-| SoftwareApplication | Home | App result (price $2.99, macOS 14+, download) |
-| FAQPage | Home (visible FAQ section) | FAQ rich result |
-| Article | Blog post | Article result |
-| BreadcrumbList | Blog index + post | Breadcrumb trail |
+| Schema              | Where                      | Rich result                                   |
+| ------------------- | -------------------------- | --------------------------------------------- |
+| Organization        | Home                       | Brand/knowledge panel                         |
+| WebSite             | Home                       | Site name                                     |
+| SoftwareApplication | Home                       | App result (price $2.99, macOS 14+, download) |
+| FAQPage             | Home (visible FAQ section) | FAQ rich result                               |
+| Article             | Blog post                  | Article result                                |
+| BreadcrumbList      | Blog index + post          | Breadcrumb trail                              |
 
 - All validated structurally against schema.org types; entities linked by `@id`. Validate live post-deploy with Google Rich Results Test.
 - **Missing/optional to consider:** `aggregateRating` on SoftwareApplication (needs real review data), `VideoObject` if a demo video is added.
@@ -65,6 +65,7 @@ Snapshot after the SEO pass. URLs are environment-driven via `VITE_BASE_URL`
 - Dynamic `sitemap.xml`: indexable pages + all blog posts with `lastmod`, `changefreq`, `priority`. Excludes the noindex duplicates.
 
 ## Open items for you
+
 1. Delete one legal set (`/legal/*` vs `/privacy`+`/terms`) to fully remove duplication.
 2. Fill the `[JURISDICTION]` placeholder in `/legal/terms`.
 3. Replace the placeholder roadmap items in the changelog with real plans.

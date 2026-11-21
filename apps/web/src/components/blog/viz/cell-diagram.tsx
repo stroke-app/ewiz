@@ -2,7 +2,14 @@ import { useEffect, useRef, useState } from "react";
 
 import { Button } from "#/components/ui/button";
 
-import { clamp, fitCanvas, type Palette, prefersReducedMotion, roundRect, useThemeColors } from "./canvas-utils";
+import {
+  clamp,
+  fitCanvas,
+  type Palette,
+  prefersReducedMotion,
+  roundRect,
+  useThemeColors,
+} from "./canvas-utils";
 import { Figure } from "./figure";
 
 interface Ion {
