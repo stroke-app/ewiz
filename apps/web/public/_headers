@@ -1,0 +1,5 @@
+# This _headers file works for Netlify and Cloudflare. For other providers, you may want to configure these headers yourself, depending on your setup.
+
+# TanStack Start generated assets (hash-based filenames)
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
