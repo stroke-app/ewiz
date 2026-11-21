@@ -257,10 +257,20 @@ struct SettingsView: View {
             VStack(spacing: 0) {
                 VStack(spacing: 8) {
                     AppIconView(size: 96)
-                    Text("eWiz")
-                        .font(.title2.weight(.semibold))
+                    HStack(spacing: 6) {
+                        Text("eWiz")
+                            .font(.title2.weight(.semibold))
+                        if updater.isBeta { BetaBadge() }
+                    }
                     Text("Version \(updater.currentVersion)")
                         .font(.callout).foregroundStyle(.secondary)
+                    if updater.isBeta {
+                        Text("eWiz is in beta: it works, and it's still getting better. Spotted something odd? Report a Bug below helps most.")
+                            .font(.caption).foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                            .frame(maxWidth: 320)
+                            .padding(.top, 2)
+                    }
                     Text("Created by Nischal Dahal")
                         .font(.callout).foregroundStyle(.secondary)
                 }
@@ -1629,7 +1639,7 @@ struct SettingsView: View {
                         Button("Check for Updates…") { updater.checkForUpdates() }
                             .disabled(!updater.canCheckForUpdates)
                         Spacer()
-                        Text("v\(updater.currentVersion)")
+                        Text("v\(updater.currentVersion)\(updater.isBeta ? " beta" : "")")
                             .font(.callout).foregroundStyle(.secondary).monospacedDigit()
                     }
                     .padding(.horizontal, rowInset).padding(.vertical, DS.Space.s + 2)
@@ -2188,4 +2198,18 @@ struct BatteryStylePicker: View {
 
     // Show a representative level so the styles are easy to tell apart even at 0%.
     private var previewPct: Int { max(35, min(100, percentage)) }
+}
+
+/// The small "BETA" capsule beside the app name while eWiz is below 1.0.
+struct BetaBadge: View {
+    var body: some View {
+        Text("BETA")
+            .font(.caption2.weight(.semibold))
+            .tracking(0.6)
+            .foregroundStyle(Color.accentColor)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(Capsule().fill(Color.accentColor.opacity(0.15)))
+            .accessibilityLabel("Beta")
+    }
 }

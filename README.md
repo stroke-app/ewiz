@@ -8,16 +8,25 @@ Charge limiting, heat-aware charging, sleep-safe enforcement, and one-tap save
 modes — all from your menu bar, built for Apple Silicon.
 
 <a href="https://ewiz.app"><b>Website</b></a> ·
+<a href="https://ewiz.app/features"><b>Features</b></a> ·
 <a href="https://ewiz.app/buy"><b>Buy</b></a> ·
 <a href="https://github.com/stroke-app/ewiz/releases"><b>Releases</b></a> ·
-<a href="https://github.com/stroke-app/ewiz/issues"><b>Feedback</b></a>
+<a href="https://github.com/stroke-app/ewiz/issues"><b>Feedback</b></a> ·
+<a href="https://ewiz.app/donate/checkout"><b>Donate</b></a>
 
+![Status](https://img.shields.io/badge/status-public%20beta-orange)
+![Release](https://img.shields.io/github/v/release/stroke-app/ewiz?label=release)
 ![Platform](https://img.shields.io/badge/macOS-14%2B-blue)
 ![Arch](https://img.shields.io/badge/Apple%20Silicon-arm64-black)
 ![Price](https://img.shields.io/badge/price-%242.99-green)
 ![License](https://img.shields.io/badge/license-eWiz%20License-lightgrey)
 
 </div>
+
+> **eWiz is in public beta.** It's stable enough to run every day and is updated
+> often. Until 1.0, expect rough edges and please
+> [report anything odd](https://github.com/stroke-app/ewiz/issues/new); the app's
+> **Report a Bug** button attaches the diagnostics for you.
 
 ## Why eWiz exists
 
@@ -32,6 +41,10 @@ small menu-bar app that does one thing well, and it stays out of your way the re
 of the time.
 
 ## What it does
+
+New to it? [ewiz.app/features](https://ewiz.app/features) walks through every setting
+in plain language. In the app, Settings shows the everyday options first; switch on
+**Advanced settings** at the bottom of the sidebar for the rest.
 
 **Charging & longevity**
 
@@ -146,6 +159,11 @@ change is never a mystery.
   *Settings → Shortcuts*, defaults sit on ⌃⌥⌘, and anything disruptive (sleep, force
   discharge) ships unbound. No Accessibility permission needed: eWiz claims only
   the combinations you assign and never sees anything else you type.
+- **AI agents (MCP)** — eWiz ships an MCP server inside the app. Connect Claude
+  Desktop or Cursor in one click from *Settings → Automation* (or copy the command for
+  Claude Code and other clients), and an agent can keep the Mac awake through a long
+  job and release it after, read battery status, and, only if you allow it, change the
+  charge limit, pause charging, save mode, Low Power Mode and sleep settings.
 - **Launch at login** and **in-app auto-update**, and it'll tell you if the helper
   ever falls out of date so features don't silently stop working.
 
@@ -248,15 +266,18 @@ This is a monorepo ([Bun](https://bun.sh) workspaces + [Turborepo](https://turbo
 | [`apps/web`](apps/web) | [ewiz.app](https://ewiz.app): website, checkout and licensing (TanStack Start on Cloudflare) |
 | `packages/` | Shared code (empty for now) |
 
-The in-app update feed (`appcast.xml` / `appcast.json`) and the Homebrew cask still
-live in [`stroke-app/ewiz-releases`](https://github.com/stroke-app/ewiz-releases):
-installed copies read the feed from that URL, and the release workflow publishes to it.
+The in-app update feed is `https://ewiz.app/appcast.xml`, which serves the
+`appcast.xml` attached to the latest GitHub release. Copies up to 0.19.10 still read
+the legacy feed in [`stroke-app/ewiz-releases`](https://github.com/stroke-app/ewiz-releases),
+which the release workflow keeps updating. The Homebrew cask lives in
+[`stroke-app/homebrew-ewiz`](https://github.com/stroke-app/homebrew-ewiz).
 
 ```bash
 bun install
-bun run dev:web        # the website
-bun run build          # build everything (turbo)
-bun run test           # Swift tests
+bun run secrets:restore   # maintainers: the .env files, from the encrypted backup
+bun run dev:web           # the website (needs apps/web/.env)
+bun run build             # build everything (turbo)
+bun run test              # Swift tests
 ```
 
 ## Build from source
@@ -293,8 +314,30 @@ bun run changeset      # describe your change (patch / minor / major)
 ```
 
 Commit the generated `.changeset/*.md`. Merging the auto-opened "Version Packages"
-PR bumps the version in `apps/macos/package.json` and [`CHANGELOG.md`](apps/macos/CHANGELOG.md); pushing that version tag triggers the
-release build.
+PR bumps the version in `apps/macos/package.json` and
+[`CHANGELOG.md`](apps/macos/CHANGELOG.md), tags it, and starts the release build. The
+release builds and signs the DMG, publishes the GitHub release, and updates the update
+feeds and the Homebrew cask. Deploy the website (`bun run deploy` in `apps/web`)
+separately.
+
+### Secrets (maintainers)
+
+GitHub Actions and Cloudflare never show a secret again once it's set, so the only
+readable copies are two gitignored files: `apps/web/.env` (website) and
+`apps/macos/.env` (release signing). [`scripts/secrets.sh`](scripts/secrets.sh) keeps
+an AES-256 encrypted backup of both in iCloud Drive and is the only way secrets should
+change:
+
+```bash
+bun run secrets:check          # anything set remotely but missing locally?
+bun run secrets:push:web       # after editing apps/web/.env → Cloudflare + backup
+bun run secrets:push:release   # after editing apps/macos/.env → GitHub + backup
+bun run secrets:restore        # new Mac: put both files back from the backup
+```
+
+The update signing key and the license signing key are irreplaceable: lose the first
+and installed copies can never update again; lose the second and every license stops
+verifying.
 
 The app and helper speak a small versioned protocol over their socket. When you
 change what the daemon does, bump `ControlProtocol.version` — the app compares it to

@@ -138,7 +138,7 @@ function Hero({
           <BuyButton>Buy · {PRICE}</BuyButton>
         </div>
         <p className="mt-3 text-sm text-muted-foreground">
-          Free for 30 days · macOS 14+ · Apple Silicon
+          Public beta · Free for 30 days · macOS 14+ · Apple Silicon
         </p>
       </Container>
 

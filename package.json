@@ -2,7 +2,10 @@
   "name": "ewiz-monorepo",
   "private": true,
   "packageManager": "bun@1.2.2",
-  "workspaces": ["apps/*", "packages/*"],
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
     "dev": "turbo run dev",
     "dev:web": "turbo run dev --filter=@ewiz/web",
@@ -14,7 +17,12 @@
     "format": "turbo run format",
     "changeset": "changeset",
     "version": "changeset version",
-    "prepare": "husky"
+    "prepare": "husky",
+    "secrets:backup": "./scripts/secrets.sh backup",
+    "secrets:restore": "./scripts/secrets.sh restore",
+    "secrets:check": "./scripts/secrets.sh check",
+    "secrets:push:web": "./scripts/secrets.sh push web",
+    "secrets:push:release": "./scripts/secrets.sh push release"
   },
   "devDependencies": {
     "@changesets/cli": "^2.27.9",
