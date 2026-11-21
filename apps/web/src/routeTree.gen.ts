@@ -17,6 +17,7 @@ import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as LlmsDottxtRouteImport } from './routes/llms[.]txt'
 import { Route as LlmsFullDottxtRouteImport } from './routes/llms-full[.]txt'
 import { Route as LicenseRouteImport } from './routes/license'
+import { Route as FeaturesRouteImport } from './routes/features'
 import { Route as DownloadRouteImport } from './routes/download'
 import { Route as DonateRouteImport } from './routes/donate'
 import { Route as ChangelogRouteImport } from './routes/changelog'
@@ -77,6 +78,11 @@ const LlmsFullDottxtRoute = LlmsFullDottxtRouteImport.update({
 const LicenseRoute = LicenseRouteImport.update({
   id: '/license',
   path: '/license',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FeaturesRoute = FeaturesRouteImport.update({
+  id: '/features',
+  path: '/features',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DownloadRoute = DownloadRouteImport.update({
@@ -193,6 +199,7 @@ export interface FileRoutesByFullPath {
   '/changelog': typeof ChangelogRoute
   '/donate': typeof DonateRoute
   '/download': typeof DownloadRoute
+  '/features': typeof FeaturesRoute
   '/license': typeof LicenseRoute
   '/llms-full.txt': typeof LlmsFullDottxtRoute
   '/llms.txt': typeof LlmsDottxtRoute
@@ -221,6 +228,7 @@ export interface FileRoutesByTo {
   '/changelog': typeof ChangelogRoute
   '/donate': typeof DonateRoute
   '/download': typeof DownloadRoute
+  '/features': typeof FeaturesRoute
   '/license': typeof LicenseRoute
   '/llms-full.txt': typeof LlmsFullDottxtRoute
   '/llms.txt': typeof LlmsDottxtRoute
@@ -252,6 +260,7 @@ export interface FileRoutesById {
   '/changelog': typeof ChangelogRoute
   '/donate': typeof DonateRoute
   '/download': typeof DownloadRoute
+  '/features': typeof FeaturesRoute
   '/license': typeof LicenseRoute
   '/llms-full.txt': typeof LlmsFullDottxtRoute
   '/llms.txt': typeof LlmsDottxtRoute
@@ -283,6 +292,7 @@ export interface FileRouteTypes {
     | '/changelog'
     | '/donate'
     | '/download'
+    | '/features'
     | '/license'
     | '/llms-full.txt'
     | '/llms.txt'
@@ -311,6 +321,7 @@ export interface FileRouteTypes {
     | '/changelog'
     | '/donate'
     | '/download'
+    | '/features'
     | '/license'
     | '/llms-full.txt'
     | '/llms.txt'
@@ -341,6 +352,7 @@ export interface FileRouteTypes {
     | '/changelog'
     | '/donate'
     | '/download'
+    | '/features'
     | '/license'
     | '/llms-full.txt'
     | '/llms.txt'
@@ -373,6 +385,7 @@ export interface RootRouteChildren {
   ChangelogRoute: typeof ChangelogRoute
   DonateRoute: typeof DonateRoute
   DownloadRoute: typeof DownloadRoute
+  FeaturesRoute: typeof FeaturesRoute
   LicenseRoute: typeof LicenseRoute
   LlmsFullDottxtRoute: typeof LlmsFullDottxtRoute
   LlmsDottxtRoute: typeof LlmsDottxtRoute
@@ -441,6 +454,13 @@ declare module '@tanstack/react-router' {
       path: '/license'
       fullPath: '/license'
       preLoaderRoute: typeof LicenseRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/features': {
+      id: '/features'
+      path: '/features'
+      fullPath: '/features'
+      preLoaderRoute: typeof FeaturesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/download': {
@@ -671,6 +691,7 @@ const rootRouteChildren: RootRouteChildren = {
   ChangelogRoute: ChangelogRoute,
   DonateRoute: DonateRoute,
   DownloadRoute: DownloadRoute,
+  FeaturesRoute: FeaturesRoute,
   LicenseRoute: LicenseRoute,
   LlmsFullDottxtRoute: LlmsFullDottxtRoute,
   LlmsDottxtRoute: LlmsDottxtRoute,
