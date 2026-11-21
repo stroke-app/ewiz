@@ -28,6 +28,9 @@ struct SettingsView: View {
     @Environment(\.openWindow) private var openWindow
     @State private var installError: String?
     @State private var selection: Tab = .charging
+    /// Advanced settings stay out of sight until asked for: a new user meets the
+    /// handful that matter, not all forty. One switch for every pane, remembered.
+    @AppStorage("settings.showAdvanced") private var showAdvanced = false
     /// Which shortcut row is capturing keys (nil = none). Held here rather than per
     /// row so starting one recording ends any other.
     @State private var recordingAction: HotkeyAction?
@@ -73,11 +76,57 @@ struct SettingsView: View {
             case .about: return "info"
             }
         }
+        /// One plain sentence under the pane title: what this area is for.
+        var summary: String {
+            switch self {
+            case .charging:
+                return "How eWiz charges your battery so it lasts longer. Set the charge limit itself from the menu bar."
+            case .schedule:
+                return "Charge on a timetable, or have the battery full by the time you need it."
+            case .automation:
+                return "Let eWiz act on its own when something changes: a display, Wi-Fi network, app, charger and more."
+            case .sleepPower:
+                return "When your Mac sleeps: keep it awake, work with the lid closed, and save power."
+            case .shortcuts:
+                return "Keyboard shortcuts for eWiz that work from any app."
+            case .general:
+                return "The menu bar icon, notifications, startup and updates."
+            case .about:
+                return ""
+            }
+        }
+        /// Section of ewiz.app/features that explains this pane.
+        var learnMoreURL: URL? {
+            let anchor: String
+            switch self {
+            case .charging: anchor = "charging"
+            case .schedule: anchor = "schedule"
+            case .automation: anchor = "automation"
+            case .sleepPower: anchor = "sleep-power"
+            case .shortcuts: anchor = "shortcuts"
+            case .general: anchor = "general"
+            case .about: return nil
+            }
+            return URL(string: "\(EWizLinks.website.absoluteString)/features#\(anchor)")
+        }
+        /// Whether the pane hides anything behind "Show advanced settings".
+        var hasAdvanced: Bool {
+            switch self {
+            case .charging, .schedule, .automation, .sleepPower, .general: return true
+            case .shortcuts, .about: return false
+            }
+        }
+        /// Sidebar groups, top to bottom.
+        static let groups: [(String, [Tab])] = [
+            ("Battery", [.charging, .schedule]),
+            ("Power", [.sleepPower, .automation]),
+            ("eWiz", [.general, .shortcuts, .about]),
+        ]
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            tabBar
+        HStack(spacing: 0) {
+            sidebar
             Divider()
             Group {
                 switch selection {
@@ -92,9 +141,8 @@ struct SettingsView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        // Wide enough for all seven tabs to sit on one row without crowding —
-        // "Sleep & Power" is the one that clips first when this shrinks.
-        .frame(width: 580, height: 600)
+        // Sidebar + the 468pt content column with comfortable margins.
+        .frame(width: 720, height: 620)
         .sheet(item: $editingSchedule) { schedule in
             ScheduleEditorView(
                 schedule: schedule,
@@ -129,46 +177,77 @@ struct SettingsView: View {
         }
     }
 
-    // MARK: - Tab bar
+    // MARK: - Sidebar
 
-    /// Tabs share the bar equally. A fixed per-tab minimum would overflow the
-    /// window once there were six of them, pushing the last pill off the edge.
-    private var tabBar: some View {
-        HStack(spacing: 2) {
-            ForEach(Tab.allCases) { tab in
-                tabButton(tab)
+    /// System Settings-style list. Seven tabs in a row left no room for words, so
+    /// each pane was an icon and a guess; a sidebar names them, groups them, and
+    /// leaves space for the advanced switch at the bottom.
+    private var sidebar: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: DS.Space.m) {
+                    ForEach(Tab.groups, id: \.0) { group in
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(group.0.uppercased())
+                                .font(.caption2.weight(.semibold))
+                                .foregroundStyle(.tertiary)
+                                .padding(.horizontal, 10)
+                                .padding(.bottom, 2)
+                            ForEach(group.1) { sidebarButton($0) }
+                        }
+                    }
+                }
+                .padding(.horizontal, 10)
+                .padding(.top, DS.Space.l)
             }
+            .scrollIndicators(.hidden)
+
+            Divider()
+            Toggle(isOn: $showAdvanced.animation(.snappy)) {
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("Advanced settings").font(.callout)
+                    Text(showAdvanced ? "Showing everything" : "Hidden to keep things simple")
+                        .font(.caption2).foregroundStyle(.secondary)
+                }
+            }
+            .toggleStyle(.switch)
+            .controlSize(.mini)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
         }
-        .padding(.horizontal, 12)
-        .padding(.top, 12)
-        .padding(.bottom, 10)
+        .frame(width: 200)
+        .background(.background.secondary)
     }
 
-    private func tabButton(_ tab: Tab) -> some View {
+    private func sidebarButton(_ tab: Tab) -> some View {
         let selected = selection == tab
         return Button {
             selection = tab
         } label: {
-            VStack(spacing: 4) {
-                HugeIcon(tab.icon, size: 19)
-                    .frame(height: 20)
+            HStack(spacing: 9) {
+                HugeIcon(tab.icon, size: 15)
+                    .foregroundStyle(selected ? Color.white : Color.accentColor)
+                    .frame(width: 24, height: 24)
+                    .background(
+                        RoundedRectangle(cornerRadius: 6, style: .continuous)
+                            .fill(selected ? Color.accentColor : Color.accentColor.opacity(0.14))
+                    )
                 Text(tab.title)
-                    .font(.caption)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.85)
+                    .font(.callout)
+                    .foregroundStyle(selected ? Color.primary : Color.primary.opacity(0.85))
+                Spacer(minLength: 0)
             }
-            .foregroundStyle(selected ? Color.accentColor : Color.secondary)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 7)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 5)
             .background(
-                RoundedRectangle(cornerRadius: 9, style: .continuous)
-                    .fill(selected ? Color.primary.opacity(0.10) : Color.clear)
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(selected ? Color.primary.opacity(0.09) : Color.clear)
             )
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        // No focus ring: on a tab strip it reads as a stray outline, not focus.
         .focusEffectDisabled()
+        .accessibilityAddTraits(selected ? .isSelected : [])
     }
 
     // MARK: - About
@@ -308,11 +387,11 @@ struct SettingsView: View {
     // MARK: - Charging
 
     private var chargingTab: some View {
-        tab {
+        tab(.charging) {
             if chargeLimit.daemonAvailable {
                 proGate {
                     if chargeLimit.dischargeSupported {
-                        card("Long-term care") {
+                        card("Battery health") {
                             toggleRow("Park the battery near \(LongevityCare.targetPercent)%",
                                       "Charges up to it, runs down to it, then holds there on the adapter.",
                                       isOn: Binding(get: { chargeLimit.longevityCare },
@@ -325,7 +404,7 @@ struct SettingsView: View {
                         }
                     }
 
-                    card("Hold") {
+                    card("Pause charging") {
                         toggleRow("Don't charge while plugged in",
                                   chargeLimit.nativeLimitFloor.map {
                                       "Stops charging and runs on wall power. macOS can only hold this Mac at \(chargeLimit.nativeLimitSteps.filter { $0 < 100 }.map(String.init).joined(separator: ", "))%, so it charges up to the next of those first, from \($0)% at the lowest."
@@ -340,87 +419,89 @@ struct SettingsView: View {
                         }
                     }
 
-                    card("Enforcement") {
-                        toggleRow("Stop charging before sleep",
-                                  chargeLimit.limitEnabled
-                                  ? "Cuts charging at sleep even when no limit is set."
-                                  : "Cuts charging as the Mac goes to sleep. With a charge limit set this happens anyway: the limit can't be enforced while asleep.",
-                                  isOn: bind(\.disableChargingBeforeSleep))
-                        divider
-                        toggleRow("Prevent idle sleep while plugged in",
-                                  "Keeps the Mac awake on power so the limit holds.",
-                                  isOn: bind(\.preventIdleSleep))
-                        divider
-                        toggleRow("Always Active (keep awake with lid closed)",
-                                  "Work keeps running with the lid shut. AC power only by default.",
-                                  isOn: bind(\.keepAwake))
-                        if chargeLimit.keepAwake {
+                    advanced {
+                        card("While asleep or idle") {
+                            toggleRow("Stop charging before sleep",
+                                      chargeLimit.limitEnabled
+                                      ? "Cuts charging at sleep even when no limit is set."
+                                      : "Cuts charging as the Mac goes to sleep. With a charge limit set this happens anyway: the limit can't be enforced while asleep.",
+                                      isOn: bind(\.disableChargingBeforeSleep))
                             divider
-                            keepAwakeTimerRow
-                            if chargeLimit.hasAwakeSchedules {
+                            toggleRow("Prevent idle sleep while plugged in",
+                                      "Keeps the Mac awake on power so the limit holds.",
+                                      isOn: bind(\.preventIdleSleep))
+                            divider
+                            toggleRow("Always Active (keep awake with lid closed)",
+                                      "Work keeps running with the lid shut. AC power only by default.",
+                                      isOn: bind(\.keepAwake))
+                            if chargeLimit.keepAwake {
                                 divider
-                                keepAwakeWindowsRow
-                            }
-                            divider
-                            toggleRow("Also keep awake on battery",
-                                      "Drains fast and runs hot. Set a temperature guardrail below.",
-                                      isOn: bind(\.keepAwakeOnBattery))
-                            divider
-                            toggleRow("Only while a task is running",
-                                      "Holds while a matching process runs, then sleeps.",
-                                      isOn: bind(\.keepAwakeRequiresTask))
-                            if chargeLimit.keepAwakeRequiresTask {
-                                divider
-                                VStack(alignment: .leading, spacing: 6) {
-                                    HStack {
-                                        Text("Keep awake for these apps/processes").font(.callout)
-                                        Spacer()
-                                        Button {
-                                            showingProcessPicker = true
-                                        } label: {
-                                            Label("Choose…", systemImage: "plus.circle")
-                                        }
-                                        .buttonStyle(.link)
-                                    }
-                                    TextField("e.g. ffmpeg, npm, docker, rsync",
-                                              text: keepAwakeProcessText)
-                                        .textFieldStyle(.roundedBorder)
-                                    Text("Comma-separated names; matched against running commands. Use “Choose…” to pick from running processes.")
-                                        .font(.caption).foregroundStyle(.secondary)
+                                keepAwakeTimerRow
+                                if chargeLimit.hasAwakeSchedules {
+                                    divider
+                                    keepAwakeWindowsRow
                                 }
-                                .padding(.horizontal, rowInset).padding(.vertical, DS.Space.s + 2)
                                 divider
-                                stepperRow("Or any process above",
-                                           value: chargeLimit.keepAwakeMinCpu > 0
-                                                ? "\(Int(chargeLimit.keepAwakeMinCpu))% CPU" : "Off",
-                                           binding: Binding(
-                                            get: { chargeLimit.keepAwakeMinCpu },
-                                            set: { chargeLimit.keepAwakeMinCpu = $0; chargeLimit.apply() }),
-                                           range: 0...100)
+                                toggleRow("Also keep awake on battery",
+                                          "Drains fast and runs hot. Set a temperature guardrail below.",
+                                          isOn: bind(\.keepAwakeOnBattery))
                                 divider
-                                toggleRow("Sleep when the task finishes",
-                                          "Sleeps as soon as the task stops, rather than waiting for idle.",
-                                          isOn: bind(\.sleepWhenTaskDone))
-                            }
-                            divider
-                            toggleRow("Sleep if it gets too hot",
-                                      "Releases keep-awake and sleeps if the Mac runs hot.",
-                                      isOn: Binding(
-                                        get: { chargeLimit.keepAwakeMaxTempC > 0 },
-                                        set: { chargeLimit.keepAwakeMaxTempC = $0 ? 40 : 0; chargeLimit.apply() }))
-                            if chargeLimit.keepAwakeMaxTempC > 0 {
+                                toggleRow("Only while a task is running",
+                                          "Holds while a matching process runs, then sleeps.",
+                                          isOn: bind(\.keepAwakeRequiresTask))
+                                if chargeLimit.keepAwakeRequiresTask {
+                                    divider
+                                    VStack(alignment: .leading, spacing: 6) {
+                                        HStack {
+                                            Text("Keep awake for these apps/processes").font(.callout)
+                                            Spacer()
+                                            Button {
+                                                showingProcessPicker = true
+                                            } label: {
+                                                Label("Choose…", systemImage: "plus.circle")
+                                            }
+                                            .buttonStyle(.link)
+                                        }
+                                        TextField("e.g. ffmpeg, npm, docker, rsync",
+                                                  text: keepAwakeProcessText)
+                                            .textFieldStyle(.roundedBorder)
+                                        Text("Comma-separated names; matched against running commands. Use “Choose…” to pick from running processes.")
+                                            .font(.caption).foregroundStyle(.secondary)
+                                    }
+                                    .padding(.horizontal, rowInset).padding(.vertical, DS.Space.s + 2)
+                                    divider
+                                    stepperRow("Or any process above",
+                                               value: chargeLimit.keepAwakeMinCpu > 0
+                                                    ? "\(Int(chargeLimit.keepAwakeMinCpu))% CPU" : "Off",
+                                               binding: Binding(
+                                                get: { chargeLimit.keepAwakeMinCpu },
+                                                set: { chargeLimit.keepAwakeMinCpu = $0; chargeLimit.apply() }),
+                                               range: 0...100)
+                                    divider
+                                    toggleRow("Sleep when the task finishes",
+                                              "Sleeps as soon as the task stops, rather than waiting for idle.",
+                                              isOn: bind(\.sleepWhenTaskDone))
+                                }
                                 divider
-                                stepperRow("Temperature cutoff",
-                                           value: "\(Int(chargeLimit.keepAwakeMaxTempC)) °C",
-                                           binding: Binding(
-                                            get: { chargeLimit.keepAwakeMaxTempC },
-                                            set: { chargeLimit.keepAwakeMaxTempC = $0; chargeLimit.apply() }),
-                                           range: 35...55)
+                                toggleRow("Sleep if it gets too hot",
+                                          "Releases keep-awake and sleeps if the Mac runs hot.",
+                                          isOn: Binding(
+                                            get: { chargeLimit.keepAwakeMaxTempC > 0 },
+                                            set: { chargeLimit.keepAwakeMaxTempC = $0 ? 40 : 0; chargeLimit.apply() }))
+                                if chargeLimit.keepAwakeMaxTempC > 0 {
+                                    divider
+                                    stepperRow("Temperature cutoff",
+                                               value: "\(Int(chargeLimit.keepAwakeMaxTempC)) °C",
+                                               binding: Binding(
+                                                get: { chargeLimit.keepAwakeMaxTempC },
+                                                set: { chargeLimit.keepAwakeMaxTempC = $0; chargeLimit.apply() }),
+                                               range: 35...55)
+                                }
                             }
                         }
                     }
 
-                    card("Heat") {
+                    card("Heat protection") {
                         toggleRow("Pause charging when hot",
                                   "Stops charging while the battery is warm.",
                                   isOn: bind(\.heatAwareEnabled))
@@ -435,23 +516,27 @@ struct SettingsView: View {
                         }
                     }
 
-                    if chargeLimit.dischargeSupported {
-                        card("Discharge") {
-                            toggleRow("Discharge to limit",
-                                      "Runs off battery until it drops back to the limit.",
-                                      isOn: bind(\.dischargeEnabled))
+                    advanced {
+                        if chargeLimit.dischargeSupported {
+                            card("Discharge") {
+                                toggleRow("Discharge to limit",
+                                          "Runs off battery until it drops back to the limit.",
+                                          isOn: bind(\.dischargeEnabled))
+                            }
                         }
                     }
 
-                    if chargeLimit.magSafeSupported {
-                        card("MagSafe LED") {
-                            pickerRow(magSafeHint) {
-                                Picker("MagSafe LED behaviour", selection: Binding(
-                                    get: { chargeLimit.magSafeLedMode },
-                                    set: { chargeLimit.magSafeLedMode = $0; chargeLimit.apply() })) {
-                                    ForEach(MagSafeLEDMode.allCases) { Text($0.title).tag($0) }
+                    advanced {
+                        if chargeLimit.magSafeSupported {
+                            card("MagSafe LED") {
+                                pickerRow(magSafeHint) {
+                                    Picker("MagSafe LED behaviour", selection: Binding(
+                                        get: { chargeLimit.magSafeLedMode },
+                                        set: { chargeLimit.magSafeLedMode = $0; chargeLimit.apply() })) {
+                                        ForEach(MagSafeLEDMode.allCases) { Text($0.title).tag($0) }
+                                    }
+                                    .pickerStyle(.segmented).labelsHidden()
                                 }
-                                .pickerStyle(.segmented).labelsHidden()
                             }
                         }
                     }
@@ -594,7 +679,7 @@ struct SettingsView: View {
     // MARK: - Schedule
 
     private var scheduleTab: some View {
-        tab {
+        tab(.schedule) {
             if chargeLimit.daemonAvailable {
                 proGate {
                     card("Charging schedules") {
@@ -618,30 +703,32 @@ struct SettingsView: View {
                         .padding(.horizontal, rowInset).padding(.vertical, DS.Space.s + 2)
                     }
 
-                    card("Always Active hours") {
-                        if chargeLimit.keepAwakeSchedules.isEmpty {
-                            infoRow("None set. Always Active holds whenever its switch is on.",
-                                    systemImage: "clock")
-                        } else {
-                            ForEach(chargeLimit.keepAwakeSchedules) { window in
-                                awakeScheduleRow(window)
-                                divider
+                    advanced {
+                        card("Always Active hours") {
+                            if chargeLimit.keepAwakeSchedules.isEmpty {
+                                infoRow("None set. Always Active holds whenever its switch is on.",
+                                        systemImage: "clock")
+                            } else {
+                                ForEach(chargeLimit.keepAwakeSchedules) { window in
+                                    awakeScheduleRow(window)
+                                    divider
+                                }
+                                if !chargeLimit.keepAwake {
+                                    infoRow("Always Active is off, so these hours do nothing yet.",
+                                            systemImage: "info")
+                                    divider
+                                }
                             }
-                            if !chargeLimit.keepAwake {
-                                infoRow("Always Active is off, so these hours do nothing yet.",
-                                        systemImage: "info")
-                                divider
+                            HStack {
+                                Button {
+                                    editingAwakeIsNew = true
+                                    editingAwakeSchedule = AwakeSchedule()
+                                } label: { Label("Add Hours", systemImage: "plus") }
+                                    .controlSize(.small)
+                                Spacer()
                             }
+                            .padding(.horizontal, rowInset).padding(.vertical, DS.Space.s + 2)
                         }
-                        HStack {
-                            Button {
-                                editingAwakeIsNew = true
-                                editingAwakeSchedule = AwakeSchedule()
-                            } label: { Label("Add Hours", systemImage: "plus") }
-                                .controlSize(.small)
-                            Spacer()
-                        }
-                        .padding(.horizontal, rowInset).padding(.vertical, DS.Space.s + 2)
                     }
 
                     card("Ready by") {
@@ -680,8 +767,10 @@ struct SettingsView: View {
                         }
                     }
 
-                    card("Charge power") {
-                        chargePowerRow
+                    advanced {
+                        card("Charge power") {
+                            chargePowerRow
+                        }
                     }
                 }
             } else {
@@ -734,10 +823,10 @@ struct SettingsView: View {
     /// Condition-driven rules: apply a charging or power setting while something
     /// is true of the Mac, and put it back when it stops being true.
     private var automationTab: some View {
-        tab {
+        tab(.automation) {
             if chargeLimit.daemonAvailable {
                 proGate {
-                    card("Rules") {
+                    card("Your rules") {
                         if triggers.rules.isEmpty {
                             infoRow("None yet. A rule applies a setting while something is true, and undoes it after.",
                                     systemImage: "wand")
@@ -797,14 +886,16 @@ struct SettingsView: View {
                         }
                     }
 
-                    card("Right now") {
+                    card("Current conditions") {
                         TriggerLiveStateView(store: triggers)
                     }
                 }
             } else {
                 helperCard
             }
-            agentsCard
+            advanced {
+                agentsCard
+            }
         }
     }
 
@@ -977,7 +1068,7 @@ struct SettingsView: View {
     // MARK: - Sleep & Power
 
     private var sleepPowerTab: some View {
-        tab {
+        tab(.sleepPower) {
             proGate {
                 // The closed-lid section is deliberately one thing, not three. It used to
                 // be a "deep sleep" picker, a "super save" switch and a pair of radio
@@ -1043,61 +1134,63 @@ struct SettingsView: View {
                 .disabled(chargeLimit.sealedSleep)
                 .opacity(chargeLimit.sealedSleep ? 0.55 : 1)
 
-                card("Rest without closing the lid") {
-                    HStack(spacing: 10) {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Rest now").font(.callout)
-                            Text(idleSaver.resting
-                                 ? "Resting. The screen is off and settings are held. Touch anything to come back."
-                                 : "Screen and keyboard backlight off, and the settings below applied, without shutting the lid.")
-                                .font(.caption).foregroundStyle(.secondary)
-                                .fixedSize(horizontal: false, vertical: true)
+                advanced {
+                    card("Rest without closing the lid") {
+                        HStack(spacing: 10) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Rest now").font(.callout)
+                                Text(idleSaver.resting
+                                     ? "Resting. The screen is off and settings are held. Touch anything to come back."
+                                     : "Screen and keyboard backlight off, and the settings below applied, without shutting the lid.")
+                                    .font(.caption).foregroundStyle(.secondary)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                            Spacer(minLength: 8)
+                            Button(idleSaver.resting ? "Wake" : "Rest Now") {
+                                idleSaver.resting ? idleSaver.wake() : idleSaver.restNow()
+                            }
+                            .controlSize(.small)
                         }
-                        Spacer(minLength: 8)
-                        Button(idleSaver.resting ? "Wake" : "Rest Now") {
-                            idleSaver.resting ? idleSaver.wake() : idleSaver.restNow()
-                        }
-                        .controlSize(.small)
-                    }
-                    .padding(.horizontal, rowInset).padding(.vertical, DS.Space.s + 2)
-                    divider
-                    toggleRow("Rest automatically when I'm away",
-                              "Waits for no input at all, and holds off during calls, films and games.",
-                              isOn: $idleSaver.autoEnabled)
-                    if idleSaver.autoEnabled {
-                        if let waiting = idleSaver.waitingBecause {
+                        .padding(.horizontal, rowInset).padding(.vertical, DS.Space.s + 2)
+                        divider
+                        toggleRow("Rest automatically when I'm away",
+                                  "Waits for no input at all, and holds off during calls, films and games.",
+                                  isOn: $idleSaver.autoEnabled)
+                        if idleSaver.autoEnabled {
+                            if let waiting = idleSaver.waitingBecause {
+                                divider
+                                infoRow("You've been away long enough to rest, but \(waiting). Resting will start once that stops.",
+                                        systemImage: "info")
+                            }
                             divider
-                            infoRow("You've been away long enough to rest, but \(waiting). Resting will start once that stops.",
-                                    systemImage: "info")
+                            stepperRow("After",
+                                       value: "\(idleSaver.afterMinutes) min",
+                                       binding: Binding(
+                                        get: { Double(idleSaver.afterMinutes) },
+                                        set: { idleSaver.afterMinutes = max(5, Int($0)) }),
+                                       range: 5...120)
+                            divider
+                            stepperRow("Then sleep after",
+                                       value: idleSaver.sleepAfterMinutes > 0
+                                            ? "\(idleSaver.sleepAfterMinutes) min more" : "Never",
+                                       binding: Binding(
+                                        get: { Double(idleSaver.sleepAfterMinutes) },
+                                        set: { idleSaver.sleepAfterMinutes = max(0, Int($0)) }),
+                                       range: 0...180)
                         }
                         divider
-                        stepperRow("After",
-                                   value: "\(idleSaver.afterMinutes) min",
-                                   binding: Binding(
-                                    get: { Double(idleSaver.afterMinutes) },
-                                    set: { idleSaver.afterMinutes = max(5, Int($0)) }),
-                                   range: 5...120)
+                        toggleRow("Low Power Mode while resting",
+                                  "Put back when you return.",
+                                  isOn: $idleSaver.lowPowerWhileResting)
                         divider
-                        stepperRow("Then sleep after",
-                                   value: idleSaver.sleepAfterMinutes > 0
-                                        ? "\(idleSaver.sleepAfterMinutes) min more" : "Never",
-                                   binding: Binding(
-                                    get: { Double(idleSaver.sleepAfterMinutes) },
-                                    set: { idleSaver.sleepAfterMinutes = max(0, Int($0)) }),
-                                   range: 0...180)
+                        toggleRow("Wi-Fi and Bluetooth off while resting",
+                                  "Off by default: losing the network mid-call costs more than it saves.",
+                                  isOn: $idleSaver.radiosOffWhileResting)
+                        divider
                     }
-                    divider
-                    toggleRow("Low Power Mode while resting",
-                              "Put back when you return.",
-                              isOn: $idleSaver.lowPowerWhileResting)
-                    divider
-                    toggleRow("Wi-Fi and Bluetooth off while resting",
-                              "Off by default: losing the network mid-call costs more than it saves.",
-                              isOn: $idleSaver.radiosOffWhileResting)
-                    divider
                 }
 
-                card("Caffeine (keep awake now)") {
+                card("Keep awake now") {
                     infoRow(caffeineStateHint, systemImage: "coffee")
                     divider
                     toggleRow("End it when I unplug",
@@ -1128,15 +1221,19 @@ struct SettingsView: View {
                         }
                     }
 
-                    card("Power") {
-                        toggleRow("Low Power Mode",
-                                  "Also lowers the refresh rate on ProMotion Macs.",
-                                  isOn: Binding(
-                                    get: { chargeLimit.lowPowerMode },
-                                    set: { chargeLimit.setLowPowerMode($0) }))
+                    advanced {
+                        card("Power") {
+                            toggleRow("Low Power Mode",
+                                      "Also lowers the refresh rate on ProMotion Macs.",
+                                      isOn: Binding(
+                                        get: { chargeLimit.lowPowerMode },
+                                        set: { chargeLimit.setLowPowerMode($0) }))
+                        }
                     }
 
-                    networkCard
+                    advanced {
+                        networkCard
+                    }
                 }
             }
         }
@@ -1202,7 +1299,7 @@ struct SettingsView: View {
     // MARK: - Shortcuts
 
     private var shortcutsTab: some View {
-        tab {
+        tab(.shortcuts) {
             card("Global Shortcuts") {
                 toggleRow("Enable keyboard shortcuts",
                           "Works from any app. eWiz claims only the combinations below.",
@@ -1283,8 +1380,9 @@ struct SettingsView: View {
     }
 
     private var generalTab: some View {
-        tab {
-            helperCard
+        tab(.general) {
+            // Front and centre only when it needs doing; once it runs it's an advanced detail.
+            if !chargeLimit.daemonAvailable { helperCard }
 
             card("Menu Bar") {
                 pickerRow("Pick how the battery looks in the menu bar. The fill tracks your exact charge.") {
@@ -1360,132 +1458,134 @@ struct SettingsView: View {
                 }
             }
 
-                card("Plug-in feedback (experimental)") {
-                    if NSWorkspace.shared.accessibilityDisplayShouldReduceMotion {
-                        toggleRow("Animate anyway",
-                                  "Reduce Motion is on. eWiz's animations stay off unless you allow them.",
-                                  isOn: $settings.animateWithReduceMotion)
-                        divider
-                    }
-                    toggleRow("Tap the trackpad when you plug in",
-                              "Two taps on connect, one on unplug, three at the limit.",
-                              isOn: $settings.hapticsEnabled)
-                    divider
-                    toggleRow("Play a sound when you plug in",
-                              "A short cue on connect, a smaller one on unplug.",
-                              isOn: $settings.soundEnabled)
-                    if settings.soundEnabled {
-                        divider
-                        HStack(spacing: 10) {
-                            Text("Sound").font(.callout)
-                            Spacer(minLength: DS.Space.s)
-                            // Plays on change. Choosing a sound by reading five words is
-                            // not choosing a sound.
-                            Picker("", selection: Binding(
-                                get: { settings.soundTheme },
-                                set: {
-                                    settings.soundTheme = $0
-                                    ChargeSound.play(.connect, volume: settings.soundVolume,
-                                                     theme: $0)
-                                }
-                            )) {
-                                ForEach(ChargeSound.Theme.allCases) {
-                                    Text($0.displayName).tag($0)
-                                }
-                            }
-                            .labelsHidden().fixedSize()
+                advanced {
+                    card("Plug-in feedback (experimental)") {
+                        if NSWorkspace.shared.accessibilityDisplayShouldReduceMotion {
+                            toggleRow("Animate anyway",
+                                      "Reduce Motion is on. eWiz's animations stay off unless you allow them.",
+                                      isOn: $settings.animateWithReduceMotion)
+                            divider
                         }
-                        .padding(.horizontal, rowInset).padding(.vertical, DS.Space.s + 2)
+                        toggleRow("Tap the trackpad when you plug in",
+                                  "Two taps on connect, one on unplug, three at the limit.",
+                                  isOn: $settings.hapticsEnabled)
                         divider
-                        HStack(spacing: 10) {
-                            Text("Volume").font(.callout)
-                            Slider(value: $settings.soundVolume, in: 0.05...1)
-                                .controlSize(.small)
-                            Text("\(Int(settings.soundVolume * 100))%")
-                                .font(.callout).monospacedDigit()
-                                .foregroundStyle(.secondary)
-                                .frame(width: 42, alignment: .trailing)
-                            Menu("Test") {
-                                Button("Plugged in") {
-                                    ChargeSound.play(.connect, volume: settings.soundVolume,
-                                                     theme: settings.soundTheme)
-                                }
-                                Button("Unplugged") {
-                                    ChargeSound.play(.disconnect, volume: settings.soundVolume,
-                                                     theme: settings.soundTheme)
-                                }
-                                Button("Charge complete") {
-                                    ChargeSound.play(.complete, volume: settings.soundVolume,
-                                                     theme: settings.soundTheme)
-                                }
-                            }
-                            .menuStyle(.borderlessButton)
-                            .controlSize(.small)
-                            .fixedSize()
-                        }
-                        .padding(.horizontal, rowInset).padding(.vertical, DS.Space.s + 2)
-                    }
-                    divider
-                    if ChargeOverlayFeature.shipped {
-                        toggleRow("Show an animation when you plug in",
-                                  "Flashes for about a second, then gets out of the way.",
-                                  isOn: $settings.chargeOverlayEnabled)
-                    } else {
-                        comingSoonRow("Show an animation when you plug in",
-                                      "Being rebuilt. It plays over whatever you're doing, so it ships when it's right.")
-                    }
-                    if ChargeOverlayFeature.shipped, settings.chargeOverlayEnabled {
-                        divider
-                        VStack(alignment: .leading, spacing: 8) {
-                            HStack {
-                                Text("Animation").font(.callout)
-                                Spacer()
-                                Picker("", selection: $settings.chargeOverlayStyle) {
-                                    ForEach(ChargeOverlayStyle.allCases) {
+                        toggleRow("Play a sound when you plug in",
+                                  "A short cue on connect, a smaller one on unplug.",
+                                  isOn: $settings.soundEnabled)
+                        if settings.soundEnabled {
+                            divider
+                            HStack(spacing: 10) {
+                                Text("Sound").font(.callout)
+                                Spacer(minLength: DS.Space.s)
+                                // Plays on change. Choosing a sound by reading five words is
+                                // not choosing a sound.
+                                Picker("", selection: Binding(
+                                    get: { settings.soundTheme },
+                                    set: {
+                                        settings.soundTheme = $0
+                                        ChargeSound.play(.connect, volume: settings.soundVolume,
+                                                         theme: $0)
+                                    }
+                                )) {
+                                    ForEach(ChargeSound.Theme.allCases) {
                                         Text($0.displayName).tag($0)
                                     }
                                 }
-                                .labelsHidden().frame(width: 160)
-                                Button("Preview") {
-                                    overlay.show(style: settings.chargeOverlayStyle,
-                                                 duration: settings.chargeOverlayDuration,
-                                                 percentage: battery.snapshot.percentage,
-                                                 allowMotion: settings.motionAllowed)
-                                }
-                                .controlSize(.small)
+                                .labelsHidden().fixedSize()
                             }
-                            Text(settings.chargeOverlayStyle.summary)
-                                .font(.caption).foregroundStyle(.secondary)
-                                .fixedSize(horizontal: false, vertical: true)
-                            if settings.chargeOverlayStyle == .custom {
-                                let count = ChargeFrameSequence.frameURLs().count
-                                HStack(spacing: 8) {
-                                    Button("Reveal Frames Folder…") {
-                                        ChargeFrameSequence.revealInFinder()
+                            .padding(.horizontal, rowInset).padding(.vertical, DS.Space.s + 2)
+                            divider
+                            HStack(spacing: 10) {
+                                Text("Volume").font(.callout)
+                                Slider(value: $settings.soundVolume, in: 0.05...1)
+                                    .controlSize(.small)
+                                Text("\(Int(settings.soundVolume * 100))%")
+                                    .font(.callout).monospacedDigit()
+                                    .foregroundStyle(.secondary)
+                                    .frame(width: 42, alignment: .trailing)
+                                Menu("Test") {
+                                    Button("Plugged in") {
+                                        ChargeSound.play(.connect, volume: settings.soundVolume,
+                                                         theme: settings.soundTheme)
+                                    }
+                                    Button("Unplugged") {
+                                        ChargeSound.play(.disconnect, volume: settings.soundVolume,
+                                                         theme: settings.soundTheme)
+                                    }
+                                    Button("Charge complete") {
+                                        ChargeSound.play(.complete, volume: settings.soundVolume,
+                                                         theme: settings.soundTheme)
+                                    }
+                                }
+                                .menuStyle(.borderlessButton)
+                                .controlSize(.small)
+                                .fixedSize()
+                            }
+                            .padding(.horizontal, rowInset).padding(.vertical, DS.Space.s + 2)
+                        }
+                        divider
+                        if ChargeOverlayFeature.shipped {
+                            toggleRow("Show an animation when you plug in",
+                                      "Flashes for about a second, then gets out of the way.",
+                                      isOn: $settings.chargeOverlayEnabled)
+                        } else {
+                            comingSoonRow("Show an animation when you plug in",
+                                          "Being rebuilt. It plays over whatever you're doing, so it ships when it's right.")
+                        }
+                        if ChargeOverlayFeature.shipped, settings.chargeOverlayEnabled {
+                            divider
+                            VStack(alignment: .leading, spacing: 8) {
+                                HStack {
+                                    Text("Animation").font(.callout)
+                                    Spacer()
+                                    Picker("", selection: $settings.chargeOverlayStyle) {
+                                        ForEach(ChargeOverlayStyle.allCases) {
+                                            Text($0.displayName).tag($0)
+                                        }
+                                    }
+                                    .labelsHidden().frame(width: 160)
+                                    Button("Preview") {
+                                        overlay.show(style: settings.chargeOverlayStyle,
+                                                     duration: settings.chargeOverlayDuration,
+                                                     percentage: battery.snapshot.percentage,
+                                                     allowMotion: settings.motionAllowed)
                                     }
                                     .controlSize(.small)
-                                    Text(count == 0
-                                         ? "No frames yet. The dot grid plays until you add some."
-                                         : "\(count) frame\(count == 1 ? "" : "s") found, played in filename order.")
-                                        .font(.caption).foregroundStyle(.secondary)
                                 }
-                                Text("Export a numbered image sequence (frame_001.png, frame_002.png, …) from Rive, Lottie or After Effects. Up to \(ChargeFrameSequence.maxFrames) frames, scaled to fit and centred. No plug-in or runtime needed.")
+                                Text(settings.chargeOverlayStyle.summary)
                                     .font(.caption).foregroundStyle(.secondary)
                                     .fixedSize(horizontal: false, vertical: true)
+                                if settings.chargeOverlayStyle == .custom {
+                                    let count = ChargeFrameSequence.frameURLs().count
+                                    HStack(spacing: 8) {
+                                        Button("Reveal Frames Folder…") {
+                                            ChargeFrameSequence.revealInFinder()
+                                        }
+                                        .controlSize(.small)
+                                        Text(count == 0
+                                             ? "No frames yet. The dot grid plays until you add some."
+                                             : "\(count) frame\(count == 1 ? "" : "s") found, played in filename order.")
+                                            .font(.caption).foregroundStyle(.secondary)
+                                    }
+                                    Text("Export a numbered image sequence (frame_001.png, frame_002.png, …) from Rive, Lottie or After Effects. Up to \(ChargeFrameSequence.maxFrames) frames, scaled to fit and centred. No plug-in or runtime needed.")
+                                        .font(.caption).foregroundStyle(.secondary)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
                             }
+                            .padding(.horizontal, rowInset).padding(.vertical, DS.Space.s + 2)
+                            divider
+                            stepperRow("How long",
+                                       value: String(format: "%.1f s", settings.chargeOverlayDuration),
+                                       binding: Binding(
+                                        get: { settings.chargeOverlayDuration * 10 },
+                                        set: { settings.chargeOverlayDuration = ($0.rounded() / 10) }),
+                                       range: 5...20)
+                            divider
+                            toggleRow("Play it when you unplug too",
+                                      "The same animation in a cooler colour.",
+                                      isOn: $settings.chargeOverlayOnUnplug)
                         }
-                        .padding(.horizontal, rowInset).padding(.vertical, DS.Space.s + 2)
-                        divider
-                        stepperRow("How long",
-                                   value: String(format: "%.1f s", settings.chargeOverlayDuration),
-                                   binding: Binding(
-                                    get: { settings.chargeOverlayDuration * 10 },
-                                    set: { settings.chargeOverlayDuration = ($0.rounded() / 10) }),
-                                   range: 5...20)
-                        divider
-                        toggleRow("Play it when you unplug too",
-                                  "The same animation in a cooler colour.",
-                                  isOn: $settings.chargeOverlayOnUnplug)
                     }
                 }
 
@@ -1500,11 +1600,13 @@ struct SettingsView: View {
                 }
             }
 
-            card("System") {
-                labelRow("Lid", automation.isLidClosed ? "Closed · clamshell" : "Open")
-                if let s = automation.lastLidSession {
-                    divider
-                    labelRow("Last closed", lastClosedText(s))
+            advanced {
+                card("System") {
+                    labelRow("Lid", automation.isLidClosed ? "Closed · clamshell" : "Open")
+                    if let s = automation.lastLidSession {
+                        divider
+                        labelRow("Last closed", lastClosedText(s))
+                    }
                 }
             }
 
@@ -1533,6 +1635,10 @@ struct SettingsView: View {
                     .padding(.horizontal, rowInset).padding(.vertical, DS.Space.s + 2)
                 }
             }
+
+            advanced {
+                if chargeLimit.daemonAvailable { helperCard }
+            }
         }
     }
 
@@ -1548,14 +1654,82 @@ struct SettingsView: View {
     ///
     /// `Space.l` between groups, not `Space.xl`. The larger value was chosen when a filled
     /// box was also marking each boundary; without one, the same gap just reads as a hole.
-    private func tab<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+    ///
+    /// Every pane opens with what it's for in one plain sentence and a link to the
+    /// longer explanation on ewiz.app/features, and ends with the switch that reveals
+    /// its advanced settings, so nobody has to guess what a group of toggles is about.
+    private func tab<Content: View>(_ pane: Tab, @ViewBuilder _ content: () -> Content) -> some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: DS.Space.l) { content() }
-                .frame(width: contentWidth, alignment: .leading)
-                .padding(.vertical, DS.Space.l)
-                .frame(maxWidth: .infinity, alignment: .center)
+            VStack(alignment: .leading, spacing: DS.Space.l) {
+                paneHeader(pane)
+                content()
+                if pane.hasAdvanced { advancedFooter }
+            }
+            .frame(width: contentWidth, alignment: .leading)
+            .padding(.vertical, DS.Space.l)
+            .frame(maxWidth: .infinity, alignment: .center)
         }
         .scrollIndicators(.hidden)
+    }
+
+    private func paneHeader(_ pane: Tab) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            HugeIcon(pane.icon, size: 22)
+                .foregroundStyle(.white)
+                .frame(width: 40, height: 40)
+                .background(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .fill(Color.accentColor.gradient)
+                )
+            VStack(alignment: .leading, spacing: 3) {
+                Text(pane.title)
+                    .font(.title3.weight(.semibold))
+                Text(pane.summary)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                if let url = pane.learnMoreURL {
+                    Button {
+                        openURL(url)
+                    } label: {
+                        HStack(spacing: 3) {
+                            Text("Learn what each setting does")
+                            HugeIcon("arrowUpRight", size: 11)
+                        }
+                        .font(.caption)
+                    }
+                    .buttonStyle(.link)
+                    .padding(.top, 2)
+                }
+            }
+        }
+        .padding(.horizontal, rowInset)
+        .padding(.bottom, DS.Space.xs)
+    }
+
+    /// Mirrors the sidebar switch where people finish reading a pane.
+    private var advancedFooter: some View {
+        Button {
+            withAnimation(.snappy) { showAdvanced.toggle() }
+        } label: {
+            HStack(spacing: 6) {
+                HugeIcon(showAdvanced ? "minus" : "plus", size: 12)
+                Text(showAdvanced ? "Hide advanced settings" : "Show advanced settings")
+            }
+            .font(.callout)
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, rowInset)
+            .padding(.vertical, 6)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .padding(.top, DS.Space.xs)
+    }
+
+    /// Settings most people never need: shown only with "Advanced settings" on.
+    @ViewBuilder
+    private func advanced<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+        if showAdvanced { content() }
     }
 
     /// Narrower than the window on purpose — see `tab`.
