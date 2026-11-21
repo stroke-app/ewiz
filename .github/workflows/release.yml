@@ -179,8 +179,10 @@ jobs:
           draft: false
           make_latest: true
 
-      # Point the public in-app update feeds at this release: appcast.xml (Sparkle,
-      # SUFeedURL) and appcast.json (the old updater in copies up to 0.18.5). Done inline
+      # Legacy feeds for installed copies up to 0.19.10, which read them from
+      # stroke-app/ewiz-releases: appcast.xml (Sparkle) and appcast.json (the old updater
+      # in copies up to 0.18.5). Newer builds read https://ewiz.app/appcast.xml, which
+      # serves this release's own asset. Remove this step once old copies have updated. Done inline
       # here rather than in a separate `release: published` workflow because releases
       # published by the default GITHUB_TOKEN do NOT emit an event that can
       # trigger another workflow — so that feed workflow never fired on its own.

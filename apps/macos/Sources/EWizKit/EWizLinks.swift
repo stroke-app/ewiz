@@ -16,8 +16,9 @@ public enum EWizLinks {
     /// one. The license window and the "isn't linked to a Mac" error send people here.
     public static let license = URL(string: "https://ewiz.app/license")!
 
-    /// Settings › About › Donate.
-    public static let donate = URL(string: "https://ewiz.app/donate")!
+    /// Settings › About › Donate: the website redirects this to the pay-what-you-want
+    /// checkout, so the checkout link can change without an app release.
+    public static let donate = URL(string: "https://ewiz.app/donate/checkout")!
 
     /// Where Contact Support and the license window's help link write to.
     public static let supportEmail = "hello@ewiz.app"

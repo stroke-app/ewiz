@@ -17,10 +17,13 @@ import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as LlmsDottxtRouteImport } from './routes/llms[.]txt'
 import { Route as LlmsFullDottxtRouteImport } from './routes/llms-full[.]txt'
 import { Route as LicenseRouteImport } from './routes/license'
+import { Route as FeaturesRouteImport } from './routes/features'
 import { Route as DownloadRouteImport } from './routes/download'
 import { Route as DonateRouteImport } from './routes/donate'
 import { Route as ChangelogRouteImport } from './routes/changelog'
 import { Route as BuyRouteImport } from './routes/buy'
+import { Route as AppcastDotxmlRouteImport } from './routes/appcast[.]xml'
+import { Route as AppcastDotjsonRouteImport } from './routes/appcast[.]json'
 import { Route as LegalRouteRouteImport } from './routes/legal/route'
 import { Route as BlogRouteRouteImport } from './routes/blog/route'
 import { Route as GuestRouteRouteImport } from './routes/_guest/route'
@@ -30,8 +33,8 @@ import { Route as BlogIndexRouteImport } from './routes/blog/index'
 import { Route as LegalTermsRouteImport } from './routes/legal/terms'
 import { Route as LegalPrivacyRouteImport } from './routes/legal/privacy'
 import { Route as LegalLicenseRouteImport } from './routes/legal/license'
+import { Route as DonateCheckoutRouteImport } from './routes/donate_.checkout'
 import { Route as BlogSlugRouteImport } from './routes/blog/$slug'
-import { Route as GuestSignupRouteImport } from './routes/_guest/signup'
 import { Route as GuestLoginRouteImport } from './routes/_guest/login'
 import { Route as AuthAppRouteRouteImport } from './routes/_auth/app/route'
 import { Route as AuthAppIndexRouteImport } from './routes/_auth/app/index'
@@ -77,6 +80,11 @@ const LicenseRoute = LicenseRouteImport.update({
   path: '/license',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FeaturesRoute = FeaturesRouteImport.update({
+  id: '/features',
+  path: '/features',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DownloadRoute = DownloadRouteImport.update({
   id: '/download',
   path: '/download',
@@ -95,6 +103,16 @@ const ChangelogRoute = ChangelogRouteImport.update({
 const BuyRoute = BuyRouteImport.update({
   id: '/buy',
   path: '/buy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppcastDotxmlRoute = AppcastDotxmlRouteImport.update({
+  id: '/appcast.xml',
+  path: '/appcast.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppcastDotjsonRoute = AppcastDotjsonRouteImport.update({
+  id: '/appcast.json',
+  path: '/appcast.json',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LegalRouteRoute = LegalRouteRouteImport.update({
@@ -140,15 +158,15 @@ const LegalLicenseRoute = LegalLicenseRouteImport.update({
   path: '/license',
   getParentRoute: () => LegalRouteRoute,
 } as any)
+const DonateCheckoutRoute = DonateCheckoutRouteImport.update({
+  id: '/donate_/checkout',
+  path: '/donate/checkout',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BlogSlugRoute = BlogSlugRouteImport.update({
   id: '/$slug',
   path: '/$slug',
   getParentRoute: () => BlogRouteRoute,
-} as any)
-const GuestSignupRoute = GuestSignupRouteImport.update({
-  id: '/signup',
-  path: '/signup',
-  getParentRoute: () => GuestRouteRoute,
 } as any)
 const GuestLoginRoute = GuestLoginRouteImport.update({
   id: '/login',
@@ -175,10 +193,13 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/blog': typeof BlogRouteRouteWithChildren
   '/legal': typeof LegalRouteRouteWithChildren
+  '/appcast.json': typeof AppcastDotjsonRoute
+  '/appcast.xml': typeof AppcastDotxmlRoute
   '/buy': typeof BuyRoute
   '/changelog': typeof ChangelogRoute
   '/donate': typeof DonateRoute
   '/download': typeof DownloadRoute
+  '/features': typeof FeaturesRoute
   '/license': typeof LicenseRoute
   '/llms-full.txt': typeof LlmsFullDottxtRoute
   '/llms.txt': typeof LlmsDottxtRoute
@@ -189,8 +210,8 @@ export interface FileRoutesByFullPath {
   '/terms': typeof TermsRoute
   '/app': typeof AuthAppRouteRouteWithChildren
   '/login': typeof GuestLoginRoute
-  '/signup': typeof GuestSignupRoute
   '/blog/$slug': typeof BlogSlugRoute
+  '/donate/checkout': typeof DonateCheckoutRoute
   '/legal/license': typeof LegalLicenseRoute
   '/legal/privacy': typeof LegalPrivacyRoute
   '/legal/terms': typeof LegalTermsRoute
@@ -201,10 +222,13 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/legal': typeof LegalRouteRouteWithChildren
+  '/appcast.json': typeof AppcastDotjsonRoute
+  '/appcast.xml': typeof AppcastDotxmlRoute
   '/buy': typeof BuyRoute
   '/changelog': typeof ChangelogRoute
   '/donate': typeof DonateRoute
   '/download': typeof DownloadRoute
+  '/features': typeof FeaturesRoute
   '/license': typeof LicenseRoute
   '/llms-full.txt': typeof LlmsFullDottxtRoute
   '/llms.txt': typeof LlmsDottxtRoute
@@ -214,8 +238,8 @@ export interface FileRoutesByTo {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/login': typeof GuestLoginRoute
-  '/signup': typeof GuestSignupRoute
   '/blog/$slug': typeof BlogSlugRoute
+  '/donate/checkout': typeof DonateCheckoutRoute
   '/legal/license': typeof LegalLicenseRoute
   '/legal/privacy': typeof LegalPrivacyRoute
   '/legal/terms': typeof LegalTermsRoute
@@ -230,10 +254,13 @@ export interface FileRoutesById {
   '/_guest': typeof GuestRouteRouteWithChildren
   '/blog': typeof BlogRouteRouteWithChildren
   '/legal': typeof LegalRouteRouteWithChildren
+  '/appcast.json': typeof AppcastDotjsonRoute
+  '/appcast.xml': typeof AppcastDotxmlRoute
   '/buy': typeof BuyRoute
   '/changelog': typeof ChangelogRoute
   '/donate': typeof DonateRoute
   '/download': typeof DownloadRoute
+  '/features': typeof FeaturesRoute
   '/license': typeof LicenseRoute
   '/llms-full.txt': typeof LlmsFullDottxtRoute
   '/llms.txt': typeof LlmsDottxtRoute
@@ -244,8 +271,8 @@ export interface FileRoutesById {
   '/terms': typeof TermsRoute
   '/_auth/app': typeof AuthAppRouteRouteWithChildren
   '/_guest/login': typeof GuestLoginRoute
-  '/_guest/signup': typeof GuestSignupRoute
   '/blog/$slug': typeof BlogSlugRoute
+  '/donate_/checkout': typeof DonateCheckoutRoute
   '/legal/license': typeof LegalLicenseRoute
   '/legal/privacy': typeof LegalPrivacyRoute
   '/legal/terms': typeof LegalTermsRoute
@@ -259,10 +286,13 @@ export interface FileRouteTypes {
     | '/'
     | '/blog'
     | '/legal'
+    | '/appcast.json'
+    | '/appcast.xml'
     | '/buy'
     | '/changelog'
     | '/donate'
     | '/download'
+    | '/features'
     | '/license'
     | '/llms-full.txt'
     | '/llms.txt'
@@ -273,8 +303,8 @@ export interface FileRouteTypes {
     | '/terms'
     | '/app'
     | '/login'
-    | '/signup'
     | '/blog/$slug'
+    | '/donate/checkout'
     | '/legal/license'
     | '/legal/privacy'
     | '/legal/terms'
@@ -285,10 +315,13 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/legal'
+    | '/appcast.json'
+    | '/appcast.xml'
     | '/buy'
     | '/changelog'
     | '/donate'
     | '/download'
+    | '/features'
     | '/license'
     | '/llms-full.txt'
     | '/llms.txt'
@@ -298,8 +331,8 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/terms'
     | '/login'
-    | '/signup'
     | '/blog/$slug'
+    | '/donate/checkout'
     | '/legal/license'
     | '/legal/privacy'
     | '/legal/terms'
@@ -313,10 +346,13 @@ export interface FileRouteTypes {
     | '/_guest'
     | '/blog'
     | '/legal'
+    | '/appcast.json'
+    | '/appcast.xml'
     | '/buy'
     | '/changelog'
     | '/donate'
     | '/download'
+    | '/features'
     | '/license'
     | '/llms-full.txt'
     | '/llms.txt'
@@ -327,8 +363,8 @@ export interface FileRouteTypes {
     | '/terms'
     | '/_auth/app'
     | '/_guest/login'
-    | '/_guest/signup'
     | '/blog/$slug'
+    | '/donate_/checkout'
     | '/legal/license'
     | '/legal/privacy'
     | '/legal/terms'
@@ -343,10 +379,13 @@ export interface RootRouteChildren {
   GuestRouteRoute: typeof GuestRouteRouteWithChildren
   BlogRouteRoute: typeof BlogRouteRouteWithChildren
   LegalRouteRoute: typeof LegalRouteRouteWithChildren
+  AppcastDotjsonRoute: typeof AppcastDotjsonRoute
+  AppcastDotxmlRoute: typeof AppcastDotxmlRoute
   BuyRoute: typeof BuyRoute
   ChangelogRoute: typeof ChangelogRoute
   DonateRoute: typeof DonateRoute
   DownloadRoute: typeof DownloadRoute
+  FeaturesRoute: typeof FeaturesRoute
   LicenseRoute: typeof LicenseRoute
   LlmsFullDottxtRoute: typeof LlmsFullDottxtRoute
   LlmsDottxtRoute: typeof LlmsDottxtRoute
@@ -355,6 +394,7 @@ export interface RootRouteChildren {
   RobotsDottxtRoute: typeof RobotsDottxtRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   TermsRoute: typeof TermsRoute
+  DonateCheckoutRoute: typeof DonateCheckoutRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
 
@@ -416,6 +456,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LicenseRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/features': {
+      id: '/features'
+      path: '/features'
+      fullPath: '/features'
+      preLoaderRoute: typeof FeaturesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/download': {
       id: '/download'
       path: '/download'
@@ -442,6 +489,20 @@ declare module '@tanstack/react-router' {
       path: '/buy'
       fullPath: '/buy'
       preLoaderRoute: typeof BuyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/appcast.xml': {
+      id: '/appcast.xml'
+      path: '/appcast.xml'
+      fullPath: '/appcast.xml'
+      preLoaderRoute: typeof AppcastDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/appcast.json': {
+      id: '/appcast.json'
+      path: '/appcast.json'
+      fullPath: '/appcast.json'
+      preLoaderRoute: typeof AppcastDotjsonRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/legal': {
@@ -507,19 +568,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LegalLicenseRouteImport
       parentRoute: typeof LegalRouteRoute
     }
+    '/donate_/checkout': {
+      id: '/donate_/checkout'
+      path: '/donate/checkout'
+      fullPath: '/donate/checkout'
+      preLoaderRoute: typeof DonateCheckoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/blog/$slug': {
       id: '/blog/$slug'
       path: '/$slug'
       fullPath: '/blog/$slug'
       preLoaderRoute: typeof BlogSlugRouteImport
       parentRoute: typeof BlogRouteRoute
-    }
-    '/_guest/signup': {
-      id: '/_guest/signup'
-      path: '/signup'
-      fullPath: '/signup'
-      preLoaderRoute: typeof GuestSignupRouteImport
-      parentRoute: typeof GuestRouteRoute
     }
     '/_guest/login': {
       id: '/_guest/login'
@@ -578,12 +639,10 @@ const AuthRouteRouteWithChildren = AuthRouteRoute._addFileChildren(
 
 interface GuestRouteRouteChildren {
   GuestLoginRoute: typeof GuestLoginRoute
-  GuestSignupRoute: typeof GuestSignupRoute
 }
 
 const GuestRouteRouteChildren: GuestRouteRouteChildren = {
   GuestLoginRoute: GuestLoginRoute,
-  GuestSignupRoute: GuestSignupRoute,
 }
 
 const GuestRouteRouteWithChildren = GuestRouteRoute._addFileChildren(
@@ -626,10 +685,13 @@ const rootRouteChildren: RootRouteChildren = {
   GuestRouteRoute: GuestRouteRouteWithChildren,
   BlogRouteRoute: BlogRouteRouteWithChildren,
   LegalRouteRoute: LegalRouteRouteWithChildren,
+  AppcastDotjsonRoute: AppcastDotjsonRoute,
+  AppcastDotxmlRoute: AppcastDotxmlRoute,
   BuyRoute: BuyRoute,
   ChangelogRoute: ChangelogRoute,
   DonateRoute: DonateRoute,
   DownloadRoute: DownloadRoute,
+  FeaturesRoute: FeaturesRoute,
   LicenseRoute: LicenseRoute,
   LlmsFullDottxtRoute: LlmsFullDottxtRoute,
   LlmsDottxtRoute: LlmsDottxtRoute,
@@ -638,6 +700,7 @@ const rootRouteChildren: RootRouteChildren = {
   RobotsDottxtRoute: RobotsDottxtRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   TermsRoute: TermsRoute,
+  DonateCheckoutRoute: DonateCheckoutRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
 }
 export const routeTree = rootRouteImport

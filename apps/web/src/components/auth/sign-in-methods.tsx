@@ -1,6 +1,6 @@
-import { SiGithub, SiGoogle } from "@icons-pack/react-simple-icons";
+import { SiApple, SiGoogle } from "@icons-pack/react-simple-icons";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { CheckIcon, MailIcon } from "lucide-react";
+import { CheckIcon } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "#/components/ui/button";
@@ -8,13 +8,13 @@ import { authClient } from "#/lib/auth/auth-client";
 import { $getSocialProviders } from "#/lib/auth/functions";
 
 const PROVIDERS = [
-  { id: "github", label: "GitHub", icon: SiGithub },
   { id: "google", label: "Google", icon: SiGoogle },
+  { id: "apple", label: "Apple", icon: SiApple },
 ] as const;
 
 /**
  * Lists how this account can sign in and lets the user connect the other
- * provider, so GitHub and Google both open the same account and license.
+ * provider, so Google and Apple both open the same account and license.
  */
 export function SignInMethods() {
   const { data: accounts } = useQuery({
@@ -76,15 +76,6 @@ export function SignInMethods() {
             )}
           </li>
         ))}
-        <li className="flex items-center justify-between py-2">
-          <span className="flex items-center gap-2.5 text-sm">
-            <MailIcon className="size-4" aria-hidden />
-            Email and password
-          </span>
-          <span className="text-xs text-muted-foreground">
-            {linked.has("credential") ? "Set" : "Not set"}
-          </span>
-        </li>
       </ul>
     </section>
   );

@@ -311,6 +311,14 @@ function Features({
           Pick a feature to see where it lives in the app. The window is clickable: switch tabs,
           flip a switch, try a menu bar style.
         </p>
+        <p className="mt-2 text-[15px]">
+          <Link
+            to="/features"
+            className="text-muted-foreground underline underline-offset-4 transition-colors hover:text-foreground"
+          >
+            See every setting explained
+          </Link>
+        </p>
 
         <div className="mt-10 grid gap-8 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] lg:gap-14">
           <ol className="flex flex-col self-start border-l border-border">
@@ -724,12 +732,12 @@ function ClosingCta() {
         </div>
         <p className="mt-4 text-sm text-muted-foreground">
           Already using it and want to help?{" "}
-          <Link
-            to="/donate"
+          <a
+            href="/donate/checkout"
             className="text-foreground underline decoration-border underline-offset-4 transition-colors hover:decoration-foreground"
           >
             Donate
-          </Link>
+          </a>
         </p>
       </Container>
     </section>
