@@ -31,7 +31,6 @@ import { Route as LegalTermsRouteImport } from './routes/legal/terms'
 import { Route as LegalPrivacyRouteImport } from './routes/legal/privacy'
 import { Route as LegalLicenseRouteImport } from './routes/legal/license'
 import { Route as BlogSlugRouteImport } from './routes/blog/$slug'
-import { Route as GuestSignupRouteImport } from './routes/_guest/signup'
 import { Route as GuestLoginRouteImport } from './routes/_guest/login'
 import { Route as AuthAppRouteRouteImport } from './routes/_auth/app/route'
 import { Route as AuthAppIndexRouteImport } from './routes/_auth/app/index'
@@ -145,11 +144,6 @@ const BlogSlugRoute = BlogSlugRouteImport.update({
   path: '/$slug',
   getParentRoute: () => BlogRouteRoute,
 } as any)
-const GuestSignupRoute = GuestSignupRouteImport.update({
-  id: '/signup',
-  path: '/signup',
-  getParentRoute: () => GuestRouteRoute,
-} as any)
 const GuestLoginRoute = GuestLoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -189,7 +183,6 @@ export interface FileRoutesByFullPath {
   '/terms': typeof TermsRoute
   '/app': typeof AuthAppRouteRouteWithChildren
   '/login': typeof GuestLoginRoute
-  '/signup': typeof GuestSignupRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/legal/license': typeof LegalLicenseRoute
   '/legal/privacy': typeof LegalPrivacyRoute
@@ -214,7 +207,6 @@ export interface FileRoutesByTo {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/login': typeof GuestLoginRoute
-  '/signup': typeof GuestSignupRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/legal/license': typeof LegalLicenseRoute
   '/legal/privacy': typeof LegalPrivacyRoute
@@ -244,7 +236,6 @@ export interface FileRoutesById {
   '/terms': typeof TermsRoute
   '/_auth/app': typeof AuthAppRouteRouteWithChildren
   '/_guest/login': typeof GuestLoginRoute
-  '/_guest/signup': typeof GuestSignupRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/legal/license': typeof LegalLicenseRoute
   '/legal/privacy': typeof LegalPrivacyRoute
@@ -273,7 +264,6 @@ export interface FileRouteTypes {
     | '/terms'
     | '/app'
     | '/login'
-    | '/signup'
     | '/blog/$slug'
     | '/legal/license'
     | '/legal/privacy'
@@ -298,7 +288,6 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/terms'
     | '/login'
-    | '/signup'
     | '/blog/$slug'
     | '/legal/license'
     | '/legal/privacy'
@@ -327,7 +316,6 @@ export interface FileRouteTypes {
     | '/terms'
     | '/_auth/app'
     | '/_guest/login'
-    | '/_guest/signup'
     | '/blog/$slug'
     | '/legal/license'
     | '/legal/privacy'
@@ -514,13 +502,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BlogSlugRouteImport
       parentRoute: typeof BlogRouteRoute
     }
-    '/_guest/signup': {
-      id: '/_guest/signup'
-      path: '/signup'
-      fullPath: '/signup'
-      preLoaderRoute: typeof GuestSignupRouteImport
-      parentRoute: typeof GuestRouteRoute
-    }
     '/_guest/login': {
       id: '/_guest/login'
       path: '/login'
@@ -578,12 +559,10 @@ const AuthRouteRouteWithChildren = AuthRouteRoute._addFileChildren(
 
 interface GuestRouteRouteChildren {
   GuestLoginRoute: typeof GuestLoginRoute
-  GuestSignupRoute: typeof GuestSignupRoute
 }
 
 const GuestRouteRouteChildren: GuestRouteRouteChildren = {
   GuestLoginRoute: GuestLoginRoute,
-  GuestSignupRoute: GuestSignupRoute,
 }
 
 const GuestRouteRouteWithChildren = GuestRouteRoute._addFileChildren(

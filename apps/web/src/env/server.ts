@@ -6,11 +6,18 @@ export const env = createEnv({
     VITE_BASE_URL: z.url().default("http://localhost:3000"),
     BETTER_AUTH_SECRET: z.string().min(1),
 
-    // OAuth2 providers, optional, update as needed
-    GITHUB_CLIENT_ID: z.string().optional(),
-    GITHUB_CLIENT_SECRET: z.string().optional(),
+    // Sign-in providers (the only ways in). Each is optional so the worker
+    // boots before it's set up; the login page hides providers that aren't.
     GOOGLE_CLIENT_ID: z.string().optional(),
     GOOGLE_CLIENT_SECRET: z.string().optional(),
+    // Sign in with Apple: the Services ID, your Team ID, and the Key ID + .p8
+    // private key of a "Sign in with Apple" key. The client secret is a JWT
+    // the server signs from these (see lib/auth/apple.ts).
+    APPLE_CLIENT_ID: z.string().optional(),
+    APPLE_TEAM_ID: z.string().optional(),
+    APPLE_KEY_ID: z.string().optional(),
+    APPLE_PRIVATE_KEY: z.string().optional(),
+    APPLE_APP_BUNDLE_IDENTIFIER: z.string().optional(),
 
     // Dodo Payments — https://better-auth.com/docs/plugins/dodopayments
     // Optional so the app still boots before you paste real values in.

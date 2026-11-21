@@ -2,6 +2,7 @@ import { createServerFn, createServerOnlyFn } from "@tanstack/react-start";
 import { getRequest, setResponseHeader } from "@tanstack/react-start/server";
 
 import { env } from "#/env/server";
+import { appleConfigured } from "#/lib/auth/apple";
 import { auth } from "#/lib/auth/auth";
 
 /**
@@ -22,8 +23,8 @@ export const $getUser = createServerFn({ method: "GET" }).handler(async () => {
  * instead of offering a button that fails with "Provider not found".
  */
 export const $getSocialProviders = createServerFn({ method: "GET" }).handler(() => ({
-  github: Boolean(env.GITHUB_CLIENT_ID && env.GITHUB_CLIENT_SECRET),
   google: Boolean(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET),
+  apple: appleConfigured,
 }));
 
 interface GetUserServerQuery {
