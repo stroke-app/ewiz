@@ -344,6 +344,9 @@ struct SettingsView: View {
                         DispatchQueue.main.asyncAfter(deadline: .now() + 2) { copiedDiagnostics = false }
                     }
                     divider
+                    linkRow("What's Coming", systemImage: "sparkles",
+                            url: EWizLinks.roadmap.absoluteString)
+                    divider
                     linkRow("Donate", systemImage: "heart",
                             url: EWizLinks.donate.absoluteString)
                     divider

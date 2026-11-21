@@ -20,6 +20,9 @@ public enum EWizLinks {
     /// checkout, so the checkout link can change without an app release.
     public static let donate = URL(string: "https://ewiz.app/donate/checkout")!
 
+    /// Settings › About › What's Coming.
+    public static let roadmap = URL(string: "https://ewiz.app/roadmap")!
+
     /// Where Contact Support and the license window's help link write to.
     public static let supportEmail = "hello@ewiz.app"
 

@@ -144,12 +144,17 @@ function ChangelogPage() {
 
           <Entry pill="Next" title="On the roadmap">
             <ul className="mt-4 list-disc space-y-1.5 pl-6 marker:text-muted-foreground">
-              {ROADMAP.map((item) => (
-                <li key={item} className="pl-1 text-[15px] leading-relaxed">
-                  {item}
+              {ROADMAP.filter((item) => item.stage !== "later").map((item) => (
+                <li key={item.title} className="pl-1 text-[15px] leading-relaxed">
+                  {item.title}
                 </li>
               ))}
             </ul>
+            <p className="mt-4 text-[15px]">
+              <Link to="/roadmap" className="text-primary underline-offset-4 hover:underline">
+                See the full roadmap
+              </Link>
+            </p>
             <blockquote className="mt-5 border-l-2 border-border pl-3 text-[15px] text-muted-foreground italic">
               Plans, not promises. Ideas are welcome on{" "}
               <a href={LINKS.feedback} target="_blank" rel="noreferrer" className="underline">
