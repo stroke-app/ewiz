@@ -118,7 +118,7 @@ strip -x "$CONTENTS/MacOS/ewiz-mcp"
 # CFBundleVersion is the build number Sparkle compares (see scripts/build-number.sh), and
 # the SU* keys configure it: the feed, the release key every download has to verify
 # against (UpdateSignature.publicKeyBase64 — the same key signs appcast.json for the old
-# updater), a check on launch and every day without asking first, and verification of the
+# updater), a check on launch and every four hours without asking first, and verification of the
 # image before it's even opened. The app isn't Developer ID signed, so SUPublicEDKey is
 # the proof Sparkle relies on; with it valid, Sparkle also accepts a change of code-signing
 # identity, which is what carries ad-hoc installs over to the self-signed certificate.
@@ -152,7 +152,7 @@ cat > "$CONTENTS/Info.plist" <<PLIST
     <key>SUFeedURL</key>                <string>$SPARKLE_FEED</string>
     <key>SUPublicEDKey</key>            <string>$SPARKLE_PUBLIC_KEY</string>
     <key>SUEnableAutomaticChecks</key>  <true/>
-    <key>SUScheduledCheckInterval</key> <integer>86400</integer>
+    <key>SUScheduledCheckInterval</key> <integer>14400</integer>
     <key>SUVerifyUpdateBeforeExtraction</key> <true/>
     <!-- Required: eWiz toggles Bluetooth power on lid close. Without this
          usage string macOS kills the app (TCC) when it touches Bluetooth. -->

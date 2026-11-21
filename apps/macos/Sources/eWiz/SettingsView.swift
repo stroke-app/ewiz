@@ -202,6 +202,10 @@ struct SettingsView: View {
             }
             .scrollIndicators(.hidden)
 
+            sidebarUpdate
+                .padding(.horizontal, 12)
+                .padding(.bottom, 10)
+
             Divider()
             Toggle(isOn: $showAdvanced.animation(.snappy)) {
                 VStack(alignment: .leading, spacing: 1) {
@@ -217,6 +221,42 @@ struct SettingsView: View {
         }
         .frame(width: 200)
         .background(.background.secondary)
+    }
+
+    /// Updates, where every pane can see them. An available update is a filled button
+    /// naming the version; otherwise a quiet check with the version you're on.
+    @ViewBuilder
+    private var sidebarUpdate: some View {
+        if let version = updater.availableVersion {
+            Button {
+                updater.checkForUpdates()
+            } label: {
+                HStack(spacing: 6) {
+                    HugeIcon("download", size: 13)
+                    Text("Update to v\(version)")
+                }
+                .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
+        } else {
+            VStack(alignment: .leading, spacing: 4) {
+                Button {
+                    updater.checkForUpdates()
+                } label: {
+                    HStack(spacing: 6) {
+                        HugeIcon("refresh", size: 12)
+                        Text("Check for Updates")
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+                .disabled(!updater.canCheckForUpdates)
+                Text("v\(updater.currentVersion)\(updater.isBeta ? " beta" : "")")
+                    .font(.caption2).foregroundStyle(.tertiary).monospacedDigit()
+                    .frame(maxWidth: .infinity)
+            }
+        }
     }
 
     private func sidebarButton(_ tab: Tab) -> some View {

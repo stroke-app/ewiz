@@ -376,4 +376,30 @@ struct ChargeCompletionTests {
             percentage: 85, isCharging: false, isPluggedIn: false))
         #expect(!unplugged.onAdapter)
     }
+
+    /// Seen on a macOS-limit Mac: macOS's battery mitigation set its own 80% limit aside
+    /// and charged from 23% to 99%. The header said nothing was wrong.
+    @Test("macOS charging past its own limit is called out")
+    func macOSOverridesLimit() {
+        let d = ChargeDisplay(.init(percentage: 92, isCharging: true, isPluggedIn: true,
+                                    limitEnabled: true, effectiveLimit: 80,
+                                    nativeLimitApplied: 80, usesNativeLimit: true))
+        #expect(d.macOSOverridingLimit)
+        #expect(d.headerNote == "macOS is charging past the 80% limit")
+        #expect(d.hint?.hasPrefix("macOS has paused its own charge limit") == true)
+    }
+
+    @Test("Charging up to the limit is not an override")
+    func chargingToLimitIsNotOverride() {
+        let at = ChargeDisplay(.init(percentage: 80, isCharging: true, isPluggedIn: true,
+                                     limitEnabled: true, effectiveLimit: 80,
+                                     nativeLimitApplied: 80, usesNativeLimit: true))
+        #expect(!at.macOSOverridingLimit)
+        let smc = ChargeDisplay(.init(percentage: 92, isCharging: true, isPluggedIn: true,
+                                      limitEnabled: true, effectiveLimit: 80))
+        #expect(!smc.macOSOverridingLimit)
+        let noLimit = ChargeDisplay(.init(percentage: 92, isCharging: true, isPluggedIn: true,
+                                          usesNativeLimit: true))
+        #expect(!noLimit.macOSOverridingLimit)
+    }
 }
