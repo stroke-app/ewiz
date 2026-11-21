@@ -38,10 +38,13 @@ export function SiteHeader() {
       <Container className="grid h-[88px] max-w-[68rem] grid-cols-[1fr_auto_1fr] items-center">
         <Link
           to="/"
-          aria-label="eWiz home"
-          className="justify-self-start transition-opacity hover:opacity-80"
+          aria-label="eWiz home, public beta"
+          className="flex items-center gap-2 justify-self-start transition-opacity hover:opacity-80"
         >
           <AppIcon className="size-8" />
+          <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-semibold tracking-wide text-primary uppercase">
+            Beta
+          </span>
         </Link>
         <nav className="flex items-center gap-3 text-sm text-muted-foreground sm:gap-6 sm:text-[15px]">
           <Link to="/features" className={NAV_LINK}>

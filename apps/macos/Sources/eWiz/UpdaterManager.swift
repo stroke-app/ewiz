@@ -1,5 +1,6 @@
 import Combine
 import Foundation
+import EWizKit
 import Sparkle
 
 /// In-app updates, through Sparkle: a check on launch and daily, or on demand; then its
@@ -22,6 +23,9 @@ final class UpdaterManager: ObservableObject {
 
     let currentVersion: String =
         (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) ?? "0.0.0"
+
+    /// True until 1.0; shown as "Beta" beside the version.
+    var isBeta: Bool { AppStage.isBeta(version: currentVersion) }
 
     private let controller: SPUStandardUpdaterController
     private let observer = UpdateObserver()
