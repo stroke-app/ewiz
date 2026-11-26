@@ -130,8 +130,6 @@ final class NotificationManager: NSObject, ObservableObject, UNUserNotificationC
     private var lastLow = false
     private var lastFull = false
 
-    private var lastOverridden = false
-
     /// Battery %, at or below which (on battery) we warn about low charge.
     private let lowThreshold = 20
 
@@ -157,7 +155,6 @@ final class NotificationManager: NSObject, ObservableObject, UNUserNotificationC
         let heatPaused = display.state == .paused(.heat)
         let low = display.state == .onBattery && snap.percentage <= lowThreshold
         let full = snap.isFullyCharged
-        let overridden = display.macOSOverridingLimit
 
         // Always advance the baseline so events while off don't fire retroactively later.
         defer {
@@ -165,7 +162,6 @@ final class NotificationManager: NSObject, ObservableObject, UNUserNotificationC
             lastHeatPaused = heatPaused
             lastLow = low
             lastFull = full
-            lastOverridden = overridden
             initialized = true
         }
 
@@ -181,15 +177,6 @@ final class NotificationManager: NSObject, ObservableObject, UNUserNotificationC
             post("limit", "Charge limit reached",
                  "Holding at \(at)% to reduce battery wear.",
                  icon: "battery")
-        }
-
-        // Once per episode: macOS charging past the limit is the one time the limit visibly
-        // fails, and the user should hear it from eWiz rather than find 99% later.
-        if overridden && !lastOverridden, let to = display.state.target {
-            post("override", "macOS is charging past your \(to)% limit",
-                 "macOS paused its own charge limit, usually to recalibrate the battery. "
-                 + "On this Mac eWiz can't stop charging until macOS turns it back on.",
-                 icon: "alert")
         }
 
         if low && !lastLow {
