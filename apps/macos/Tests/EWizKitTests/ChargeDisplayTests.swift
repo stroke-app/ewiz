@@ -387,6 +387,14 @@ struct ChargeCompletionTests {
         #expect(d.macOSOverridingLimit)
         #expect(d.headerNote == "macOS is charging past the 80% limit")
         #expect(d.hint?.hasPrefix("macOS has paused its own charge limit") == true)
+
+        // A tick later the helper has cut the adapter to hold the limit itself.
+        let held = ChargeDisplay(.init(percentage: 92, isCharging: false, isPluggedIn: false,
+                                       limitEnabled: true, effectiveLimit: 80,
+                                       nativeLimitApplied: 80, usesNativeLimit: true,
+                                       pauseReason: "limit", discharging: true))
+        #expect(!held.macOSOverridingLimit)
+        #expect(held.state == .draining(to: 80))
     }
 
     @Test("Charging up to the limit is not an override")

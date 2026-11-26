@@ -409,7 +409,9 @@ public enum HelperBuild {
     ///        ExternalConnected alone said unplugged.
     ///   v34: for two minutes after eWiz releases macOS's limit, a battery not yet charging
     ///        is reported as about to ("settling"), since macOS can take a minute to start.
-    public static let version = 34
+    ///   v35: when macOS sets its own limit aside (battery mitigations) and charges past it,
+    ///        the adapter holds the limit instead, running down to 2 under and back.
+    public static let version = 35
 }
 
 public enum ControlError: Error, CustomStringConvertible {

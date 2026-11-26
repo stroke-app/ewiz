@@ -114,6 +114,9 @@ final class Daemon: @unchecked Sendable {
     /// macOS is holding and macOS brings it down. `pmset` says "AC attached; not charging"
     /// throughout, so without this the app would show a draining battery as "held".
     private var nativeDraining = false
+    /// The adapter is holding the limit because macOS set its own aside. See
+    /// `nativeIgnoredWanted`.
+    private var nativeIgnoredHold = false
 
     /// Whether this Mac exposes an SMC charge-inhibit key. Resolved once the SMC is open.
     /// False disables charge enforcement only — the daemon still serves everything else,
@@ -683,6 +686,7 @@ final class Daemon: @unchecked Sendable {
             let resuming = nativeReleasedAt.map { now.timeIntervalSince($0) < nativeResumeWindow } ?? false
                 && snap.onExternalPower && !snap.isCharging && !snap.isFullyCharged && level < 100
             lastPauseReason = adapterHolding ? "hold"
+                : nativeIgnoredHold ? (cfg.holdCharge ? "hold" : "limit")
                 : nativeHolding ? (paused ? "paused" : cfg.holdCharge ? "hold" : "limit")
                 : resuming ? "settling" : nil
         }
@@ -1175,15 +1179,18 @@ final class Daemon: @unchecked Sendable {
         // "Battery Power", so isPluggedIn would flip false next tick and we'd restore the
         // adapter — oscillating instead of draining. onExternalPower stays true while the cable is in.
         let bridge = nativeBridgeWanted(cfg, snap)
+        let ignored = nativeIgnoredWanted(cfg, snap, bridging: bridge)
         let shouldDischarge = snap.onExternalPower
-            && (limitDischarge || scheduleDischarge || adapterHold || bridge)
+            && (limitDischarge || scheduleDischarge || adapterHold || bridge || ignored)
 
         let adapterOn = (try? charge.isAdapterEnabled()) ?? true
         var cut = !adapterOn
         if shouldDischarge {
             if adapterOn {
                 if (try? charge.disableAdapter()) != nil { cut = true }
-                log(bridge && !limitDischarge && !scheduleDischarge
+                log(ignored && !limitDischarge && !scheduleDischarge
+                    ? "macOS is ignoring its own \(nativeApplied ?? 0)% limit at \(snap.percentage)%; adapter off, back at \((nativeApplied ?? 0) - adapterHoldBand)%"
+                    : bridge && !limitDischarge && !scheduleDischarge
                     ? "macOS limit set; adapter off until macOS stops the charge itself"
                     : adapterHold && !limitDischarge && !scheduleDischarge
                     ? "hold: on the battery at \(snap.percentage)%, adapter back at \((holdAnchor ?? cfg.chargeLimit) - adapterHoldBand)%"
@@ -1219,6 +1226,32 @@ final class Daemon: @unchecked Sendable {
             return false
         }
         return true
+    }
+
+    /// Whether the adapter should hold the limit because macOS is ignoring its own.
+    ///
+    /// macOS sets its limit aside while it recalibrates the gauge ("Battery mitigations
+    /// are in place, MCL will be ignored"), and then charges to full whatever the limit
+    /// says: seen from 23% to 99% on an 80% limit, with the panel only able to apologise.
+    /// The adapter still stops the charge, so it does: charging above the step macOS was
+    /// told to hold, once the bridge has had its chance, means the limit isn't biting.
+    /// The battery runs down `adapterHoldBand` under the mark and gets the adapter back;
+    /// if macOS honours its limit again by then it holds from there, and if not this
+    /// catches it again one point over.
+    ///
+    /// Never for calibration or a bypass, which lift `nativeApplied` before this runs.
+    /// Caller holds `lock`.
+    private func nativeIgnoredWanted(_ cfg: EWizConfig, _ snap: BatterySnapshot, bridging: Bool) -> Bool {
+        guard let mark = nativeApplied, mark < 100, !cfg.calibrateToFull, snap.onExternalPower else {
+            nativeIgnoredHold = false
+            return false
+        }
+        if !nativeIgnoredHold, !bridging, snap.isCharging, snap.percentage > mark {
+            nativeIgnoredHold = true
+        } else if nativeIgnoredHold, snap.percentage <= mark - adapterHoldBand {
+            nativeIgnoredHold = false
+        }
+        return nativeIgnoredHold
     }
 
     /// The level "don't charge" was thrown at, on a Mac with no charge-inhibit key.

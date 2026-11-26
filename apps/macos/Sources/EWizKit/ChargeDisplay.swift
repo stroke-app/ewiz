@@ -249,8 +249,8 @@ public struct ChargeDisplay: Equatable, Sendable {
     /// On a Mac without an SMC charge key, macOS's own charge limit is the only way to
     /// stop charging, and macOS sometimes sets it aside: while it recalibrates the battery
     /// gauge ("battery mitigations are in place, MCL will be ignored", seen from 23% to
-    /// 99% on an 80% limit), it charges to full whatever the limit says. eWiz can't
-    /// prevent that, but it must not let it look like the limit failed silently.
+    /// 99% on an 80% limit), it charges to full whatever the limit says. The helper cuts
+    /// the adapter within a tick to hold the limit itself; this covers the seconds before.
     public var macOSOverridingLimit: Bool {
         guard case .charging(let to) = state else { return false }
         return input.usesNativeLimit && (input.limitEnabled || input.holdCharge)
@@ -312,7 +312,7 @@ public struct ChargeDisplay: Equatable, Sendable {
         switch state {
         case .charging where macOSOverridingLimit:
             return "macOS has paused its own charge limit, usually to recalibrate the battery. "
-                + "On this Mac that's the only way to stop charging, so it charges to full until macOS turns the limit back on."
+                + "eWiz is switching to the battery to hold the limit instead."
         case .charging where input.pauseReason == "slow":
             return "Charging gently, at \(input.chargePower)% power"
         case .heldAtLimit:
